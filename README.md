@@ -22,9 +22,9 @@ Ready to take control of your SMS privacy? Getting started is easy.
 
         Download the latest APK directly from the official GitHub repository https://github.com/redskate/nook/blob/master/app/release/nook.apk or from https://f-droid.org/ (soon).
 
-        Note: Due to its SMS permissions, NooK is not available on the Google Play Store.
+        Note: Due to its SMS permissions, NooK is 🚫 not available on the Google Play Store.
 
-    Enable Installation from Unknown Sources
+    Thus: Enable Installation from Unknown Sources
 
         On your Android device, go to Settings > Security.
 
@@ -33,11 +33,11 @@ Ready to take control of your SMS privacy? Getting started is easy.
     NB: Android installer will want to understand that tha APP be potentially dangerous
     Well: maybe "potentially". But not dangerous at all -> see the code (SMSReceiver, SMSSender, SMSScanner)
     
-    CONFIRM INSTALL ANYWAY (do not give up so quickly)
+    💡 CONFIRM INSTALL ANYWAY (do not give up so quickly)
     
     🚀 Launch
     
-    Accept disclaimer (!!) & Grant Permissions
+    ❗ Accept disclaimer (!!) & Grant Permissions
 
         Open the downloaded APK file and follow the installation prompts.
 
@@ -66,5 +66,16 @@ You might see a cyclic warning from Google Play Protect or other virus scanners.
     Share Secrets Safely: Agree on your shared passwords with contacts through a secure secondary channel (like a quick call or in person) before starting a conversation.
 
     Understand What's Visible: While your message content is encrypted, standard SMS metadata (like the sender's phone number and timestamp) remains visible to your cellular carrier—just like with any regular text message.
+
+🚫 Important Notes
+
+    Android seems to restrict more and more the APPs registered by GOOGLE Play Store, the official APP store of GOOGLE for Android standard OS phones.
+
+    Here what you can do, in case you'd NEED NooK:
+
+    1. Look for and install other APP archives like F-DROID or AURORA. You will have to search for the APK directly and install first the archive's APK, then from there NooK (if present).
+    2. Consider using a phone with unlocked bootloader, install a custom ROM like e.g. lineage and proceed with step 1. 
+
+    Currently to my knowledge the GOOGLE (!) pixel smartphones have an unlockable bootloader allowing to install a more freedom friendly custom ROM.
 
 Welcome to a world where your conversations are truly your own. With NooK, No One Knows.
