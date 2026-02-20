@@ -4,6 +4,7 @@ Private SMS Messaging Powered by AES-256 Encryption
 Secure. Simple. Offline.
 
 NOOK transforms your everyday SMS into truly private conversations. Built directly on the cellular network, it requires zero internet connection and collects absolutely no data. Your privacy isn't just a feature—it's the foundation.
+
 ✨ Why Choose NooK?
 
     Military-Grade Encryption: Your messages are secured with AES-256 before they ever leave your device.
