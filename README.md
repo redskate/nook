@@ -81,3 +81,5 @@ You might see a cyclic warning from Google Play Protect or other virus scanners.
     Currently to my knowledge the GOOGLE (!) pixel smartphones have an unlockable bootloader allowing to install a more freedom friendly custom ROM.
 
 Welcome to a world where your conversations are truly your own. With NooK, No One Knows.
+
+[https://semweb.solutions/nook]
