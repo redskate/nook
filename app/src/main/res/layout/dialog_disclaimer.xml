@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="#FFFFFF">
+
+    <!-- Titolo -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/disclaimer_title"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:textColor="#000000"
+        android:paddingBottom="16dp" />
+
+    <!-- Testo del disclaimer -->
+    <ScrollView
+        android:id="@+id/disclaimer_scroll_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingBottom="16dp">
+
+        <TextView
+            android:id="@+id/disclaimer_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#000000"
+            android:lineSpacingExtra="4dp" />
+
+    </ScrollView>
+
+    <!-- Pulsanti SEMPLICI -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal">
+
+        <Button
+            android:id="@+id/btn_exit"
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:text="@string/disclaimer_exit"
+            android:textSize="14sp"
+            android:textColor="#FF0000"
+            android:background="@android:color/transparent" />
+
+        <View
+            android:layout_width="2dp"
+            android:layout_height="1dp" />
+
+        <!-- Bottone AGREE largo -->
+        <Button
+            android:id="@+id/btn_agree"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="@string/disclaimer_agree"
+            android:textSize="14sp"
+            android:textColor="#00AA00"
+            android:padding="2dp"
+            android:layout_marginStart="8dp"
+            android:background="@android:color/transparent"/>
+
+    </LinearLayout>
+
+</LinearLayout>

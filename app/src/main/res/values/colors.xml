@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colori principali -->
+    <color name="light_green">#FFA5D6A7</color>
+    <color name="middle_green">#FF4CAF50</color>
+    <color name="intensive_green">#FF388E3C</color>
+
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="red">#F44336</color>
+
+    <color name="link_color_decoded">#1B5E20</color>    <!-- very dark green #C8E6C9 -->
+    <color name="link_color_outgoing">#FFFFFF</color>   <!-- White -->
+    <color name="white">#FFFFFF</color>
+    <color name="background_main">#222222</color>
+    <color name="background_main2">#333333</color>
+    <color name="gray">#aaaaaa</color>
+    <color name="text_primary">#aaaaaa</color>
+    <color name="orange">#aa5500</color>
+    <color name="orange_light">#ffaa55</color>
+    <color name="pink">#FF4081</color>
+    <color name="light_orange">#FF9800</color>
+    <color name="gray_3">#757575</color>
+
+
+    <!--
+       <color name="plaintext_background">#FFF8E1</color> < Light yellow background -->
+    -->
+    <color name="blue">#FF0000AA</color> <!-- Light yellow background -->
+
+
+</resources>

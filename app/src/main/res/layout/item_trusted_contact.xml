@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="4dp"
+    app:cardElevation="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- Nome Contatto -->
+        <TextView
+            android:id="@+id/contact_name_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mario Rossi"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"/>
+
+        <!-- Numero Telefono -->
+        <TextView
+            android:id="@+id/contact_phone_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="+39 333 1234567"
+            android:textSize="14sp"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Switch Attivazione e Pulsante Rimuovi -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <Switch
+                android:id="@+id/active_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="12dp"
+                android:text="@string/active_switch_text"
+                android:checked="true"/>
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/remove_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/remove_button_text"
+                android:textSize="20dp"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:backgroundTint="@android:color/transparent"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

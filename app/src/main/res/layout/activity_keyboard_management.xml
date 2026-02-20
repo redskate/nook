@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_main"
+    android:paddingTop="40dp">
+
+    <!-- Header con titolo e back button -->
+<LinearLayout
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:orientation="horizontal"
+android:gravity="center_vertical"
+android:paddingLeft="16dp"
+android:paddingRight="16dp"
+android:paddingTop="16dp"
+android:paddingBottom="16dp">
+
+<!-- Bottone Back -->
+<Button
+    android:id="@+id/back_btn"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="@string/back"
+    android:textColor="@color/intensive_green"
+    android:background="?android:attr/selectableItemBackground"
+    android:padding="8dp"/>
+
+<!-- Spazio tra back e titolo -->
+<View
+    android:layout_width="0dp"
+    android:layout_height="1dp"
+    android:layout_weight="1"/>
+
+<!-- "Keyboards managed" in alto a destra -->
+<TextView
+    android:id="@+id/keyboard_count"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="0 keyboards"
+    android:textSize="14sp"
+    android:textColor="@color/gray"/>
+
+</LinearLayout>
+
+    <!-- Titolo con più spazio sopra e sotto -->
+<TextView
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:text="@string/manage_keyboards"
+android:textSize="24sp"
+android:textStyle="bold"
+android:gravity="center"
+android:paddingTop="0dp"
+android:paddingBottom="30dp"
+android:textColor="@color/intensive_green"/>
+
+    <!-- RecyclerView per la lista delle tastiere -->
+<androidx.recyclerview.widget.RecyclerView
+android:id="@+id/keyboard_list_recycler"
+android:layout_width="match_parent"
+android:textColor="@color/white"
+android:layout_height="0dp"
+android:layout_weight="1"
+android:background="@color/background_main2"
+android:paddingLeft="16dp"
+android:paddingRight="16dp"/>
+
+    <!-- Spazio per distanziare i bottoni dal fondo -->
+<View
+android:layout_width="match_parent"
+android:layout_height="50dp"/>
+
+    <!-- Pulsanti azioni in fondo SENZA BORDI -->
+<LinearLayout
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:orientation="horizontal"
+android:gravity="center"
+android:paddingLeft="16dp"
+android:paddingRight="16dp"
+android:paddingBottom="50dp">
+
+<TextView
+    android:id="@+id/clear_all_btn"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:text="@string/clear_all"
+    android:layout_marginRight="8dp"
+    android:textColor="@color/red"
+    android:textSize="16sp"
+    android:gravity="center"
+    android:padding="12dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:background="?android:attr/selectableItemBackground"/>
+
+<TextView
+    android:id="@+id/reset_defaults_btn"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:text="@string/reset_defaults"
+    android:layout_marginLeft="8dp"
+    android:textColor="@color/intensive_green"
+    android:textSize="16sp"
+    android:gravity="center"
+    android:padding="12dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:background="?android:attr/selectableItemBackground"/>
+
+</LinearLayout>
+
+    </LinearLayout>

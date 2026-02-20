@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingVertical="4dp">
+
+    <!-- Messaggio in arrivo NON DECODIFICATO (SINISTRA) -->
+    <LinearLayout
+        android:id="@+id/incoming_message_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="start"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="80dp"
+        android:visibility="gone">
+
+        <!-- Timestamp trasmissione sopra il messaggio -->
+        <TextView
+            android:id="@+id/sending_time_top"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="15:30"
+            android:textSize="10sp"
+            android:textColor="#757575"
+            android:layout_marginBottom="2dp"
+            android:layout_marginStart="8dp"/>
+        <!-- Timestamp ricezione sopra il messaggio -->
+        <TextView
+            android:id="@+id/incoming_time_top"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="15:30"
+            android:textSize="10sp"
+            android:textColor="#757575"
+            android:layout_marginBottom="2dp"
+            android:layout_marginStart="8dp"/>
+
+        <!-- Bubble messaggio non decodificato -->
+        <TextView
+            android:id="@+id/incoming_message_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:background="@drawable/bubble_incoming"
+            android:textColor="@android:color/black"
+            android:maxWidth="280dp"
+            android:text="@string/incoming_message_placeholder"/>
+
+    </LinearLayout>
+
+    <!-- Messaggio cifrato DECODIFICATO (SINISTRA) -->
+    <LinearLayout
+        android:id="@+id/decoded_message_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="start"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="80dp"
+        android:visibility="gone">
+
+        <!-- Timestamp trasmissione sopra il messaggio -->
+        <TextView
+            android:id="@+id/decoded_sending_time_top"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="15:30"
+            android:textSize="10sp"
+            android:textColor="#757575"
+            android:layout_marginBottom="2dp"
+            android:layout_marginStart="8dp"/>
+        <!-- Timestamp ricezione sopra il messaggio -->
+        <TextView
+            android:id="@+id/decoded_receiving_time_top"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="15:30"
+            android:textSize="10sp"
+            android:textColor="#757575"
+            android:layout_marginBottom="2dp"
+            android:layout_marginStart="8dp"/>
+
+        <!-- Bubble messaggio decodificato -->
+        <TextView
+            android:id="@+id/decoded_message_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:background="@drawable/bubble_decoded"
+            android:textColor="@android:color/black"
+            android:maxWidth="280dp"
+            android:text="@string/decoded_message_placeholder"/>
+
+    </LinearLayout>
+
+    <!-- Messaggio PLAINTEXT IN CHIARO IN ARRIVO (SINISTRA) - EVIDENZIATO -->
+    <LinearLayout
+        android:id="@+id/plaintext_message_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="start"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="80dp"
+        android:visibility="gone">
+
+        <!-- Timestamp con icona warning -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="2dp"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:id="@+id/plaintext_warning_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚠️"
+                android:textSize="10sp"
+                android:layout_marginEnd="4dp"/>
+
+            <TextView
+                android:id="@+id/plaintext_sending_time_top"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="15:30"
+                android:textSize="10sp"
+                android:textColor="#D32F2F"/>
+            <TextView
+                android:id="@+id/plaintext_receiving_time_top"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="15:30"
+                android:textSize="10sp"
+                android:textColor="#D32F2F"/>
+
+        </LinearLayout>
+
+        <!-- Bubble messaggio plaintext in arrivo -->
+        <TextView
+            android:id="@+id/plaintext_message_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:background="@drawable/bubble_plaintext_incoming"
+            android:textColor="#D32F2F"
+            android:maxWidth="280dp"
+            android:text="@string/plaintext_message_placeholder"/>
+
+    </LinearLayout>
+
+    <!-- Messaggio PLAINTEXT IN CHIARO IN USCITA (DESTRA) - EVIDENZIATO -->
+    <LinearLayout
+        android:id="@+id/plaintext_outgoing_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="end"
+        android:layout_marginStart="80dp"
+        android:layout_marginEnd="8dp"
+        android:visibility="gone">
+
+        <!-- Timestamp con icona warning -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="2dp"
+            android:layout_gravity="end"
+            android:layout_marginEnd="8dp">
+
+            <TextView
+                android:id="@+id/plaintext_outgoing_warning_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚠️"
+                android:textSize="10sp"
+                android:layout_marginEnd="4dp"/>
+
+            <TextView
+                android:id="@+id/plaintext_outgoing_time_top"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="15:30"
+                android:textSize="10sp"
+                android:textColor="#D32F2F"/>
+
+        </LinearLayout>
+
+        <!-- Bubble messaggio plaintext in uscita -->
+        <TextView
+            android:id="@+id/plaintext_outgoing_message_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:background="@drawable/bubble_plaintext_outgoing"
+            android:textColor="#D32F2F"
+            android:maxWidth="280dp"
+            android:text="@string/plaintext_message_placeholder"/>
+
+    </LinearLayout>
+
+    <!-- Messaggio in uscita CIFRATO/DECODIFICATO (DESTRA) -->
+    <LinearLayout
+        android:id="@+id/outgoing_message_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="end"
+        android:layout_marginStart="80dp"
+        android:layout_marginEnd="8dp"
+        android:visibility="gone">
+
+        <!-- Timestamp sopra il messaggio -->
+        <TextView
+            android:id="@+id/outgoing_time_top"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="15:30"
+            android:textSize="10sp"
+            android:textColor="#757575"
+            android:layout_marginBottom="2dp"
+            android:layout_gravity="end"
+            android:layout_marginEnd="8dp"/>
+
+        <!-- Bubble messaggio in uscita -->
+        <TextView
+            android:id="@+id/outgoing_message_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:background="@drawable/bubble_outgoing"
+            android:textColor="@android:color/white"
+            android:maxWidth="280dp"
+            android:text="@string/outgoing_message_placeholder"/>
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="?android:attr/selectableItemBackground">
+
+    <!-- Prima riga: Nome, Stato E Remove tutto in una linea -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp"
+        android:gravity="center_vertical">
+
+        <!-- Nome tastiera -->
+        <TextView
+            android:id="@+id/keyboard_name"
+            android:layout_width="160dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:text="Keyboard Name"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <!-- Stato (Approved/Rejected/Unknown) -->
+        <TextView
+            android:id="@+id/keyboard_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Status"
+            android:textSize="14sp"
+            android:paddingLeft="8dp"
+            android:paddingRight="2dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:layout_marginRight="8dp"
+            android:singleLine="true"/>
+
+        <!-- Bottone Remove/Approve IN ALTO A DESTRA con WIDTH FISSA -->
+        <TextView
+            android:id="@+id/keyboard_action_btn"
+            android:layout_width="90dp"
+            android:layout_height="wrap_content"
+            android:text="Action"
+            android:textSize="14sp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:gravity="center"
+            android:singleLine="true"
+            android:ellipsize="none"
+            android:clickable="true"
+            android:focusable="true"/>
+
+    </LinearLayout>
+
+    <!-- Seconda riga: Package ID -->
+    <TextView
+        android:id="@+id/keyboard_package"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="com.example.keyboard"
+        android:textSize="12sp"
+        android:textColor="@color/text_primary"
+        android:singleLine="true"
+        android:ellipsize="middle"/>
+
+</LinearLayout>

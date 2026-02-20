@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:background="?android:attr/selectableItemBackground">
+
+    <!-- ID della tastiera (una sola linea con ellipsis) -->
+    <TextView
+        android:id="@+id/keyboard_id_text"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="13sp"
+        android:textColor="#333333"
+        android:fontFamily="monospace"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:lines="1"
+        tools:text="com.google.android.inputmethod.latin" />
+
+    <!-- Pulsante per rimuovere -->
+    <ImageButton
+        android:id="@+id/remove_button"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="8dp"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:contentDescription="@android:string/cancel"
+        android:background="?android:attr/selectableItemBackground"
+        android:padding="6dp"
+        app:tint="#FF5252" />
+
+</LinearLayout>

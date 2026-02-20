@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Titolo per il numero di telefono -->
+    <TextView
+        android:id="@+id/text_phone_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Numero"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp"/>
+
+    <!-- Numero di telefono (solo visualizzazione, non modificabile) -->
+    <EditText
+        android:id="@+id/no_edit_text_phone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="phone"
+        android:enabled="false"
+        android:maxLines="1"
+        android:padding="12dp"
+        android:background="@drawable/rounded_edittext"
+        android:textColor="@android:color/black"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Titolo per il nome chat -->
+    <TextView
+        android:id="@+id/text_chat_name_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/chat_name_title"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp"/>
+
+    <!-- Campo per il nome chat -->
+    <EditText
+        android:id="@+id/y_user_name_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/chat_name_hint"
+        android:inputType="text"
+        android:maxLines="1"
+        android:padding="12dp"
+        android:background="@drawable/rounded_edittext"
+        android:textColor="@android:color/black"/>
+
+</LinearLayout>

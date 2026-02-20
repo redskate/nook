@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Codifica (Encoding) -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/encoding_title"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp"
+        android:textColor="?android:attr/textColorPrimary"/>
+
+    <Spinner
+        android:id="@+id/encoding_spinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Container password encoding (mostrato solo quando encoding != "Text") -->
+    <LinearLayout
+        android:id="@+id/encoding_password_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/encoding_password_label"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary"/>
+
+        <!-- Layout con campo password e pulsanti -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/rounded_edittext"
+            android:padding="4dp"
+            android:gravity="center_vertical">
+
+            <EditText
+                android:id="@+id/encoding_password_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/encoding_password_hint"
+                android:inputType="textMultiLine"
+                android:maxLines="3"
+                android:minLines="2"
+                android:singleLine="false"
+                android:padding="8dp"
+                android:textColor="@android:color/black"
+                android:background="@android:color/transparent"
+                android:imeOptions="actionDone"/>
+
+            <!-- Layout per i due pulsanti a destra -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <ImageButton
+                    android:id="@+id/encoding_generate_auto_btn"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:src="@drawable/ic_autorenew"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/content_description_generate_auto_password"
+                    android:padding="6dp"
+                    android:layout_marginBottom="4dp"/>
+
+                <ImageButton
+                    android:id="@+id/encoding_toggle_password_btn"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:src="@android:drawable/ic_menu_view"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/content_description_toggle_password_visibility"
+                    android:padding="6dp"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Informazioni sulla password encoding -->
+        <TextView
+            android:id="@+id/encoding_password_info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/encoding_password_info_default"
+            android:textSize="12sp"
+            android:textColor="@color/middle_green"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"/>
+
+    </LinearLayout>
+
+    <!-- Schema di cifratura (Encryption) -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/encryption_scheme_title"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp"
+        android:textColor="?android:attr/textColorPrimary"/>
+
+    <Spinner
+        android:id="@+id/encryption_spinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Container password cifratura (solo per SiSa) -->
+    <LinearLayout
+        android:id="@+id/encryption_password_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/relationship_password_title"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp"
+            android:textColor="?android:attr/textColorPrimary"/>
+
+        <!-- Layout con campo password e pulsanti -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/rounded_edittext"
+            android:padding="4dp"
+            android:gravity="center_vertical">
+
+            <EditText
+                android:id="@+id/encryption_password_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/password_relationship_hint"
+                android:inputType="textMultiLine"
+                android:maxLines="3"
+                android:minLines="2"
+                android:singleLine="false"
+                android:padding="8dp"
+                android:textColor="@android:color/black"
+                android:background="@android:color/transparent"
+                android:imeOptions="actionDone"/>
+
+            <!-- Layout per i due pulsanti a destra -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <ImageButton
+                    android:id="@+id/encryption_generate_auto_btn"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:src="@drawable/ic_autorenew"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/content_description_generate_auto_password"
+                    android:padding="6dp"
+                    android:layout_marginBottom="4dp"/>
+
+                <ImageButton
+                    android:id="@+id/encryption_toggle_password_btn"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:src="@android:drawable/ic_menu_view"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/content_description_toggle_password_visibility"
+                    android:padding="6dp"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Informazioni sulla password cifratura -->
+        <TextView
+            android:id="@+id/encryption_password_info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/password_info_text"
+            android:textSize="12sp"
+            android:textColor="@color/middle_green"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"/>
+
+    </LinearLayout>
+</LinearLayout>
