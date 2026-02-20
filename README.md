@@ -70,7 +70,8 @@ You might see a cyclic warning from Google Play Protect or other virus scanners.
 🚫 Important Notes
 
     Android seems to restrict more and more the APPs registered by GOOGLE Play Store, the official APP store of GOOGLE for Android standard OS phones.
-
+    You might search in the refurbed market for a good pixel phone (my suggestion: pixel 5).
+    
     Here what you can do, in case you'd NEED NooK:
 
     1. Look for and install other APP archives like [F-DROID](https://f-droid.org/) or [AURORA](https://store.auroraoss.com/). You will have to search for their APK directly and install first the archive's APK or follow their instructions, then from there NooK (if present).
