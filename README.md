@@ -34,7 +34,8 @@ Ready to take control of your SMS privacy? Getting started is easy.
     Well: just potentially. Not dangerous at all -> see the code. 
     Confirm Install (do not give up so quickly)
     
-    Launch
+    🚀 Launch
+    
     Install & Grant Permissions
 
         Open the downloaded APK file and follow the installation prompts.
@@ -43,17 +44,17 @@ Ready to take control of your SMS privacy? Getting started is easy.
 
     Start Chatting Securely!
 
-        Open NOOK, select a contact, and set a shared secret (a password you both agree on).
+        Open NOOK, select a contact, make it to trusted contact, and set a shared secret (a password you both agree on). Share the secret by voice (more secure) or paper.
 
         That's it! Your messages are now encrypted end-to-end.
 
 ⚠️ A Note on App Permissions
 
-You might see a warning from Google Play Protect or other virus scanners. This is a known false positive triggered by the app's access to SMS permissions.
+You might see a cyclic warning from Google Play Protect or other virus scanners. This is a known false positive triggered by the app's access to SMS permissions.
 
     Why this happens: Scanners often flag any app with SMS permissions as potential malware.
 
-    The Truth: NOOK is 100% open source. It only sends SMS when you press the send button, stores all data encrypted on your device, and has no internet access to leak your information.
+    The Truth: NOOK is 100% safe and open source. It only sends SMS when you press NooK's send button, stores all data encrypted on your phone, and has no internet access to leak your information.
 
     Install with Confidence: A permanent notification reminds you the app is active and safe.
 
