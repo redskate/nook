@@ -20,7 +20,7 @@ Ready to take control of your SMS privacy? Getting started is easy.
 
     Download the App
 
-        Get the latest APK directly from the official GitHub repository (link example).
+        Get the latest APK directly from the official GitHub repository https://github.com/redskate/nook/blob/master/app/release/nook.apk or from https://f-droid.org/ (soon).
 
         Note: Due to its SMS permissions, NOOK is not available on the Google Play Store.
 
@@ -30,6 +30,11 @@ Ready to take control of your SMS privacy? Getting started is easy.
 
         Enable the option "Install unknown apps" or "Allow from this source" for your file manager or browser.
 
+    NB: Andoid installe will want to understand that tha APP be potentially dangerous
+    Well: just potentially. Not dangerous at all -> see the code. 
+    Confirm Install (do not give up so quickly)
+    
+    Launch
     Install & Grant Permissions
 
         Open the downloaded APK file and follow the installation prompts.
