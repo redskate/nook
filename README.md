@@ -4,7 +4,7 @@ Private SMS Messaging Powered by AES-256 Encryption
 Secure. Simple. Offline.
 
 NOOK transforms your everyday SMS into truly private conversations. Built directly on the cellular network, it requires zero internet connection and collects absolutely no data. Your privacy isn't just a feature—it's the foundation.
-✨ Why Choose NOOK?
+✨ Why Choose NooK?
 
     Military-Grade Encryption: Your messages are secured with AES-256 before they ever leave your device.
 
@@ -20,9 +20,9 @@ Ready to take control of your SMS privacy? Getting started is easy.
 
     Download the App
 
-        Get the latest APK directly from the official GitHub repository https://github.com/redskate/nook/blob/master/app/release/nook.apk or from https://f-droid.org/ (soon).
+        Download the latest APK directly from the official GitHub repository https://github.com/redskate/nook/blob/master/app/release/nook.apk or from https://f-droid.org/ (soon).
 
-        Note: Due to its SMS permissions, NOOK is not available on the Google Play Store.
+        Note: Due to its SMS permissions, NooK is not available on the Google Play Store.
 
     Enable Installation from Unknown Sources
 
@@ -45,7 +45,7 @@ Ready to take control of your SMS privacy? Getting started is easy.
 
     Start Chatting Securely!
 
-        Open NOOK, select a contact, make it to trusted contact, and set a shared secret (a password you both agree on). Share the secret by voice (more secure) or paper.
+        Open NooK, select a contact, make it to trusted contact, and set a shared secret (a password you both agree on). Share the secret by voice (more secure) or paper.
 
         That's it! Your messages are now encrypted end-to-end.
 
@@ -55,7 +55,7 @@ You might see a cyclic warning from Google Play Protect or other virus scanners.
 
     Why this happens: Scanners often flag any app with SMS permissions as potential malware.
 
-    The Truth: NOOK is 100% safe and open source. It only sends SMS when you press NooK's send button, stores all data encrypted on your phone, and has no internet access to leak your information.
+    The Truth: NooK is 100% safe and open source. It only sends SMS when you press NooK's send button, stores all data encrypted on your phone, and has no internet access to leak your information.
 
     Install with Confidence: A permanent notification reminds you the app is active and safe.
 
@@ -67,4 +67,4 @@ You might see a cyclic warning from Google Play Protect or other virus scanners.
 
     Understand What's Visible: While your message content is encrypted, standard SMS metadata (like the sender's phone number and timestamp) remains visible to your cellular carrier—just like with any regular text message.
 
-Welcome to a world where your conversations are truly your own. With NOOK, No One Knows.
+Welcome to a world where your conversations are truly your own. With NooK, No One Knows.
