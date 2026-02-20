@@ -30,13 +30,14 @@ Ready to take control of your SMS privacy? Getting started is easy.
 
         Enable the option "Install unknown apps" or "Allow from this source" for your file manager or browser.
 
-    NB: Andoid installe will want to understand that tha APP be potentially dangerous
-    Well: just potentially. Not dangerous at all -> see the code. 
-    Confirm Install (do not give up so quickly)
+    NB: Android installer will want to understand that tha APP be potentially dangerous
+    Well: maybe "potentially". But not dangerous at all -> see the code (SMSReceiver, SMSSender, SMSScanner)
+    
+    CONFIRM INSTALL ANYWAY (do not give up so quickly)
     
     🚀 Launch
     
-    Install & Grant Permissions
+    Accept disclaimer (!!) & Grant Permissions
 
         Open the downloaded APK file and follow the installation prompts.
 
