@@ -1,4 +1,4 @@
-Welcome to NOOK – No One Knows
+Welcome to NooK – No one Knows
 
 Private SMS Messaging Powered by AES-256 Encryption
 Secure. Simple. Offline.
