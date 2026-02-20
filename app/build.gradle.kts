@@ -75,47 +75,32 @@ configurations.all {
 }
 
 dependencies {
-    // TUE DIPENDENZE ESISTENTI
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.10.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.recyclerview:recyclerview:1.3.1")
     implementation("androidx.cardview:cardview:1.0.0")
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("commons-codec:commons-codec:1.16.0")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
-    implementation(libs.play.services.vision.common)
-    implementation(libs.androidx.compiler)
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    implementation(libs.common)
-    implementation(libs.androidx.compose.ui.geometry)
-    implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.androidx.media3.common.ktx)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.firebase.crashlytics.buildtools)
-    implementation(libs.androidx.games.text.input)
-    implementation(libs.androidx.adapters)
-    implementation(libs.androidx.sqlite.ktx)
-    implementation(libs.protolite.well.known.types)
-    implementation(libs.firebase.firestore.ktx)
-    implementation(libs.firebase.ai)
-    implementation(libs.androidx.swiperefreshlayout)
-    implementation(libs.androidx.ui)
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     val room_version = "2.8.4"
     implementation("androidx.room:room-runtime:$room_version")
-    implementation("androidx.room:room-ktx:$room_version")  // Per coroutine support
-    kapt("androidx.room:room-compiler:$room_version") // <--- CORRETTO
-
-    // Coroutines
+    implementation("androidx.room:room-ktx:$room_version")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("commons-codec:commons-codec:1.16.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
+    implementation("com.google.guava:guava:31.1-android") {
+        because("Resolves conflict ListenableFuture btw profileinstaller and workmanager")
+    }
+
+    kapt("androidx.room:room-compiler:$room_version")
+
+    // ✅ Test
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-
 }
 
 kapt {
