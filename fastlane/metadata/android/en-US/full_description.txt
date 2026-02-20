@@ -1,0 +1,19 @@
+Welcome to NooK! (No one Knows)
+
+Private SMS Messaging Powered by AES-256 Encryption. Secure. Simple. Offline.
+
+NOOK transforms your everyday SMS into truly private conversations. Built directly on the cellular network, it requires zero internet connection and collects absolutely no data. Your privacy isn't just a feature—it's the foundation.
+
+✨ Why Choose NooK?
+
+• Military-Grade Encryption: Your messages are secured with AES-256 before they ever leave your device.
+• No Internet? No Problem: Communicate securely using the existing SMS infrastructure, even in areas with no data signal.
+• Your Data Stays Yours: We don't collect, store, or share anything. No trackers, no analytics, no cloud servers.
+• Open Source & Transparent: The entire codebase is public for anyone to audit. No secrets, no backdoors.
+
+⚠️ Note: The app requires SMS permissions to function. This triggers Google Play Protect warnings, but the app is 100% safe and open source. No internet access means your data cannot be leaked.
+
+🔒 First-Time User Tips:
+• Set up App Lock (fingerprint/PIN) immediately
+• Share passwords with contacts through a secure channel (voice/in person)
+• Only message content is encrypted - metadata (phone numbers, timestamps) remains visible to carriers

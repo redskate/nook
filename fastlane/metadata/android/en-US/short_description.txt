@@ -1,0 +1,1 @@
+Private SMS with AES-256 encryption. No internet needed. Zero data collection.
