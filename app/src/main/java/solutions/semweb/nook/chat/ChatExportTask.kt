@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.text.format.DateFormat
-import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.google.gson.Gson
 import solutions.semweb.nook.ChatMessage

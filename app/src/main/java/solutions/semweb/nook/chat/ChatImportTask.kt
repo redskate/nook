@@ -2,7 +2,6 @@ package solutions.semweb.nook.chat
 
 import android.content.Context
 import android.net.Uri
-import android.widget.Toast
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import solutions.semweb.nook.ChatConversation

@@ -2,7 +2,6 @@ package solutions.semweb.nook.sms
 
 import android.content.Context
 import android.telephony.SmsManager
-import android.widget.Toast
 import solutions.semweb.nook.LogUtils
 import solutions.semweb.nook.MainActivity
 import solutions.semweb.nook.R

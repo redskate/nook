@@ -5,8 +5,6 @@ import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
-import android.content.Context
-import java.lang.ref.WeakReference
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Typeface
@@ -56,6 +54,7 @@ import solutions.semweb.nook.sound.MainActivitySoundPicker
 import solutions.semweb.nook.sound.SoundManagement
 import java.io.File
 import java.io.FileOutputStream
+import java.lang.ref.WeakReference
 import java.util.Timer
 import java.util.TimerTask
 
