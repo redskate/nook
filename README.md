@@ -1,9 +1,10 @@
-Welcome to NooK!   (No one Knows)
+Welcome to NooK!   (No one Knows)   [https://semweb.solutions/nook]
 
 Private SMS Messaging Powered by AES-256 Encryption
 Secure. Simple. Offline.
 
 NOOK transforms your everyday SMS into truly private conversations. Built directly on the cellular network, it requires zero internet connection and collects absolutely no data. Your privacy isn't just a feature—it's the foundation.
+
 ✨ Why Choose NooK?
 
     Military-Grade Encryption: Your messages are secured with AES-256 before they ever leave your device.
@@ -20,7 +21,7 @@ Ready to take control of your SMS privacy? Getting started is easy.
 
     Download the App
 
-        Download the [latest NooK APK](https://github.com/redskate/nook/blob/master/app/release/nook.apk) directly from the official GitHub repository or from https://f-droid.org/ (soon).
+        Download the latest NooK APK [https://semweb.solutions/nook/nook.apk] directly or (soon) from [https://f-droid.org/].
 
         Note: Due to its SMS permissions, NooK is 🚫 not available on the Google Play Store.
 
@@ -30,8 +31,8 @@ Ready to take control of your SMS privacy? Getting started is easy.
 
         Enable the option "Install unknown apps" or "Allow from this source" for your file manager or browser.
 
-    NB: Android installer will want to understand that tha APP be potentially dangerous
-    Well: maybe "potentially". But not dangerous at all -> see the code (SMSReceiver, SMSSender, SMSScanner)
+    NB: Android installer will want to understand that the APP be potentially dangerous
+    Well: maybe "potential-ly". But not dangerous at all -> see the code (SmsReceiver, SmsSender, SmsScanner)
     
     💡 CONFIRM INSTALL ANYWAY (do not give up so quickly)
     
@@ -74,10 +75,12 @@ You might see a cyclic warning from Google Play Protect or other virus scanners.
     
     Here what you can do, in case you'd NEED NooK:
 
-    1. Look for and install other APP archives like [F-DROID](https://f-droid.org/) or [AURORA](https://store.auroraoss.com/). You will have to search for their APK directly and install first the archive's APK or follow their instructions, then from there NooK (if present).
-    2. Consider using a phone with unlocked bootloader, install a custom ROM like [lineage](https://lineageos.org/), [e/OS](https://e.foundation/e-os/) or another one [here](https://keepandroidopen.org) and proceed with step 1. 
-    3. Root your device and "de-google" it. Your device belongs to you. Note: Rooting may prevent you to use identity and banking APPs. Keep a second phone for safe communication only! 
+    1. Look for and install other APP archives like F-DROID [https://f-droid.org] or AURORA [https://store.auroraoss.com]. You will have to search for their APK directly and install first the archive's APK or follow their instructions, then from there NooK (if present).
+    2. Consider using a phone with unlocked bootloader, install a custom ROM like lineage [https://lineageos.org/], e/OS [https://e.foundation/e-os/] or another one here: [https://keepandroidopen.org] and proceed with step 1. 
+    3. Root your device and "de-google" it. Your device should belong to you. Note: Rooting may prevent you to use identity and banking APPs. Keep a second phone for safe communication only! 
 
     Currently to my knowledge the GOOGLE (!) pixel smartphones have an unlockable bootloader allowing to install a more freedom friendly custom ROM.
 
 Welcome to a world where your conversations are truly your own. With NooK, No One Knows.
+
+
