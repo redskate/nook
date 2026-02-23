@@ -17,8 +17,8 @@ android {
         applicationId = "solutions.semweb.nook"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 255
+        versionName = "1.1.1.255"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         javaCompileOptions {

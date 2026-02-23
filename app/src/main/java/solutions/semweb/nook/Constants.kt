@@ -2,20 +2,6 @@ package solutions.semweb.nook
 
 import solutions.semweb.nook.crypto.EncryptionMapper
 
-
-/* 16K APK Alignment:
-1. Genera APK UNSIGNED (non firmata)
-   ↓
-2. Applica zipalign con -P 16
-   ↓
-3. FIRMA l'APK allineata
-   ↓
-4. Verifica firma e allineamento
-   ↓
-5. Rilascia APK su F-Droid
-*/
- 
-
 object Constants {
     const val VERSION = "1.1.255" //
     // This is the only "brand" I have:
