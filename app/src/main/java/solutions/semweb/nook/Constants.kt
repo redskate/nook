@@ -17,7 +17,7 @@ import solutions.semweb.nook.crypto.EncryptionMapper
  
 
 object Constants {
-    const val VERSION = "1.1.1.249"
+    const val VERSION = "1.1.1.250" //
     // This is the only "brand" I have:
     const val COPYRIGHT = "©2026 semweb.solutions"
     const val VISITME = "https://semweb.solutions"
