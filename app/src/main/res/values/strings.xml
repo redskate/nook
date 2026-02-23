@@ -602,6 +602,7 @@ Note: %3$s
     <string name="alert_scan_result_success">✅ %1$d nuovi SMS per %2$s\n🔐 Decifrati: %3$d\n📝 In chiaro: %4$d\n⚠️ Errori: %5$d\n📋 Già presenti: %6$d</string>
     <string name="alert_scan_result_no_sms">Nessun SMS trovato per %s nelle ultime %d ore</string>
     <string name="load_more_with_count">Visualizza altri %d messaggi (di %d rimanenti)</string>
+    <string name="load_last_with_count">Visualizza ultimi %d messaggi</string>
     <string name="load_last_messages">Visualizza ultimi %d messaggi</string>
     <string name="no_more_messages_to_load">Tutti i messaggi visualizzati</string>
     <string name="error_renaming_chat">Errore durante la rinomina della Chat</string>
@@ -737,5 +738,7 @@ Note: %3$s
     <string name="notification_pamphlet">Enjoy NooK - APP SICURA\nOpen Source su GitHub\n═══════════════════════\nNB: ⚠️ GOOGLE PLAY PROTECT o altri VIRUS SCANNERS potrebbero segnalare erroneamente una APP sicura come malware - cioè potenzialmente dannosa - ed invitarti a disinstallarla.</string>
     <string name="notification_action_open">Apri APP</string>
     <string name="notification_action_stop">Ferma APP</string>
+    <string name="load_last_message">Mostra l\'ultimo messaggio</string>
+    <string name="simply_exit_app">Ferma NooK</string>
 
 </resources>

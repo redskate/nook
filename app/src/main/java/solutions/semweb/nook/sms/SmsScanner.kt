@@ -169,7 +169,6 @@ class SmsScanner(private val context: Context) {
                 }
 
                 val sortedSmsList = smsList.sortedBy { it.date }
-                var dummyDeleted = false
 
                 for (sms in sortedSmsList) {
                     try {
@@ -227,127 +226,127 @@ class SmsScanner(private val context: Context) {
                 return false
             }
 
-            // Check if this SMS is already in database (but skip dummy/progress messages)
-            val existsInDb = isSmsAlreadyInDatabase(sms, existingMessages)
+            val conversation = chatManager.getConversation(sms.address)
 
-            val senderName = getContactName(context, sms.address)
+            if (conversation != null) {
+                // Check if this SMS is already in database (but skip dummy/progress messages)
+                val smsIsProcessed = isSmsAlreadyProcessed(sms, existingMessages)
 
-            LogUtils.d(context, "SmsScanner", "📨 Processing SMS from: ${sms.address}")
-            LogUtils.d(context, "SmsScanner", "  Text: '${sms.body.take(50)}...'")
-            LogUtils.d(context, "SmsScanner", "  Date SMS: ${sms.date} (${Date(sms.date)})")
+                if (!smsIsProcessed)
+                {
+                    LogUtils.d(context, "SmsScanner", "📨 Processing SMS from: ${sms.address}")
+                    LogUtils.d(context, "SmsScanner", "  Text: '${sms.body.take(50)}...'")
+                    LogUtils.d(context, "SmsScanner", "  Date SMS: ${sms.date} (${Date(sms.date)})")
 
-            if (!CryptoManager.isLikelyEncrypted(sms.body)) {
-                LogUtils.d(context, "SmsScanner", "  📝 SMS PLAINTEXT")
+                    if (!CryptoManager.isLikelyEncrypted(sms.body)) {
+                        LogUtils.d(context, "SmsScanner", "  📝 SMS PLAINTEXT")
 
-                val isPlaintext = !sms.body.trim().startsWith("#e") &&
-                        !CryptoManager.hasEncryptionIndicators(sms.body)
+                        val isPlaintext = !sms.body.trim().startsWith("#e") &&
+                                !CryptoManager.hasEncryptionIndicators(sms.body)
 
-                LogUtils.d(context, "SmsScanner", "  📝 IsPlaintext: $isPlaintext")
+                        LogUtils.d(context, "SmsScanner", "  📝 IsPlaintext: $isPlaintext")
 
-
-
-                // Save message like SMSReceiver
-                chatManager.handleIncomingMessage(
-                    sender = sms.address,
-                    messageText = sms.body,
-                    timestamp = sms.date,
-                    transTimestamp = -1,
-                    isDecoded = false,
-                    senderName = senderName,
-                    usedScheme = if (isPlaintext) EncryptionMapper.ENCRYPTION_TEXT else "",
-                    multiPartSize = 1
-                )
-
-                result.plaintext++
-                LogUtils.d(context, "SmsScanner", "  ✅ Saved SMS plaintext (timestamp: ${sms.date})")
-
-            } else {
-                // Encrypted SMS
-                LogUtils.d(context, "SmsScanner", "  🔐 Encrypted/Encoded SMS")
-
-                val conversation = chatManager.getConversation(sms.address)
-
-                // CRITICAL: If no conversation exists for encrypted message, skip
-                if (conversation == null) {
-                    LogUtils.w(context, "SmsScanner",
-                        "⚠️ No conversation found for encrypted SMS from ${sms.address} - skipping")
-                    result.skippedUntrusted++
-                    return false
-                }
-
-                val schemeToUse = conversation.encryptionScheme
-                val encodingToUse = conversation.encoding
-                val encodingPassword = conversation.encodingPassword
-
-                // Extract timestamp
-                val extractionResult = TimestampUtils.extractTimestampFromPrefix(sms.body, encodingToUse)
-                val message = extractionResult.first
-                val transmTimestamp = extractionResult.second
-
-                val timestamp = transmTimestamp ?: 0
-
-                val resultDecode = CryptoManager.decodeMessage(
-                    context,
-                    message,
-                    schemeToUse,
-                    encodingToUse,
-                    encodingPassword,
-                    sms.address,
-                    timestamp
-                )
-
-                if (resultDecode.success) {
-                    LogUtils.d(context, "SmsScanner", "  ✅ DECRYPTION SUCCESS ($schemeToUse)")
-
-                    // Save in SharedPreferences
-                    prefs.saveDecodedMessage(
-                        SharedPreferencesManager.DecodedMessage(
-                            decodedMessage = resultDecode.decoded,
-                            sender = sms.address,
+                        // Save unencr/unenc message
+                        chatManager.handleIncomingMessage(
+                            messageText = sms.body,
+                            isDecoded = false,
+                            conversation = conversation,
                             timestamp = sms.date,
-                            trans_timestamp = -1,
-                            success = true,
-                            senderName = senderName
+                            transTimestamp = -1,
+                            usedScheme = if (isPlaintext) EncryptionMapper.ENCRYPTION_TEXT else "",
+                            multiPartSize = 1
                         )
-                    )
 
-                    // Handle multipart case - useless - back to simplicity
-                    val partCount = 1
+                        result.plaintext++
+                        LogUtils.d(context, "SmsScanner", "  ✅ Saved SMS plaintext (timestamp: ${sms.date})")
 
-                    // Add the real message WITH the part count in the prefix
-                    chatManager.handleIncomingMessage(
-                        sender = sms.address,
-                        messageText = resultDecode.decoded,
-                        timestamp = sms.date,
-                        transTimestamp = -1,
-                        senderName = senderName,
-                        usedScheme = schemeToUse,
-                        usedEncoding = encodingToUse,
-                        multiPartSize = partCount
-                    )
+                    } else {
+                        // Encrypted SMS
+                        LogUtils.d(context, "SmsScanner", "  🔐 Encrypted/Encoded SMS")
 
-                    result.decrypted++
-                    LogUtils.d(context, "SmsScanner", "  ✅ Decrypted SMS saved with part count: $partCount")
+                        val conversation = chatManager.getConversation(sms.address)
 
-                    // Force UI update
-                    runBlocking {
-                        delay(200) // Give time for database operations
-                        sendChatUpdateBroadcast(sms.address, true)
+                        // CRITICAL: If no conversation exists for encrypted message, skip
+                        if (conversation == null) {
+                            LogUtils.w(context, "SmsScanner",
+                                "⚠️ No conversation found for encrypted SMS from ${sms.address} - skipping")
+                            result.skippedUntrusted++
+                            return false
+                        }
+
+                        val schemeToUse = conversation.encryptionScheme
+                        val encodingToUse = conversation.encoding
+                        val encodingPassword = conversation.encodingPassword
+
+                        // Extract timestamp
+                        val extractionResult = TimestampUtils.extractTimestampFromPrefix(sms.body, encodingToUse)
+                        val message = extractionResult.first
+                        val transmTimestamp = extractionResult.second
+
+                        val timestamp = transmTimestamp ?: 0
+
+                        val resultDecode = CryptoManager.decodeMessage(
+                            context,
+                            message,
+                            schemeToUse,
+                            encodingToUse,
+                            encodingPassword,
+                            sms.address,
+                            timestamp
+                        )
+
+                        if (resultDecode.success) {
+                            LogUtils.d(context, "SmsScanner", "  ✅ DECRYPTION SUCCESS ($schemeToUse)")
+
+                            // Save in SharedPreferences
+                            prefs.saveDecodedMessage(
+                                SharedPreferencesManager.DecodedMessage(
+                                    decodedMessage = resultDecode.decoded,
+                                    sender = sms.address,
+                                    timestamp = sms.date,
+                                    trans_timestamp = -1,
+                                    success = true,
+                                    senderName = conversation.contactName?: conversation.phoneNumber
+                                )
+                            )
+
+                            val partCount = 1
+
+                            // Add the real message WITH the part count in the prefix
+                            chatManager.handleIncomingMessage(
+                                messageText = resultDecode.decoded,
+                                true,
+                                conversation,
+                                timestamp = sms.date,
+                                transTimestamp = -1,
+                                usedScheme = schemeToUse,
+                                usedEncoding = encodingToUse,
+                                multiPartSize = partCount
+                            )
+
+                            result.decrypted++
+                            LogUtils.d(context, "SmsScanner", "  ✅ Decrypted SMS saved with part count: $partCount")
+
+                            // Force UI update
+                            runBlocking {
+                                delay(200) // Give time for database operations
+                                sendChatUpdateBroadcast(sms.address, true)
+                            }
+
+                        } else {
+                            LogUtils.w(context, "SmsScanner", "  ❌ Decryption failed for SMS ${sms.id}")
+                            result.errors++
+                        }
                     }
 
-                } else {
-                    LogUtils.w(context, "SmsScanner", "  ❌ Decryption failed for SMS ${sms.id}")
-                    result.errors++
+                    // Mark Sms as processed
+                    markSmsAsProcessed(sms.id)
+                    result.processed++
+
+                    LogUtils.d(context, "SmsScanner",
+                        "✅ SMS processed ${sms.id} from ${sms.address} with timestamp: ${sms.date}")
                 }
             }
-
-            // Mark as processed
-            markSmsAsProcessed(sms.id)
-            result.processed++
-
-            LogUtils.d(context, "SmsScanner",
-                "✅ SMS processed ${sms.id} from ${sms.address} with timestamp: ${sms.date}")
-
         } catch (e: Exception) {
             LogUtils.e(context, "SmsScanner", "❌ Error processing SMS ${sms.id}", e)
             result.errors++
@@ -628,7 +627,7 @@ class SmsScanner(private val context: Context) {
     /**
      * Check whether SMS message text already occurs in existingMessages
      */
-    private fun isSmsAlreadyInDatabase(sms: SmsData, existingMessages: List<ChatMessage>): Boolean {
+    private fun isSmsAlreadyProcessed(sms: SmsData, existingMessages: List<ChatMessage>): Boolean {
         return try {
             val timeWindowMillis = 10 * 1000L // ±10 seconds
             val startTime = sms.date - timeWindowMillis

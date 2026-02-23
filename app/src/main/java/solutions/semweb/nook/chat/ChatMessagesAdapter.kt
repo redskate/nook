@@ -121,6 +121,9 @@ class ChatMessagesAdapter(
         }
     }
 
+    /*
+     *   Message Visualizer
+     */
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
             is ContinuationViewHolder -> {
@@ -165,11 +168,27 @@ class ChatMessagesAdapter(
                                 else -> "$remainingMessages"
                             }
 
-                            context.getString(
-                                R.string.load_more_with_count,
-                                nextLoad,
-                                remainingFormatted.toInt()
-                            )
+                            // do not show (out of...) if
+                            // end of loading
+                            if (nextLoad == remainingMessages)
+                            {
+                                if (nextLoad==1)
+                                    context.getString(
+                                        R.string.load_last_message,
+                                        nextLoad
+                                    )
+                                else
+                                    context.getString(
+                                        R.string.load_last_with_count,
+                                        nextLoad
+                                    )
+                            }
+                            else
+                                context.getString(
+                                    R.string.load_more_with_count,
+                                    nextLoad,
+                                    remainingFormatted.toInt()
+                                )
                         } else {
                             context.getString(R.string.load_more_messages)
                         }
@@ -245,7 +264,7 @@ class ChatMessagesAdapter(
                         holder.plaintextWarningIcon.visibility = View.VISIBLE
                         holder.plaintextWarningIcon.text = "⚠️"
                         holder.plaintextTransTimeTop.text = formattedTransTime
-                        holder.plaintextTransTimeTop.visibility = if (formattedTransTime.isNotEmpty()) View.VISIBLE else View.GONE
+                        holder.plaintextTransTimeTop.visibility = View.GONE // since no timestamp in a plaintext message ...
                         holder.plaintextMessageText.setOnLongClickListener {
                             onMessageLongClick(message)
                             true
@@ -269,12 +288,12 @@ class ChatMessagesAdapter(
                         }
                     }
 
-                    // INCOMING DECODED MESSAGE
+                    // INCOMING DECODED MESSAGE - show trasmission time when different from receive time
                     !message.isOutgoing && message.isDecoded -> {
                         holder.decodedMessageLayout.visibility = View.VISIBLE
                         holder.decodedTimeTop.text = formattedTime
                         holder.decodedTRansTimeTop.text = formattedTransTime
-                        holder.decodedTRansTimeTop.visibility = if (formattedTransTime.isNotEmpty()) View.VISIBLE else View.GONE
+                        holder.decodedTRansTimeTop.visibility = if (formattedTransTime.isNotEmpty() && !formattedTransTime.equals(formattedTime)) View.VISIBLE else View.GONE
 
                         val displayText = if (message.isYMessage) {
                             "\uD83D\uDCE1 ${message.text}"

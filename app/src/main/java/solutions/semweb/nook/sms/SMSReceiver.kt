@@ -200,19 +200,18 @@ class SMSReceiver : BroadcastReceiver() {
                 }
             }
 
-            // Process the message
+            // Process the message for conversation (existing)
             if (body.startsWith(Constants.SMS_OBF_PREFIX)) {
                 // Encrypted message - may take time to decrypt
-                processEncryptedMessage(context, message, conversation, senderName)
+                processEncryptedMessage(context, message, conversation)
             } else {
                 // Plaintext message - fast path
                 chatManager.handleIncomingMessage(
-                    sender = sender,
                     messageText = body,
+                    isDecoded = false,
+                    conversation,
                     timestamp = timestamp,
                     transTimestamp = -1,
-                    isDecoded = false,
-                    senderName = senderName,
                     usedScheme = EncryptionMapper.ENCRYPTION_TEXT,
                     multiPartSize = 1
                 )
@@ -243,8 +242,7 @@ class SMSReceiver : BroadcastReceiver() {
     private suspend fun processEncryptedMessage(
         context: Context,
         message: SmsMessageData,
-        conversation: ChatConversation,
-        senderName: String?
+        conversation: ChatConversation
     ) {
         val (sender, body, timestamp) = message
         val chatManager = ChatManager(context)
@@ -267,16 +265,20 @@ class SMSReceiver : BroadcastReceiver() {
 
         if (result.success) {
             chatManager.handleIncomingMessage(
-                sender = sender,
                 messageText = result.decoded,
+                isDecoded = true,
+                conversation,
                 timestamp = timestamp,
                 transTimestamp = transTimestamp ?: -1,
-                isDecoded = true,
-                senderName = senderName,
                 usedScheme = conversation.encryptionScheme,
                 usedEncoding = conversation.encoding,
                 multiPartSize = 1
             )
+
+            // 🔔 PLAY EXTRA SOUND FOR SUCCESSFULLY DECODED SMS
+            // Only plays if a custom sound is configured (not default)
+            DecodedSmsSoundPlayer.playDecodedSmsSound(context)
+
             LogUtils.d(context, Constants.SMSTAG, "✅ Decrypted and saved message from $sender")
         } else {
             LogUtils.w(context, Constants.SMSTAG, "❌ Decryption failed for message from $sender")

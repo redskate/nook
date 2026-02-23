@@ -6,7 +6,7 @@ import solutions.semweb.nook.crypto.EncryptionMapper
 /* 16K APK Alignment:
 1. Genera APK UNSIGNED (non firmata)
    ↓
-2. Applica ZIPALIGN con -P 16
+2. Applica zipalign con -P 16
    ↓
 3. FIRMA l'APK allineata
    ↓
@@ -17,7 +17,7 @@ import solutions.semweb.nook.crypto.EncryptionMapper
  
 
 object Constants {
-    const val VERSION = "1.1.1.250" //
+    const val VERSION = "1.1.255" //
     // This is the only "brand" I have:
     const val COPYRIGHT = "©2026 semweb.solutions"
     const val VISITME = "https://semweb.solutions"

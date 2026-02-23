@@ -439,9 +439,8 @@ class SharedPreferencesManager private constructor(private var context: Context)
     // =============================================
 
     var notificationSoundUri: String
-        get() = prefs.getString(Constants.KEY_NOTIFICATION_SOUND_URI,
-            Constants.DEFAULT_NOTIFICATION_SOUND_URI) ?: Constants.DEFAULT_NOTIFICATION_SOUND_URI
-        set(value) = prefs.edit().putString(Constants.KEY_NOTIFICATION_SOUND_URI, value).apply()
+        get() = getString("notification_sound_uri", "") // Default: None - no sound
+        set(value) = putString("notification_sound_uri", value)
 
     var vibrationEnabled: Boolean
         get() = prefs.getBoolean(Constants.KEY_VIBRATION_ENABLED, true)

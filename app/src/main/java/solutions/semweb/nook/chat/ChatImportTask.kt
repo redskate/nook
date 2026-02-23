@@ -6,6 +6,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import solutions.semweb.nook.ChatConversation
 import solutions.semweb.nook.ChatMessage
+import solutions.semweb.nook.Constants
 import solutions.semweb.nook.LogUtils
 import solutions.semweb.nook.MainActivity
 import solutions.semweb.nook.R
@@ -272,22 +273,31 @@ class ChatImportTask(
             if (conversation == null) {
                 LogUtils.d(context, "ImportChatTask", "➕ Create new conversazione: ${exportData.phoneNumber}")
 
-                // Dummy message to init conversation
-                val dummyMessage = ChatMessage(
-                    text = context.getString(R.string.imported_chat),
-                    sender = exportData.phoneNumber,
-                    timestamp = System.currentTimeMillis(),
-                    isDecoded = true,
-                    isOutgoing = false,
-                    isYMessage = exportData.isYChat
+                chatManager.createNormalChat(
+                    phoneNumber = exportData.phoneNumber,
+                    contactName = exportData.contactName,
+                    encoding = Constants.DEFAULT_encoding
                 )
-
-                chatManager.addMessageInChat(exportData.phoneNumber, dummyMessage)
-
                 conversation = chatManager.getConversation(exportData.phoneNumber)
+                if (conversation != null)
+                {
+                    // Dummy message to init conversation
+                    val dummyMessage = ChatMessage(
+                        text = context.getString(R.string.imported_chat),
+                        sender = exportData.phoneNumber,
+                        timestamp = System.currentTimeMillis(),
+                        isDecoded = true,
+                        isOutgoing = false,
+                        isYMessage = exportData.isYChat
+                    )
 
-                if (conversation != null && exportData.contactName.isNotEmpty()) {
-                    chatManager.updateChatName(exportData.phoneNumber, exportData.contactName)
+                    chatManager.addMessageInChat( dummyMessage, conversation )
+
+                    conversation = chatManager.getConversation(exportData.phoneNumber)
+
+                    if (conversation != null && exportData.contactName.isNotEmpty()) {
+                        chatManager.updateChatName(exportData.phoneNumber, exportData.contactName)
+                    }
                 }
             }
 
@@ -305,10 +315,11 @@ class ChatImportTask(
                     val importMessage = message.copy(
                         id = chatManager.generateMessageId()
                     )
-
-                    chatManager.addMessageInChat(exportData.phoneNumber, importMessage, saveConversation = false)
-                    importedCount++
-
+                    if (conversation != null)
+                    {
+                        chatManager.addMessageInChat( importMessage, conversation, saveConversation = false)
+                        importedCount++
+                    }
                     // Log every 50 messages
                     if (importedCount % 50 == 0) {
                         LogUtils.d(context, "ImportChatTask", "📥 Imported $importedCount messages...")

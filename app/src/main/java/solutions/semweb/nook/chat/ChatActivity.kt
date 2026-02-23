@@ -947,20 +947,21 @@ class ChatActivity : AppCompatActivity() {
 
         if (schemeToUse == EncryptionMapper.ENCRYPTION_SCHEME_TEXT
             && encodingScheme == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) {
-            showPlaintextWarningDialog(text)
+            showPlaintextWarningDialog(text,conversation)
         } else {
             Thread {
-                chatManager.sendMessage(this, phoneNumber, text)
+                if (conversation!=null)
+                    chatManager.sendMessage(this, conversation, text)
             }.start()
         }
     }
 
-    private fun showPlaintextWarningDialog(text: String) {
+    private fun showPlaintextWarningDialog(text: String, conversation: ChatConversation) {
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.plaintext_warning_title))
             .setMessage(getString(R.string.plaintext_warning_message))
             .setPositiveButton(getString(R.string.send_anyway)) { dialog, _ ->
-                sendSmsMessage(text)
+                sendSmsMessage(text,conversation)
                 dialog.dismiss()
             }
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
@@ -975,9 +976,9 @@ class ChatActivity : AppCompatActivity() {
 
 
 
-    private fun sendSmsMessage(text: String) {
+    private fun sendSmsMessage(text: String, conversation: ChatConversation) {
         val chatManager = ChatManager(this)
-        val result = chatManager.sendMessage(this, phoneNumber, text)
+        val result = chatManager.sendMessage(this, conversation, text)
 
         if (result.isSent) {
             MainActivity.showToast(getString(R.string.message_sent), false)

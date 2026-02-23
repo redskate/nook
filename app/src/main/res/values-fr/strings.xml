@@ -644,6 +644,8 @@ Notes : %3$s
     <string name="interlocutor">Interlocuteur</string>
     <string name="date_of_esport">Date d\'exportation</string>
     <string name="number_or_messages">Nombre de messages</string>
+    <string name="load_last_with_count">Montre dernieres %d messages</string>
+
     <string name="exported_by">Exporté par</string>
     <string name="nook_messenger">NooK Secure Messenger</string>
     <string name="share_exported_chatfile">Partager le chat exporté</string>
@@ -690,5 +692,7 @@ Notes : %3$s
     <string name="notification_pamphlet">Enjoy NooK - APP SÛRE\nOpen Source sur GitHub\n═══════════════════════\nNB: ⚠️ GOOGLE PLAY PROTECT ou d\'autres SCANNEURS DE VIRUS peuvent signaler une application sûre comme malveillante - potentiellement dangereuse - et vous inviter à la désinstaller.</string>
     <string name="notification_action_open">Ouvrir l\'APP</string>
     <string name="notification_action_stop">Arrêter APP</string>
+    <string name="load_last_message">Montre le derniere Message</string>
+    <string name="simply_exit_app">Fermer NooK</string>
 
 </resources>

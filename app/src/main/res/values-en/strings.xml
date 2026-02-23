@@ -593,6 +593,8 @@ Notes: %3$s
     <string name="select_contact_for_import">Select a contact to import a chat</string>
     <string name="share_exported_file">Share exported file</string>
     <string name="import_file_path_error">File path error</string>
+    <string name="load_last_with_count">Show last %d messages</string>
+
 
     <!-- APP Protection -->
     <string name="app_protection_title4toggle">(Un)Lock APP</string>
@@ -694,5 +696,7 @@ Notes: %3$s
     <string name="notification_pamphlet">Enjoy NooK - SAFE APP\nOpen Source on GitHub\n═══════════════════════\nNB: ⚠️ GOOGLE PLAY PROTECT or other VIRUS SCANNERS may erroneously report a safe app as malware - i.e. potentially harmful - and invite you to uninstall it.</string>
     <string name="notification_action_open">Open APP</string>
     <string name="notification_action_stop">Stop APP</string>
+    <string name="load_last_message">Show last message</string>
+    <string name="simply_exit_app">Exit NooK</string>
 
 </resources>

@@ -158,6 +158,7 @@ class MainActivityUtils(private val activity: MainActivity) {
         }
 
         btnExit.setOnClickListener {
+            activity.stopForegroundService()
             dialog.dismiss()
             activity.finishAffinity()
             activity.finishAndRemoveTask()

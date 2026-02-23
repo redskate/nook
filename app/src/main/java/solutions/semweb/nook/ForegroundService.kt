@@ -1,171 +1,128 @@
 package solutions.semweb.nook
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ServiceInfo
+import android.content.IntentFilter
 import android.os.Build
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-
-/*
-   * Since GOOGLE (Play Protect) wants to understand that this APP be malware
-   * show a persistent notification to contrast this untruth at every instant
-   *
-   * On Android 16+ a persistent notification seems to be sweapable away
-   * but it need to remain well on sight to reminder the user
-   * against the malware false positive warning of Play Protect.
-   *
-   * So we check here for missing "persistent" notification and
-   * reissue the same notification again and again after a time.
-   *
-   * This service will be made switchable OFF through one toggle on the APP settings
-   */
-
 
 class ForegroundService : Service() {
 
     companion object {
-        private const val NOTIFICATION_ID = 2
+        const val NOTIFICATION_ID = 1001
         private const val TAG = "ForegroundService"
-        private const val CHECK_INTERVAL_MS = 10 * 60000L // Check every 10 minutes for missing swiped notification on Android 16+
 
-        // MAKE THIS PUBLIC SO NOTIFICATIONHELPER CAN CALL IT
+        // This is the missing method!
         fun startService(context: Context) {
             try {
                 val intent = Intent(context, ForegroundService::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(intent)
-                } else {
-                    context.startService(intent)
-                }
-                LogUtils.d(TAG, "🔔 Start service intent sent")
+                context.startService(intent)
+                LogUtils.e(TAG, "🚀 Starting ForegroundService")
             } catch (e: Exception) {
-                LogUtils.e(TAG, "Failed to start service", e)
+                LogUtils.e(TAG, "❌ Error starting service", e)
             }
         }
     }
 
     private lateinit var notificationManager: NotificationManager
-    private val mainHandler = Handler(Looper.getMainLooper())
-
-    private val notificationCheckRunnable = object : Runnable {
-        override fun run() {
-            if (!isNotificationActive()) {
-                LogUtils.d(TAG, "🔔 Notification missing! Restoring...")
-                restoreNotification()
+    private val stopReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == "${Constants.mainpackage}.STOP_FOREGROUND_SERVICE") {
+                LogUtils.e(TAG, "📡 Received stop broadcast")
+                stopForegroundService()
             }
-            mainHandler.postDelayed(this, CHECK_INTERVAL_MS)
         }
     }
 
     override fun onCreate() {
         super.onCreate()
-        LogUtils.d(TAG, "🔔 Service starting on Android API: ${Build.VERSION.SDK_INT}")
+        LogUtils.e(TAG, "🟢 ForegroundService created")
 
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel()
 
-        try {
-            val notification = createPersistentNotification()
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                try {
-                    val foregroundServiceType = if (Build.VERSION.SDK_INT >= 34) {
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or
-                                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                    } else {
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                    }
-                    startForeground(NOTIFICATION_ID, notification, foregroundServiceType)
-                } catch (e: Exception) {
-                    startForeground(NOTIFICATION_ID, notification)
-                }
-            } else {
-                startForeground(NOTIFICATION_ID, notification)
-            }
-
-            mainHandler.post(notificationCheckRunnable)
-            LogUtils.d(TAG, "✅ Service started successfully")
-
-        } catch (e: Exception) {
-            LogUtils.e(TAG, "❌ Critical error in service creation", e)
-        }
+        // Register receiver for stop commands
+        registerStopReceiver()
     }
 
-    private fun isNotificationActive(): Boolean {
-        return try {
-            val notificationManagerCompat = NotificationManagerCompat.from(this)
-            val activeNotifications = notificationManagerCompat.activeNotifications
-            activeNotifications.any { it.id == NOTIFICATION_ID }
-        } catch (e: Exception) {
-            LogUtils.e(TAG, "Failed to check notification status", e)
-            false
-        }
-    }
-
-    private fun restoreNotification() {
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    private fun registerStopReceiver() {
         try {
-            val notification = createPersistentNotification()
-            notificationManager.notify(NOTIFICATION_ID, notification)
+            val filter = IntentFilter("${Constants.mainpackage}.STOP_FOREGROUND_SERVICE")
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                try {
-                    val foregroundServiceType = if (Build.VERSION.SDK_INT >= 34) {
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or
-                                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                    } else {
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                    }
-                    startForeground(NOTIFICATION_ID, notification, foregroundServiceType)
-                } catch (e: Exception) {
-                    startForeground(NOTIFICATION_ID, notification)
-                }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(stopReceiver, filter, RECEIVER_NOT_EXPORTED)
             } else {
-                startForeground(NOTIFICATION_ID, notification)
+                @Suppress("DEPRECATION")
+                registerReceiver(stopReceiver, filter)
             }
 
-            LogUtils.d(TAG, "🔔 Notification restored")
+            LogUtils.e(TAG, "✅ Stop receiver registered")
         } catch (e: Exception) {
-            LogUtils.e(TAG, "Failed to restore notification", e)
+            LogUtils.e(TAG, "❌ Error registering receiver", e)
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        LogUtils.d(TAG, "🔔 onStartCommand() called")
-        restoreNotification()
+        LogUtils.e(TAG, "▶️ ForegroundService onStartCommand")
+
+        // Create and show notification with ORIGINAL text
+        startForeground(NOTIFICATION_ID, createPersistentNotification())
+
         return START_STICKY
     }
 
-    override fun onTaskRemoved(rootIntent: Intent?) {
-        super.onTaskRemoved(rootIntent)
-        LogUtils.d(TAG, "🔔 Task removed - service continues")
-        restoreNotification()
+    private fun stopForegroundService() {
+        LogUtils.e(TAG, "🛑 Stopping foreground service internally")
+
+        // 1. Stop foreground with REMOVE flag
+        stopForeground(STOP_FOREGROUND_REMOVE)
+
+        // 2. Cancel notification
+        val notificationManager = NotificationManagerCompat.from(this)
+        notificationManager.cancel(NOTIFICATION_ID)
+
+        // 3. Stop self
+        stopSelf()
     }
 
     override fun onDestroy() {
-        LogUtils.d(TAG, "🔔 Service destroyed - restarting!")
-        mainHandler.removeCallbacks(notificationCheckRunnable)
+        LogUtils.e(TAG, "💥 ForegroundService onDestroy")
 
-        val restartIntent = Intent(this, ForegroundService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(restartIntent)
-        } else {
-            startService(restartIntent)
+        // Force remove notification
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        val notificationManager = NotificationManagerCompat.from(this)
+        notificationManager.cancel(NOTIFICATION_ID)
+
+        // Unregister receiver
+        try {
+            unregisterReceiver(stopReceiver)
+            LogUtils.e(TAG, "✅ Stop receiver unregistered")
+        } catch (e: Exception) {
+            LogUtils.e(TAG, "⚠️ Error unregistering receiver", e)
         }
 
         super.onDestroy()
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        LogUtils.e(TAG, "🗑️ Task removed - app swiped away")
+        stopForegroundService()
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
+    // ORIGINAL notification creation with pamphlet text
     private fun createPersistentNotification(): Notification {
         val openIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP

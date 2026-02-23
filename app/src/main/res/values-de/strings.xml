@@ -600,6 +600,7 @@ Hinweise: %3$s
     <string name="select_contact_for_import">Wählen Sie einen Kontakt zum Importieren eines Chats</string>
     <string name="share_exported_file">Exportierte Datei teilen</string>
     <string name="import_file_path_error">Fehler im Dateipfad</string>
+    <string name="load_last_with_count">Zeige letzte %d Nachrichten</string>
 
     <!-- APP-Schutz -->
     <string name="app_protection_title4toggle">APP mit Passwort schützen</string>
@@ -701,5 +702,7 @@ Hinweise: %3$s
     <string name="notification_pamphlet">Genießen Sie NooK - unbedenkliche APP\nOpen Source auf GitHub\n═══════════════════════\nNB: ⚠️ GOOGLE PLAY PROTECT oder VIREN SCANNERS können eine unbedenkliche APP als Malware = potenziell schädlich - melden und Sie zur Deinstallation auffordern.</string>
     <string name="notification_action_open">APP öffnen</string>
     <string name="notification_action_stop">APP beenden</string>
+    <string name="load_last_message">Zeige die letzte Nachricht</string>
+    <string name="simply_exit_app">NooK Verlassen</string>
 
 </resources>

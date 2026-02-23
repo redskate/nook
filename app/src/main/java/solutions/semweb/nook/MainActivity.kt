@@ -35,6 +35,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -119,6 +120,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             }
         }
     }
+
 
     companion object {
         private const val TAG = "MainActivity"
@@ -1338,10 +1340,15 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         if (isAppInitialized) {
             try {
                 unregisterReceiver(chatUpdateReceiver)
+                keyboardSafetyManager.cleanup()
+                appLockManager.stopMonitoring()
+                stopForegroundService()
+                val notificationManager = NotificationManagerCompat.from(this)
+                notificationManager.cancel(Constants.NOTIFICATION_ID)
+                LogUtils.e(TAG, "🛑 ForegroundService destroyed, notification removed")
             } catch (e: IllegalArgumentException) {
+                LogUtils.e(TAG, "⚠️ Error during cleanup: ${e.message}")
             }
-            keyboardSafetyManager.cleanup()
-            appLockManager.stopMonitoring()
         }
     }
 
@@ -1592,6 +1599,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         val passwordInput = dialogView.findViewById<EditText>(R.id.password_input)
         val confirmLabel = dialogView.findViewById<TextView>(R.id.confirm_label)
         val confirmPasswordInput = dialogView.findViewById<EditText>(R.id.confirm_password_input)
+        val simplyExitButton = dialogView.findViewById<Button>(R.id.simply_exit_button)
 
         titleText.text = getString(R.string.app_protection_dialog_title)
         messageText.text = getString(R.string.app_protection_dialog_message)
@@ -1601,17 +1609,28 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
-            .setPositiveButton(getString(R.string.set), null) // NULL per gestire manualmente
+            .setPositiveButton(getString(R.string.set), null)
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+                // Just dismiss and turn off the toggle WITHOUT showing any Toast
                 appProtectionToggle.isChecked = false
                 dialog.dismiss()
             }
             .setOnCancelListener {
+                // Just dismiss and turn off the toggle WITHOUT showing any Toast
                 appProtectionToggle.isChecked = false
             }
             .create()
 
         dialog.show()
+
+        // Handle Simply Exit button
+        simplyExitButton.setOnClickListener {
+            stopForegroundService()
+            dialog.dismiss()
+            appProtectionToggle.isChecked = false
+            finishAffinity()
+            finishAndRemoveTask()
+        }
 
         val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
         positiveButton.setOnClickListener {
@@ -1630,7 +1649,22 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 return@setOnClickListener
             }
 
-            setAppProtectionPassword(password)
+            // Save encrypted password
+            try {
+                val encryptedPassword = CryptoManager.encryptSimplePassword(this, password)
+                prefs.appProtectionPassword = encryptedPassword
+                prefs.appProtectionEnabled = true
+
+                // ALWAYS show success Toast when SET is clicked (whether from toggle or app title)
+                showToast(getString(R.string.app_protection_set_success))
+
+                LogUtils.e("MAIN", "✅ APP protection enabled")
+            } catch (e: Exception) {
+                LogUtils.e("MAIN", "❌ Error protection settings", e)
+                showToast(getString(R.string.error_generic), true)
+                appProtectionToggle.isChecked = false
+            }
+
             dialog.dismiss()
         }
     }
@@ -1652,21 +1686,11 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
     private fun removeAppProtection() {
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.app_protection_title))
-            .setMessage(getString(R.string.app_protection_removed))
-            .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
-                prefs.appProtectionEnabled = false
-                prefs.appProtectionPassword = ""
-                showToast(getString(R.string.app_protection_disabled))
-                LogUtils.e("MAIN", "✅ APP protection disabled")
-                dialog.dismiss()
-            }
-            .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
-                appProtectionToggle.isChecked = true
-                dialog.dismiss()
-            }
-            .show()
+        // Simply disable protection with a Toast confirmation
+        prefs.appProtectionEnabled = false
+        prefs.appProtectionPassword = ""
+        showToast(getString(R.string.app_protection_disabled))
+        LogUtils.e("MAIN", "✅ APP protection disabled")
     }
 
 
@@ -1700,6 +1724,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         dialog.show()
 
         exitButton.setOnClickListener {
+            stopForegroundService()
             dialog.dismiss()
             finishAffinity()
             finishAndRemoveTask()
@@ -1795,6 +1820,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
             appProtectionToggle.setOnCheckedChangeListener { _, isChecked ->
                 if (isChecked) {
+                    // Normal flow from toggle - show toast
                     showSetAppProtectionPasswordDialog()
                 } else {
                     removeAppProtection()
@@ -1809,28 +1835,54 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
     /**
      * Called when the app title TextView is clicked
-     * Immediately activates the app protection lock screen
+     * If app lock is enabled: immediately activates the app protection lock screen
+     * If app lock is disabled: enables it and shows password setup dialog
      */
     fun onAppTitleClick(view: View) {
-        LogUtils.e(TAG, "🔒 App title clicked - forcing lock screen")
-
-        // Make sure AppLockManager is initialized
-        if (!this::appLockManager.isInitialized) {
-            appLockManager = AppLockManager.getInstance(this)
-        }
-
-        // Force lock the app immediately
-        appLockManager.lockAppImmediately()
+        LogUtils.e(TAG, "🔒 App title clicked")
 
         if (prefs.appProtectionEnabled) {
-            // Block app in SharedPreferences
-            prefs.isAppLocked = true
+            // Case 1: App lock is already enabled - force lock screen
+            LogUtils.e(TAG, "🔒 App lock enabled - forcing lock screen")
 
-            // Mostra il dialog di sblocco
+            if (!this::appLockManager.isInitialized) {
+                appLockManager = AppLockManager.getInstance(this)
+            }
+
+            appLockManager.lockAppImmediately()
+            prefs.isAppLocked = true
             showPasswordPromptDialog()
 
             LogUtils.e(TAG, "🔒 Lock screen displayed")
+        } else {
+            // Case 2: App lock is disabled - enable it and show setup dialog WITH silent mode
+            LogUtils.e(TAG, "🔒 App lock disabled - enabling and showing setup (silent mode)")
+
+            // Pass true for silentMode (no toast)
+            showSetAppProtectionPasswordDialog()
         }
     }
 
+    fun stopForegroundService() {
+        try {
+            LogUtils.e(TAG, "🛑 stopForegroundService() called")
+
+            // First, try to stop the service normally
+            val intent = Intent(this, ForegroundService::class.java)
+            stopService(intent)
+
+            // Send broadcast to service for Android 16+
+            val stopIntent = Intent("${Constants.mainpackage}.STOP_FOREGROUND_SERVICE")
+            sendBroadcast(stopIntent)
+            LogUtils.e(TAG, "📢 Stop broadcast sent")
+
+            // Cancel NooK notification directly as fallback
+            val notificationManager = NotificationManagerCompat.from(this)
+            notificationManager.cancel(2)  // NOTIFICATION_ID = 2
+
+            LogUtils.e(TAG, "✅ All stop commands sent")
+        } catch (e: Exception) {
+            LogUtils.e(TAG, "❌ Error stopping foreground service", e)
+        }
+    }
 }
