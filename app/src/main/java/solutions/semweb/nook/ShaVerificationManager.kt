@@ -67,6 +67,16 @@ class ShaVerificationManager private constructor(private val context: Context) {
     private val mainHandler = Handler(Looper.getMainLooper())
 
     /**
+     * APK installation information
+     */
+    data class ApkInstallationInfo(
+        val expectedHash: String,
+        val apkHash: String,
+        val path: String,
+        val lastModified: Long
+    )
+
+    /**
      * Result of SHA verification
      */
     data class SHAVerificationResult(
@@ -74,7 +84,8 @@ class ShaVerificationManager private constructor(private val context: Context) {
         val message: String,
         val timestamp: Long = System.currentTimeMillis(),
         val version: String = BuildConfig.VERSION_NAME,
-        val isOffline: Boolean = false
+        val isOffline: Boolean = false,
+        val apkInfo: ApkInstallationInfo? = null  // Added for debug info
     )
 
     /**
@@ -108,19 +119,23 @@ class ShaVerificationManager private constructor(private val context: Context) {
                 }
 
                 // Case 3: if Internet, re-download and store fresh hash
-                val currentApkHash = calculateApkSha256()
                 // try to read fresh if internet connected
-                val actualHash = downloadShaFile()
+                val shaFileContent = downloadShaFile()
+                if (shaFileContent!=null) {
 
-                if (actualHash!=null) {
-                    prefs.putString(PREF_STORED_APK_HASH, actualHash)
-                    LogUtils.e(TAG, "🆕 Cyclic SHA refresh done")
-                    storedHash = actualHash
+                    val actualHash = findHashForVersion(shaFileContent, currentVersion)
+                    if (actualHash != null) {
+                        prefs.putString(PREF_STORED_APK_HASH, actualHash)
+                        LogUtils.e(TAG, "🆕 Cyclic SHA refresh done")
+                        storedHash = actualHash
+                    }
                 }
+                val currentApkInfo = calculateApkSha256(storedHash)
+
 
                 // pass through for DEBUG
-                if (BuildConfig.DEBUG // we let pass
-                    || currentApkHash == storedHash ) {
+                if (BuildConfig.DEBUG ||
+                     currentApkInfo?.apkHash == storedHash ) {
 
                     LogUtils.e(TAG, "✅ Rapid verification OK - Hash matches")
                     prefs.putLong(PREF_LAST_SHA_CHECK, currentTime)
@@ -131,7 +146,8 @@ class ShaVerificationManager private constructor(private val context: Context) {
                                 isValid = true,
                                 message = getString(context,R.string.apk_hash_match),
                                 timestamp = currentTime,
-                                version = currentVersion
+                                version = currentVersion,
+                                apkInfo = currentApkInfo  // Added for debug
                             )
                         )
                     }
@@ -150,7 +166,8 @@ class ShaVerificationManager private constructor(private val context: Context) {
                                 isValid = false,
                                 message = getString(context,R.string.apk_hash_mismatch),
                                 timestamp = currentTime,
-                                version = currentVersion
+                                version = currentVersion,
+                                apkInfo = currentApkInfo  // Added for debug
                             )
                         )
                     }
@@ -163,7 +180,8 @@ class ShaVerificationManager private constructor(private val context: Context) {
                         SHAVerificationResult(
                             isValid = false,
                             message = getString(context,R.string.error)+": ${e.message}",
-                            isOffline = true
+                            isOffline = true,
+                            apkInfo = null
                         )
                     )
                 }
@@ -187,7 +205,8 @@ class ShaVerificationManager private constructor(private val context: Context) {
                         SHAVerificationResult(
                             isValid = false,
                             message = getString(context,R.string.could_not_download_sha_file),
-                            isOffline = true
+                            isOffline = true,
+                            apkInfo = null
                         )
                     )
                 }
@@ -198,39 +217,43 @@ class ShaVerificationManager private constructor(private val context: Context) {
             val expectedHash = findHashForVersion(shaFileContent, currentVersion)
 
             if (expectedHash == null) {
-                if (BuildConfig.DEBUG)
-                    mainHandler.post {
-                        onComplete(
-                            SHAVerificationResult(
-                                isValid = true,
-                                message = getString(context,R.string.apk_hash_match), // lied but DEBUG
-                                version = currentVersion
+                    if (BuildConfig.DEBUG)
+                        mainHandler.post {
+                            onComplete(
+                                SHAVerificationResult(
+                                    isValid = true,
+                                    message = getString(context,R.string.apk_hash_match), // lied but DEBUG
+                                    version = currentVersion,
+                                    apkInfo = null
+                                )
                             )
-                        )
-                    }
-                else
-                    mainHandler.post {
-                        onComplete(
-                            SHAVerificationResult(
-                                isValid = false,
-                                message = getString(context,R.string.sha_version_not_found_in_file),
-                                version = currentVersion
+                        }
+                    else
+                        mainHandler.post {
+                            onComplete(
+                                SHAVerificationResult(
+                                    isValid = false,
+                                    message = getString(context,R.string.sha_version_not_found_in_file),
+                                    version = currentVersion,
+                                    apkInfo = null
+                                )
                             )
-                        )
-                    }
-                return
-            }
+                        }
+                    return
+                }
 
-            // Compute current APK hash
-            val currentApkHash = calculateApkSha256()
 
-            if (currentApkHash == null) {
+            // Compute current APK info
+            val currentApkInfo = calculateApkSha256(expectedHash)
+
+            if (currentApkInfo == null) {
                 mainHandler.post {
                     onComplete(
                         SHAVerificationResult(
                             isValid = false,
                             message = getString(context,R.string.could_not_compute_apk_hash),
-                            version = currentVersion
+                            version = currentVersion,
+                            apkInfo = null
                         )
                     )
                 }
@@ -238,11 +261,11 @@ class ShaVerificationManager private constructor(private val context: Context) {
             }
 
             //Skip in DEBUG the check!!!
-            val isValid = BuildConfig.DEBUG || currentApkHash.equals(expectedHash, ignoreCase = true)
+            val isValid = BuildConfig.DEBUG || currentApkInfo.apkHash.equals(expectedHash, ignoreCase = true)
 
             if (isValid) {
                 // Save hash & version for future use
-                prefs.putString(PREF_STORED_APK_HASH, currentApkHash)
+                prefs.putString(PREF_STORED_APK_HASH, currentApkInfo.apkHash)
                 prefs.putString(PREF_STORED_APK_VERSION, currentVersion)
                 prefs.putLong(PREF_LAST_SHA_CHECK, System.currentTimeMillis())
                 prefs.putBoolean(PREF_VERIFICATION_STATUS, true)
@@ -251,7 +274,9 @@ class ShaVerificationManager private constructor(private val context: Context) {
             } else {
                 LogUtils.e(TAG, "❌ Complete verify FAILED - hash mismatch")
                 LogUtils.e(TAG, "  Expected: $expectedHash")
-                LogUtils.e(TAG, "  Calculated: $currentApkHash")
+                LogUtils.e(TAG, "  Calculated: ${currentApkInfo.apkHash}")
+                LogUtils.e(TAG, "  Path: ${currentApkInfo.path}")
+                LogUtils.e(TAG, "  Modified: ${formatTimestamp(currentApkInfo.lastModified)}")
             }
 
             val finalIsValid = isValid
@@ -259,8 +284,9 @@ class ShaVerificationManager private constructor(private val context: Context) {
                 onComplete(
                     SHAVerificationResult(
                         isValid = finalIsValid,
-                        message = if (finalIsValid) getString(context,R.string.apk_hash_match)
-                                    else getString(context,R.string.apk_hash_mismatch)
+                        message = "! "+if (finalIsValid) getString(context,R.string.apk_hash_match)
+                        else getString(context,R.string.apk_hash_mismatch),
+                        apkInfo = currentApkInfo  // Added for debug
                     )
                 )
             }
@@ -271,7 +297,8 @@ class ShaVerificationManager private constructor(private val context: Context) {
                     SHAVerificationResult(
                         isValid = false,
                         message = getString(context,R.string.error)+": ${e.message}",
-                        isOffline = true
+                        isOffline = true,
+                        apkInfo = null
                     )
                 )
             }
@@ -285,40 +312,91 @@ class ShaVerificationManager private constructor(private val context: Context) {
         return SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault()).format(date)
     }
 
-    /**
-     * Refresh in background (silenzioso)
-     */
     private fun performBackgroundRefresh() {
         Thread {
             try {
                 val currentVersion = BuildConfig.VERSION_NAME
                 val shaFileContent = downloadShaFile()
+                val isOffline = shaFileContent == null
 
                 if (shaFileContent != null) {
                     val expectedHash = findHashForVersion(shaFileContent, currentVersion)
 
                     if (expectedHash != null) {
-                        val currentApkHash = calculateApkSha256()
+                        val currentApkInfo = calculateApkSha256(expectedHash)
 
-                        if (currentApkHash != null && currentApkHash.equals(expectedHash, ignoreCase = true)) {
+                        if (currentApkInfo != null && currentApkInfo.apkHash.equals(expectedHash, ignoreCase = true)) {
                             // Ancora OK - aggiorna timestamp
                             prefs.putLong(PREF_LAST_SHA_CHECK, System.currentTimeMillis())
                             prefs.putBoolean(PREF_VERIFICATION_STATUS, true)
                             LogUtils.e(TAG, "✅ Refresh background OK - hash still valid")
-                        } else if (currentApkHash != null) {
+
+                            // Send success result (optional - you might not want to show dialog for success)
+                            val result = SHAVerificationResult(
+                                isValid = true,
+                                message = "App integrity verified",
+                                isOffline = false,
+                                apkInfo = currentApkInfo
+                            )
+                            val intent = Intent("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
+                            intent.putExtra("result", result as java.io.Serializable)
+                            context.sendBroadcast(intent)
+
+                        } else if (currentApkInfo != null) {
                             // PROBLEMA! Hash non corrisponde più!
                             LogUtils.e(TAG, "❌❌❌ Refresh background: HASH CHANGED! App corrupted!")
                             prefs.putBoolean(PREF_VERIFICATION_STATUS, false)
 
-                            // Notifica l'activity principale se possibile
+                            // Send failure result
+                            val result = SHAVerificationResult(
+                                isValid = false,
+                                message = "!2 "+"App integrity corrupted! Hash mismatch",
+                                isOffline = false,
+                                apkInfo = currentApkInfo
+                            )
                             val intent = Intent("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
-                            intent.putExtra("message", "App integrity corrupted!")
+                            intent.putExtra("result", result as java.io.Serializable)
                             context.sendBroadcast(intent)
                         }
+                    } else {
+                        // Version not found in SHA file
+                        LogUtils.e(TAG, "❌ Version $currentVersion not found in SHA file")
+                        val result = SHAVerificationResult(
+                            isValid = false,
+                            message = "Version $currentVersion not found in integrity file",
+                            isOffline = false,
+                            apkInfo = calculateApkSha256("")
+                        )
+                        val intent = Intent("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
+                        intent.putExtra("result", result as java.io.Serializable)
+                        context.sendBroadcast(intent)
                     }
+                } else {
+                    var storedHash = prefs.getString(PREF_STORED_APK_HASH, "")
+
+                    // Offline case - can't verify
+                    LogUtils.e(TAG, "❌ Offline - can't verify integrity")
+                    val result = SHAVerificationResult(
+                        isValid = false,
+                        message = "Cannot verify integrity while offline",
+                        isOffline = true,
+                        apkInfo = calculateApkSha256(storedHash)
+                    )
+                    val intent = Intent("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
+                    intent.putExtra("result", result as java.io.Serializable)
+                    context.sendBroadcast(intent)
                 }
             } catch (e: Exception) {
                 LogUtils.e(TAG, "❌ Errore refresh background", e)
+                val result = SHAVerificationResult(
+                    isValid = false,
+                    message = "Error during verification: ${e.message}",
+                    isOffline = true,
+                    apkInfo = null
+                )
+                val intent = Intent("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
+                intent.putExtra("result", result as java.io.Serializable)
+                context.sendBroadcast(intent)
             }
         }.start()
     }
@@ -368,7 +446,7 @@ class ShaVerificationManager private constructor(private val context: Context) {
      * in file content
      */
     private fun findHashForVersion(fileContent: String, version: String): String? {
-        // Cerca sia versione normale che versione di test
+        // select line according to version
         val patterns = listOf(
             "v$version:",     // versione release (es. v1.1.1.255:)
             "t$version:",     // versione test   (es. t1.2.1.257:)
@@ -390,8 +468,9 @@ class ShaVerificationManager private constructor(private val context: Context) {
 
     /**
      * Calcola SHA256 dell'APK corrente
+     * Returns triple (hash, installation_path, installation_timestamp)
      */
-    private fun calculateApkSha256(): String? {
+    private fun calculateApkSha256(downloadedHash: String): ApkInstallationInfo? {
         return try {
             val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 context.packageManager.getPackageInfo(
@@ -418,7 +497,15 @@ class ShaVerificationManager private constructor(private val context: Context) {
                 }
             }
 
-            digest.digest().joinToString("") { "%02x".format(it) }
+            val hash = digest.digest().joinToString("") { "%02x".format(it) }
+
+            // For debug: return also path and last modified timestamp
+            ApkInstallationInfo(
+                apkHash = hash,
+                expectedHash = downloadedHash,
+                path = apkPath,
+                lastModified = apkFile.lastModified()
+            )
 
         } catch (e: Exception) {
             LogUtils.e(TAG, "❌ Errore calcolo hash APK", e)

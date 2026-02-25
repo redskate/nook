@@ -749,7 +749,7 @@ Note: %3$s
     <string name="apk_hash_mismatch">DISCORDANZA APK HASH</string>
     <string name="apk_hash_match">CONCORDANZA APK HASH</string>
     <string name="app_verified">APP verificata</string>
-    <string name="sha_version_not_found_in_file">Versione APK non trovata nel file SHA\"</string>
+    <string name="sha_version_not_found_in_file">Versione APK non trovata nel file SHA"</string>
     <string name="could_not_compute_apk_hash">Errore di calcolo nella verifica della APP</string>
     <string name="could_not_download_sha_file">Impossibile scaricare file SHA per verifica APP - Connessione assente!</string>
 

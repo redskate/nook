@@ -143,6 +143,7 @@ dependencies {
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation(libs.protolite.well.known.types)
 
     val room_version = "2.8.4"
     implementation("androidx.room:room-runtime:$room_version")

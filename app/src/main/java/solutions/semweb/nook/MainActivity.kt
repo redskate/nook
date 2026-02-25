@@ -226,7 +226,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             showInitialShaNoInternetDialog()
         } else {
             // ❌ Corrupted - block asap
-            showShaCompromisedDialog(result.message)
+            showShaCompromisedDialog(result)
         }
     }
 
@@ -1948,9 +1948,6 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
 
-    /**
-     * Configura gli elementi UI per la verifica SHA
-     */
     private fun setupShaVerificationUI() {
         shaStatusIcon = findViewById(R.id.sha_status_icon)
         shaTimestamp = findViewById(R.id.sha_timestamp)
@@ -1965,7 +1962,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
     /**
-     * Registra receiver per notifiche di fallimento SHA
+     * Setup SHA Failure notifications
      */
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private fun registerShaVerificationReceiver() {
@@ -1973,15 +1970,22 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
         shaVerificationReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                val message = intent?.getStringExtra("message") ?: "Errore sconosciuto"
-                runOnUiThread {
-                    // Mostra icona teschio e avviso
-                    shaStatusIcon.setImageResource(R.drawable.ic_skull)
-                    shaStatusIcon.visibility = View.VISIBLE
-                    shaTimestamp.visibility = View.GONE
+                val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent?.getParcelableExtra("result", ShaVerificationManager.SHAVerificationResult::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent?.getParcelableExtra("result")
+                }
 
-                    // Mostra dialog di avviso
-                    showShaCompromisedDialog(message)
+                if (result != null) {
+                    runOnUiThread {
+                        // SKULL
+                        shaStatusIcon.setImageResource(R.drawable.ic_skull)
+                        shaStatusIcon.visibility = View.VISIBLE
+                        shaTimestamp.visibility = View.GONE
+
+                        showShaCompromisedDialog(result)
+                    }
                 }
             }
         }
@@ -2007,9 +2011,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         }
     }
 
-    /**
-     * Gestisce il risultato della verifica SHA
-     */
+
     private fun handleShaVerificationResult(result: ShaVerificationManager.SHAVerificationResult) {
         isShaVerificationComplete = true
 
@@ -2018,7 +2020,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         val shaStatusIcon = findViewById<ImageView>(R.id.sha_status_icon)
 
         if (result.isValid) {
-            // ✅ TUTTO OK - mostra scudo verde + testo
+            // ✅ OK - show icon
             shaStatusIcon.setImageResource(R.drawable.ic_shield_green)
             shaStatusIcon.visibility = View.VISIBLE
 
@@ -2046,7 +2048,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             shaVerifiedText.visibility = View.GONE
             shaTimestamp.visibility = View.GONE
 
-            showShaCompromisedDialog(result.message)
+            showShaCompromisedDialog(result)
         }
     }
 
@@ -2090,13 +2092,24 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
     /**
-     * Mostra dialog per app compromessa - FORCE EXIT
+     * Show dialog for compromised App - FORCE EXIT
      */
-    private fun showShaCompromisedDialog(message: String) {
+    private fun showShaCompromisedDialog(result: ShaVerificationManager.SHAVerificationResult) {
+
+        var message = result.message
+         if (result.apkInfo != null) {
+            val apkInfo = result.apkInfo
+            message += "\n\n📱 APK Installation Info:" +
+                    "\n• ExpHash: ${apkInfo.expectedHash}" +
+                    "\n• ApkHash: ${apkInfo.apkHash}" +
+                    "\n• Path: ${apkInfo.path}" +
+                    "\n• Last Modified: ${ShaVerificationManager.getInstance(this).formatTimestamp(apkInfo.lastModified)}"
+        }
+
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.sha_verification_title))
             .setMessage("${getString(R.string.sha_verification_compromised_message, BuildConfig.VERSION_NAME)}\n\n$message")
-            .setCancelable(false)
+            .setCancelable(true) // set to false
             .setPositiveButton(getString(R.string.sha_verification_exit)) { _, _ ->
                 stopForegroundService()
                 finishAffinity()
