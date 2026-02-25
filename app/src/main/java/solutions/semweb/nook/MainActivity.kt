@@ -1951,13 +1951,31 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     private fun setupShaVerificationUI() {
         shaStatusIcon = findViewById(R.id.sha_status_icon)
         shaTimestamp = findViewById(R.id.sha_timestamp)
+        val shaVerifiedText = findViewById<TextView>(R.id.sha_verified_text)
 
         shaVerificationManager = ShaVerificationManager.getInstance(this)
 
-        // Registra receiver per notifiche di fallimento in background
+        // Create a common click listener for all SHA elements
+        val shaClickableListener = View.OnClickListener {
+            LogUtils.e("MAIN", "🔄 Manual SHA verification triggered by user click")
+            performShaVerification()
+        }
+
+        // Add click listener to all SHA elements (icon and both text views)
+        shaStatusIcon.setOnClickListener(shaClickableListener)
+        shaTimestamp.setOnClickListener(shaClickableListener)
+        shaVerifiedText.setOnClickListener(shaClickableListener)
+
+        // Make all elements clickable and focusable
+        listOf(shaStatusIcon, shaTimestamp, shaVerifiedText).forEach { view ->
+            view.isClickable = true
+            view.isFocusable = true
+        }
+
+        // Register receiver for background failure notifications
         registerShaVerificationReceiver()
 
-        // Avvia verifica
+        // Start verification
         performShaVerification()
     }
 
@@ -2019,6 +2037,12 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         val shaVerifiedText = findViewById<TextView>(R.id.sha_verified_text)
         val shaStatusIcon = findViewById<ImageView>(R.id.sha_status_icon)
 
+        // Ensure all SHA elements remain clickable
+        listOf(shaStatusIcon, shaTimestamp, shaVerifiedText).forEach { view ->
+            view.isClickable = true
+            view.isFocusable = true
+        }
+
         if (result.isValid) {
             // ✅ OK - show icon
             shaStatusIcon.setImageResource(R.drawable.ic_shield_green)
@@ -2053,7 +2077,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
     /**
-     * Mostra dialog per mancanza di internet
+     * Show dialog for missing internet
      */
     private fun showShaNoInternetDialog() {
         AlertDialog.Builder(this)
@@ -2062,21 +2086,30 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             .setCancelable(false)
             .setPositiveButton(getString(R.string.sha_verification_retry)) { dialog, _ ->
                 dialog.dismiss()
-                // Riprova
+                // Retry
                 performShaVerification()
             }
             .setNegativeButton(getString(R.string.sha_verification_continue_risk)) { dialog, _ ->
                 dialog.dismiss()
-                // Continua a rischio - mostra scudo rosso ma procedi
+                // Continue at risk - show red shield but proceed
                 shaStatusIcon.setImageResource(R.drawable.ic_shield_red)
                 shaStatusIcon.visibility = View.VISIBLE
 
-                // Procedi con disclaimer se non ancora accettato
+                // Ensure all SHA elements remain clickable
+                val shaVerifiedText = findViewById<TextView>(R.id.sha_verified_text)
+                val shaTimestamp = findViewById<TextView>(R.id.sha_timestamp)
+
+                listOf(shaStatusIcon, shaVerifiedText, shaTimestamp).forEach { view ->
+                    view.isClickable = true
+                    view.isFocusable = true
+                }
+
+                // Proceed with disclaimer if not yet accepted
                 val disclaimerAccepted = prefs.getBoolean("disclaimer_accepted", false)
                 if (!disclaimerAccepted) {
                     utils.showDisclaimerDialog(prefs, this)
                 } else {
-                    // Se già inizializzato, procedi
+                    // If already initialized, proceed
                     if (!isAppInitialized) {
                         initializeAppLinearly()
                     }

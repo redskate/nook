@@ -126,7 +126,7 @@ class MainActivityUtils(private val activity: MainActivity) {
                     btnAgree.isEnabled = true
                     btnAgree.alpha = 1.0f
                 }
-            }, 2000)
+            }, 5000) // wait 5 secs until going OK
 
             scrollView.viewTreeObserver.addOnScrollChangedListener {
                 val scrollViewHeight = scrollView.height
