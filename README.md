@@ -35,7 +35,7 @@ Ready to take control of your SMS privacy? Getting started is easy.
     NB: Android installer will want to understand that the APP be potentially dangerous
     Well: maybe "potential-ly". But not dangerous at all -> see the code (SmsReceiver, SmsSender, SmsScanner)
     
-    💡 CONFIRM INSTALL ANYWAY (do not give up so quickly)
+    💡 CHOOSE "more details" and then CONFIRM (INSTALL) ANYWAY (do not give up so quickly)
     
     🚀 Launch
     
