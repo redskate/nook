@@ -3,7 +3,21 @@ package solutions.semweb.nook
 import solutions.semweb.nook.crypto.EncryptionMapper
 
 object Constants {
-    const val VERSION = "1.1.255" //
+    //////////////////////////////////////////////////////
+    // 🔴 CENTRALIZED VERSIONING - Edit only these values
+    const val VERSION_MAJOR = 1
+    const val VERSION_MINOR = 2
+    const val VERSION_PATCH = 1
+    const val VERSION_CODE = 260  // Internal build number
+
+    // Computed version name (DO NOT EDIT DIRECTLY)
+    const val VERSION_NAME = "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_CODE"
+
+    // SHA APP CHECKS uses VERSION_NAME
+    const val VERSION = VERSION_NAME
+    //////////////////////////////////////////////////////
+
+
     // This is the only "brand" I have:
     const val COPYRIGHT = "©2026 semweb.solutions"
     const val VISITME = "https://semweb.solutions"
@@ -30,7 +44,7 @@ object Constants {
     const val SMS_OBF_PREFIX = "#e"
 
 
-    // Notifiche
+    // Notifications
     const val NOTIFICATION_CHANNEL_ID = "NooKCh"
     const val NOTIFICATION_ID = 1
 
@@ -41,7 +55,7 @@ object Constants {
     const val KEY_USE_ALL_CONTACTS = "use_all_contacts"
     const val KEY_USE_CLIPBOARD = "use_clipboard"
     const val KEY_ALLOW_SCREENSHOTS = "allow_screenshots"
-    const val KEY_MSG_SEQ = "msg_seq" // AGGIUNTO
+    const val KEY_MSG_SEQ = "msg_seq" // ADDED
 
 
     //////////////////////////////////////////////////////////////////

@@ -4,6 +4,56 @@ plugins {
     kotlin("kapt")  // Plugin kapt per Kotlin Annotation Processing
 }
 
+// Function to read version constants from Constants.kt file
+// Renamed to avoid conflict with implicit getter
+fun loadVersionCodeFromConstants(): Int {
+    val constantsFile = project.projectDir.resolve("src/main/java/solutions/semweb/nook/Constants.kt")
+    if (!constantsFile.exists()) {
+        throw GradleException("Constants.kt not found at: ${constantsFile.absolutePath}")
+    }
+
+    val constantsContent = constantsFile.readText()
+
+    // Extract VERSION_CODE
+    val versionCodePattern = """const\s+val\s+VERSION_CODE\s*=\s*(\d+)""".toRegex()
+    val versionCodeMatch = versionCodePattern.find(constantsContent)
+    val versionCode = versionCodeMatch?.groupValues?.get(1)?.toInt()
+        ?: throw GradleException("VERSION_CODE not found in Constants.kt")
+
+    // Extract version components
+    val majorPattern = """const\s+val\s+VERSION_MAJOR\s*=\s*(\d+)""".toRegex()
+    val minorPattern = """const\s+val\s+VERSION_MINOR\s*=\s*(\d+)""".toRegex()
+    val patchPattern = """const\s+val\s+VERSION_PATCH\s*=\s*(\d+)""".toRegex()
+
+    val major = majorPattern.find(constantsContent)?.groupValues?.get(1)?.toInt() ?: 1
+    val minor = minorPattern.find(constantsContent)?.groupValues?.get(1)?.toInt() ?: 0
+    val patch = patchPattern.find(constantsContent)?.groupValues?.get(1)?.toInt() ?: 0
+
+    // Store in project properties for later use
+    project.ext.set("versionMajor", major)
+    project.ext.set("versionMinor", minor)
+    project.ext.set("versionPatch", patch)
+    project.ext.set("versionCode", versionCode)
+
+    return versionCode
+}
+
+// Get version values from Constants.kt
+val versionCodeFromConstants = try {
+    loadVersionCodeFromConstants()  // Using renamed function
+} catch (e: Exception) {
+    println("⚠️ Warning: Error reading version from Constants.kt: ${e.message}")
+    255 // Fallback value
+}
+
+// Use property delegates instead of findProperty()
+val versionMajor: Int = (project.ext.get("versionMajor") as? Int) ?: 1
+val versionMinor: Int = (project.ext.get("versionMinor") as? Int) ?: 1
+val versionPatch: Int = (project.ext.get("versionPatch") as? Int) ?: 1
+val versionNameString = "$versionMajor.$versionMinor.$versionPatch.$versionCodeFromConstants"
+
+println("📱 Building version: $versionNameString (code: $versionCodeFromConstants)")
+
 android {
 
     lint {
@@ -17,8 +67,8 @@ android {
         applicationId = "solutions.semweb.nook"
         minSdk = 24
         targetSdk = 34
-        versionCode = 255
-        versionName = "1.1.1.255"
+        versionCode = versionCodeFromConstants
+        versionName = versionNameString
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         javaCompileOptions {
@@ -39,6 +89,11 @@ android {
 
             buildConfigField("String", "BUILD_TYPE", "\"debug\"")
             buildConfigField("boolean", "DEBUG", "true")
+
+            // Version fields in DEBUG / use in Constants.kt
+            buildConfigField("String", "VERSION_NAME", "\"${defaultConfig.versionName}\"")
+            buildConfigField("int", "VERSION_CODE", "${defaultConfig.versionCode}")
+            buildConfigField("String", "FULL_VERSION", "\"${defaultConfig.versionName}-debug\"")
         }
 
         getByName("release") {
@@ -49,6 +104,11 @@ android {
             )
             buildConfigField("String", "BUILD_TYPE", "\"release\"")
             buildConfigField("boolean", "DEBUG", "false")
+
+            // Version fields in release / use in Constants.kt
+            buildConfigField("String", "VERSION_NAME", "\"${defaultConfig.versionName}\"")
+            buildConfigField("int", "VERSION_CODE", "${defaultConfig.versionCode}")
+            buildConfigField("String", "FULL_VERSION", "\"${defaultConfig.versionName}\"")
         }
     }
 
@@ -90,6 +150,9 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("commons-codec:commons-codec:1.16.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    //SHA download and APP security check:
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     implementation("com.google.guava:guava:31.1-android") {
         because("Resolves conflict ListenableFuture btw profileinstaller and workmanager")

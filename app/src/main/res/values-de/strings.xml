@@ -704,5 +704,17 @@ Hinweise: %3$s
     <string name="notification_action_stop">APP beenden</string>
     <string name="load_last_message">Zeige die letzte Nachricht</string>
     <string name="simply_exit_app">NooK Verlassen</string>
+    <string name="sha_verification_title">APP Fingerabdruck-Verifizierung</string>
+    <string name="sha_verification_no_internet_message">KEIN INTERNET</string>
+    <string name="sha_verification_retry">Erneut mit INTERNET versuchen</string>
+    <string name="sha_verification_continue_risk">Fortfahren OHNE</string>
+    <string name="sha_verification_exit">APP SCHLIESSEN</string>
+    <string name="sha_verification_compromised_message">Diese Version von NooK %s scheint KOMPROMITTIERT oder NICHT ÜBERPRÜFBAR zu sein, besser schließen, von einer sicheren Quelle neu herunterladen und neu installieren</string>
+    <string name="apk_hash_mismatch">APK HASH NICHT ÜBEREINSTIMMEND</string>
+    <string name="apk_hash_match">APK HASH ÜBEREINSTIMMUNG</string>
+    <string name="app_verified">App verifiziert</string>
+    <string name="sha_version_not_found_in_file">APK-Version nicht in SHA-Datei gefunden</string>
+    <string name="could_not_compute_apk_hash">Berechnungsfehler bei der APP-Überprüfung</string>
+    <string name="could_not_download_sha_file">SHA-Datei für APP-Überprüfung konnte nicht heruntergeladen werden - Keine Internetverbindung!</string>
 
 </resources>

@@ -5,7 +5,9 @@ import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.media.RingtoneManager
@@ -61,6 +63,11 @@ import java.util.TimerTask
 
 class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
+    private lateinit var shaVerificationManager: ShaVerificationManager
+    private lateinit var shaStatusIcon: ImageView
+    private lateinit var shaTimestamp: TextView
+    private var isShaVerificationComplete = false
+    private var shaVerificationReceiver: BroadcastReceiver? = null
     private lateinit var appProtectionToggle: Switch
     private lateinit var keyboardSafetyManager: KeyboardSafetyManager
     private lateinit var prefs: SharedPreferencesManager
@@ -181,11 +188,6 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             handleDatabaseFailure(reason)
         }
 
-        LogUtils.d(this, "ChatActivity", "=== DEBUG onCreate ===")
-        LogUtils.d(this, "ChatActivity", "Intent: $intent")
-        LogUtils.d(this, "ChatActivity", "Intent extras: ${intent.extras?.keySet()}")
-        LogUtils.d(this, "ChatActivity", "phone_number extra: ${intent.getStringExtra("phone_number")}")
-
         try {
             LogUtils.e("MAIN", "🚀 onCreate() - LINEAR APPROACH")
             setContentView(R.layout.activity_main)
@@ -196,32 +198,17 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             // 2. Init prefs now
             prefs = SharedPreferencesManager.getInstance(this)
 
-            // 3. Control disclaimer
-            val disclaimerAccepted = prefs.getBoolean("disclaimer_accepted", false)
-            if (!disclaimerAccepted) {
-                utils.showDisclaimerDialog(prefs, this)
-                return
-            }
+            // 3. START SHA VERIFICATION (do not block yet)
+            shaVerificationManager = ShaVerificationManager.getInstance(this)
 
-            // 5. Setup toggle (after views)
-            setupAppProtectionToggle()
-
-            if (prefs.appProtectionEnabled) {
-                LogUtils.e("MAIN", "🔒 APP protection active - show block panel")
-
-                appLockManager = AppLockManager.getInstance(this)
-
-                if (appLockManager.isAppCurrentlyLocked() || prefs.isAppLocked) {
-                    showPasswordPromptDialog()
-                } else {
-                    LogUtils.e("MAIN", "🔓 APP not blocked - go for init")
-                    initializeAppLinearly()
+            // 4. Call SHA test in sinchronically (with callback)
+            shaVerificationManager.verifyApkIntegrity(
+                forceDownload = true  // First installation - force download
+            ) { result ->
+                runOnUiThread {
+                    handleInitialShaResult(result)
                 }
-                return
             }
-
-            // 7. Init all
-            initializeAppLinearly()
 
         } catch (e: Exception) {
             LogUtils.e("MAIN", "❌ Error in onCreate", e)
@@ -229,10 +216,83 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         }
     }
 
+
+    private fun handleInitialShaResult(result: ShaVerificationManager.SHAVerificationResult) {
+        if (result.isValid) {
+            // ✅ SHA OK - normal
+            proceedWithNormalInit()
+        } else if (result.isOffline) {
+            // 🌐 No internet - show choice dialog
+            showInitialShaNoInternetDialog()
+        } else {
+            // ❌ Corrupted - block asap
+            showShaCompromisedDialog(result.message)
+        }
+    }
+
+    private fun showInitialShaNoInternetDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.sha_verification_title))
+            .setMessage(getString(R.string.sha_verification_no_internet_message))
+            .setCancelable(false)
+            .setPositiveButton(getString(R.string.sha_verification_retry)) { dialog, _ ->
+                dialog.dismiss()
+                // Riprova
+                shaVerificationManager.verifyApkIntegrity(forceDownload = true) { result ->
+                    runOnUiThread { handleInitialShaResult(result) }
+                }
+            }
+            .setNegativeButton(getString(R.string.sha_verification_continue_risk)) { dialog, _ ->
+                dialog.dismiss()
+                // Continua a rischio
+                proceedWithNormalInit()
+            }
+            .setNeutralButton(getString(R.string.sha_verification_exit)) { dialog, _ ->
+                dialog.dismiss()
+                stopForegroundService()
+                finishAffinity()
+                finishAndRemoveTask()
+            }
+            .show()
+    }
+
+
+    private fun proceedWithNormalInit() {
+        // Controlla disclaimer
+        val disclaimerAccepted = prefs.getBoolean("disclaimer_accepted", false)
+        if (!disclaimerAccepted) {
+            utils.showDisclaimerDialog(prefs, this)
+            return
+        }
+
+        // Setup app protection toggle
+        setupAppProtectionToggle()
+
+        if (prefs.appProtectionEnabled) {
+            LogUtils.e("MAIN", "🔒 APP protection active - show block panel")
+            appLockManager = AppLockManager.getInstance(this)
+
+            if (appLockManager.isAppCurrentlyLocked() || prefs.isAppLocked) {
+                showPasswordPromptDialog()
+            } else {
+                LogUtils.e("MAIN", "🔓 APP not blocked - go for init")
+                initializeAppLinearly()
+            }
+            return
+        }
+
+        // Init all
+        initializeAppLinearly()
+    }
+
     private fun initializeAppLinearly() {
         LogUtils.e("MAIN", "🔄 Linear initialization...")
 
         try {
+
+            // 0. SHA Verification
+            setupShaVerificationUI()
+
             // 1. Setup basic views FIRST
             setupBasicViews()
 
@@ -1340,6 +1400,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         if (isAppInitialized) {
             try {
                 unregisterReceiver(chatUpdateReceiver)
+                shaVerificationReceiver?.let { unregisterReceiver(it) }
                 keyboardSafetyManager.cleanup()
                 appLockManager.stopMonitoring()
                 stopForegroundService()
@@ -1885,4 +1946,163 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             LogUtils.e(TAG, "❌ Error stopping foreground service", e)
         }
     }
+
+
+    /**
+     * Configura gli elementi UI per la verifica SHA
+     */
+    private fun setupShaVerificationUI() {
+        shaStatusIcon = findViewById(R.id.sha_status_icon)
+        shaTimestamp = findViewById(R.id.sha_timestamp)
+
+        shaVerificationManager = ShaVerificationManager.getInstance(this)
+
+        // Registra receiver per notifiche di fallimento in background
+        registerShaVerificationReceiver()
+
+        // Avvia verifica
+        performShaVerification()
+    }
+
+    /**
+     * Registra receiver per notifiche di fallimento SHA
+     */
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    private fun registerShaVerificationReceiver() {
+        val filter = IntentFilter("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
+
+        shaVerificationReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val message = intent?.getStringExtra("message") ?: "Errore sconosciuto"
+                runOnUiThread {
+                    // Mostra icona teschio e avviso
+                    shaStatusIcon.setImageResource(R.drawable.ic_skull)
+                    shaStatusIcon.visibility = View.VISIBLE
+                    shaTimestamp.visibility = View.GONE
+
+                    // Mostra dialog di avviso
+                    showShaCompromisedDialog(message)
+                }
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(shaVerificationReceiver, filter, RECEIVER_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(shaVerificationReceiver, filter)
+        }
+    }
+
+    /**
+     * Esegue verifica SHA
+     */
+    private fun performShaVerification() {
+        shaVerificationManager.verifyApkIntegrity(
+            forceDownload = false
+        ) { result ->
+            runOnUiThread {
+                handleShaVerificationResult(result)
+            }
+        }
+    }
+
+    /**
+     * Gestisce il risultato della verifica SHA
+     */
+    private fun handleShaVerificationResult(result: ShaVerificationManager.SHAVerificationResult) {
+        isShaVerificationComplete = true
+
+        val shaTimestamp = findViewById<TextView>(R.id.sha_timestamp)
+        val shaVerifiedText = findViewById<TextView>(R.id.sha_verified_text)
+        val shaStatusIcon = findViewById<ImageView>(R.id.sha_status_icon)
+
+        if (result.isValid) {
+            // ✅ TUTTO OK - mostra scudo verde + testo
+            shaStatusIcon.setImageResource(R.drawable.ic_shield_green)
+            shaStatusIcon.visibility = View.VISIBLE
+
+            shaVerifiedText.visibility = View.VISIBLE
+            shaVerifiedText.text = getString(R.string.app_verified)
+
+            shaTimestamp.text = shaVerificationManager.formatShortTimestamp(result.timestamp)
+            shaTimestamp.visibility = View.VISIBLE
+
+            LogUtils.e("MAIN", "✅ SHA Verification OK - ${result.version}")
+
+        } else if (result.isOffline) {
+            // 🌐 NO INTERNET - show only red shield
+            shaStatusIcon.setImageResource(R.drawable.ic_shield_red)
+            shaStatusIcon.visibility = View.VISIBLE
+            shaVerifiedText.visibility = View.GONE
+            shaTimestamp.visibility = View.GONE
+
+            showShaNoInternetDialog()
+
+        } else {
+            // ❌ COMPROMISED APP - show skull
+            shaStatusIcon.setImageResource(R.drawable.ic_skull)
+            shaStatusIcon.visibility = View.VISIBLE
+            shaVerifiedText.visibility = View.GONE
+            shaTimestamp.visibility = View.GONE
+
+            showShaCompromisedDialog(result.message)
+        }
+    }
+
+    /**
+     * Mostra dialog per mancanza di internet
+     */
+    private fun showShaNoInternetDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.sha_verification_title))
+            .setMessage(getString(R.string.sha_verification_no_internet_message))
+            .setCancelable(false)
+            .setPositiveButton(getString(R.string.sha_verification_retry)) { dialog, _ ->
+                dialog.dismiss()
+                // Riprova
+                performShaVerification()
+            }
+            .setNegativeButton(getString(R.string.sha_verification_continue_risk)) { dialog, _ ->
+                dialog.dismiss()
+                // Continua a rischio - mostra scudo rosso ma procedi
+                shaStatusIcon.setImageResource(R.drawable.ic_shield_red)
+                shaStatusIcon.visibility = View.VISIBLE
+
+                // Procedi con disclaimer se non ancora accettato
+                val disclaimerAccepted = prefs.getBoolean("disclaimer_accepted", false)
+                if (!disclaimerAccepted) {
+                    utils.showDisclaimerDialog(prefs, this)
+                } else {
+                    // Se già inizializzato, procedi
+                    if (!isAppInitialized) {
+                        initializeAppLinearly()
+                    }
+                }
+            }
+            .setNeutralButton(getString(R.string.sha_verification_exit)) { dialog, _ ->
+                dialog.dismiss()
+                stopForegroundService()
+                finishAffinity()
+                finishAndRemoveTask()
+            }
+            .show()
+    }
+
+    /**
+     * Mostra dialog per app compromessa - FORCE EXIT
+     */
+    private fun showShaCompromisedDialog(message: String) {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.sha_verification_title))
+            .setMessage("${getString(R.string.sha_verification_compromised_message, BuildConfig.VERSION_NAME)}\n\n$message")
+            .setCancelable(false)
+            .setPositiveButton(getString(R.string.sha_verification_exit)) { _, _ ->
+                stopForegroundService()
+                finishAffinity()
+                finishAndRemoveTask()
+            }
+            .show()
+    }
+
 }

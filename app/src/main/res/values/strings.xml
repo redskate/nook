@@ -737,8 +737,20 @@ Note: %3$s
     <string name="notification_content">NooK - SMS in vera privacy</string>
     <string name="notification_pamphlet">Enjoy NooK - APP SICURA\nOpen Source su GitHub\n═══════════════════════\nNB: ⚠️ GOOGLE PLAY PROTECT o altri VIRUS SCANNERS potrebbero segnalare erroneamente una APP sicura come malware - cioè potenzialmente dannosa - ed invitarti a disinstallarla.</string>
     <string name="notification_action_open">Apri APP</string>
-    <string name="notification_action_stop">Ferma APP</string>
+    <string name="notification_action_stop">Termina APP</string>
     <string name="load_last_message">Mostra l\'ultimo messaggio</string>
-    <string name="simply_exit_app">Ferma NooK</string>
+    <string name="simply_exit_app">Chiudi NooK</string>
+    <string name="sha_verification_title">Verifica Impronta Digitale APP</string>
+    <string name="sha_verification_no_internet_message">INTERNET assente</string>
+    <string name="sha_verification_retry">Riprova con INTERNET</string>
+    <string name="sha_verification_continue_risk">Continua SENZA</string>
+    <string name="sha_verification_exit">CHIUDI APP</string>
+    <string name="sha_verification_compromised_message">Questa versione di NooK %s appare COMPROMESSA o NON VERIFICABILE, meglio chiuderla, riscaricarla da una fonte sicura e reinstallarla</string>
+    <string name="apk_hash_mismatch">DISCORDANZA APK HASH</string>
+    <string name="apk_hash_match">CONCORDANZA APK HASH</string>
+    <string name="app_verified">APP verificata</string>
+    <string name="sha_version_not_found_in_file">Versione APK non trovata nel file SHA\"</string>
+    <string name="could_not_compute_apk_hash">Errore di calcolo nella verifica della APP</string>
+    <string name="could_not_download_sha_file">Impossibile scaricare file SHA per verifica APP - Connessione assente!</string>
 
 </resources>

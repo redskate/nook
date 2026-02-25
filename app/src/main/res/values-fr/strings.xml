@@ -694,5 +694,17 @@ Notes : %3$s
     <string name="notification_action_stop">Arrêter APP</string>
     <string name="load_last_message">Montre le derniere Message</string>
     <string name="simply_exit_app">Fermer NooK</string>
+    <string name="sha_verification_title">Vérification de l\'empreinte de l\'APP</string>
+    <string name="sha_verification_no_internet_message">PAS D\'INTERNET</string>
+    <string name="sha_verification_retry">Réessayer AVEC INTERNET</string>
+    <string name="sha_verification_continue_risk">Continuer SANS</string>
+    <string name="sha_verification_exit">FERMER L\'APP</string>
+    <string name="sha_verification_compromised_message">Cette version de NooK %s semble COMPROMISE ou NON VÉRIFIABLE, il est préférable de la fermer, de la télécharger à nouveau depuis une source sûre et de la réinstaller</string>
+    <string name="apk_hash_mismatch">NON-CONCORDANCE HASH APK</string>
+    <string name="apk_hash_match">CONCORDANCE HASH APK</string>
+    <string name="app_verified">App vérifiée</string>
+    <string name="sha_version_not_found_in_file">Version APK introuvable dans le fichier SHA</string>
+    <string name="could_not_compute_apk_hash">Erreur de calcul lors de la vérification de l\'APP</string>
+    <string name="could_not_download_sha_file">Impossible de télécharger le fichier SHA pour la vérification de l\'APP - Pas de connexion Internet !</string>
 
 </resources>

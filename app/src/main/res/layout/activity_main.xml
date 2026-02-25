@@ -90,6 +90,7 @@
                     android:layout_marginBottom="16dp">
 
                     <TextView
+                        android:id="@+id/chat_bar"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -97,6 +98,40 @@
                         android:textSize="16sp"
                         android:textStyle="bold"/>
 
+                    <!-- Vertical Container to position SHA text and SHA date-->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal"
+                        android:layout_marginEnd="8dp">
+
+                        <TextView
+                            android:id="@+id/sha_verified_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/app_verified"
+                            android:textSize="10sp"
+                            android:textColor="@color/middle_green"
+                            android:textStyle="bold"
+                            android:visibility="gone"/>
+
+                        <TextView
+                            android:id="@+id/sha_timestamp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="10sp"
+                            android:textColor="?android:attr/textColorSecondary"
+                            android:visibility="gone"/>
+                    </LinearLayout>
+
+                    <ImageView
+                        android:id="@+id/sha_status_icon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_shield_green"
+                        android:contentDescription="SHA Verification Status"
+                        android:visibility="gone"/>
                 </LinearLayout>
 
                 <androidx.recyclerview.widget.RecyclerView
@@ -104,6 +139,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="480dp"
                     android:layout_marginBottom="8dp"/>
+
+
 
                 <TextView
                     android:layout_width="match_parent"
