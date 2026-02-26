@@ -111,7 +111,7 @@ class ShaVerificationManager private constructor(private val context: Context) {
                     return@Thread
                 }
 
-                // Case 2: Complete version changed (app update)
+                // Case 2: Version changed (app update)
                 if (storedVersion != currentVersion) {
                     LogUtils.e(TAG, "🔄 Changed Version: $storedVersion -> $currentVersion")
                     performFullVerification(onComplete)
@@ -120,11 +120,13 @@ class ShaVerificationManager private constructor(private val context: Context) {
 
                 // Case 3: if Internet, re-download and store fresh hash
                 // try to read fresh if internet connected
+                var hadInternet = false
                 val shaFileContent = downloadShaFile()
                 if (shaFileContent!=null) {
 
                     val actualHash = findHashForVersion(shaFileContent, currentVersion)
                     if (actualHash != null) {
+                        hadInternet = true
                         prefs.putString(PREF_STORED_APK_HASH, actualHash)
                         LogUtils.e(TAG, "🆕 Cyclic SHA refresh done")
                         storedHash = actualHash
@@ -146,6 +148,7 @@ class ShaVerificationManager private constructor(private val context: Context) {
                                 isValid = true,
                                 message = getString(context,R.string.apk_hash_match),
                                 timestamp = currentTime,
+                                isOffline = !hadInternet,
                                 version = currentVersion,
                                 apkInfo = currentApkInfo  // Added for debug
                             )
@@ -260,7 +263,7 @@ class ShaVerificationManager private constructor(private val context: Context) {
                 return
             }
 
-            //Skip in DEBUG the check!!!
+            //Skip in DEBUG this initial check!!!
             val isValid = BuildConfig.DEBUG || currentApkInfo.apkHash.equals(expectedHash, ignoreCase = true)
 
             if (isValid) {
@@ -326,7 +329,6 @@ class ShaVerificationManager private constructor(private val context: Context) {
                         val currentApkInfo = calculateApkSha256(expectedHash)
 
                         if (currentApkInfo != null && currentApkInfo.apkHash.equals(expectedHash, ignoreCase = true)) {
-                            // Ancora OK - aggiorna timestamp
                             prefs.putLong(PREF_LAST_SHA_CHECK, System.currentTimeMillis())
                             prefs.putBoolean(PREF_VERIFICATION_STATUS, true)
                             LogUtils.e(TAG, "✅ Refresh background OK - hash still valid")
@@ -343,7 +345,6 @@ class ShaVerificationManager private constructor(private val context: Context) {
                             context.sendBroadcast(intent)
 
                         } else if (currentApkInfo != null) {
-                            // PROBLEMA! Hash non corrisponde più!
                             LogUtils.e(TAG, "❌❌❌ Refresh background: HASH CHANGED! App corrupted!")
                             prefs.putBoolean(PREF_VERIFICATION_STATUS, false)
 

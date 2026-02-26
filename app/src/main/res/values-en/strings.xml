@@ -710,5 +710,6 @@ Notes: %3$s
     <string name="sha_version_not_found_in_file">APK version not found in SHA file</string>
     <string name="could_not_compute_apk_hash">Calculation error during APP verification</string>
     <string name="could_not_download_sha_file">Could not download SHA file for APP verification - No internet connection!</string>
+    <string name="app_verified_offline">APP ver. OFFLINE</string>
 
 </resources>

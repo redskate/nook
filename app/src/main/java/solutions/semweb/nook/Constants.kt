@@ -8,7 +8,7 @@ object Constants {
     const val VERSION_MAJOR = 1
     const val VERSION_MINOR = 2
     const val VERSION_PATCH = 1
-    const val VERSION_CODE = 262  // Internal build number
+    const val VERSION_CODE = 263  // Internal build number
 
     // Computed version name (DO NOT EDIT DIRECTLY)
     const val VERSION_NAME = "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_CODE"

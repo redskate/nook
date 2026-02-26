@@ -716,5 +716,6 @@ Hinweise: %3$s
     <string name="sha_version_not_found_in_file">APK-Version nicht in SHA-Datei gefunden</string>
     <string name="could_not_compute_apk_hash">Berechnungsfehler bei der APP-Überprüfung</string>
     <string name="could_not_download_sha_file">SHA-Datei für APP-Überprüfung konnte nicht heruntergeladen werden - Keine Internetverbindung!</string>
+    <string name="app_verified_offline">APP OFFLINE ver.</string>
 
 </resources>

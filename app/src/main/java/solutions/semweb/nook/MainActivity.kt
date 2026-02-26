@@ -2044,12 +2044,21 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         }
 
         if (result.isValid) {
-            // ✅ OK - show icon
-            shaStatusIcon.setImageResource(R.drawable.ic_shield_green)
+            // ✅ OK - show icon (yellow if offline, green if online)
+            if (result.isOffline) {
+                shaVerifiedText.text = getString(R.string.app_verified_offline)
+                shaVerifiedText.setTextColor(ContextCompat.getColor(this, R.color.orange_yellow))
+                shaStatusIcon.setImageResource(R.drawable.ic_shield_orange_yellow)
+            }
+            else {
+                shaVerifiedText.text = getString(R.string.app_verified)
+                shaVerifiedText.setTextColor(ContextCompat.getColor(this, R.color.middle_green))
+                shaStatusIcon.setImageResource(R.drawable.ic_shield_green)
+            }
             shaStatusIcon.visibility = View.VISIBLE
 
             shaVerifiedText.visibility = View.VISIBLE
-            shaVerifiedText.text = getString(R.string.app_verified)
+
 
             shaTimestamp.text = shaVerificationManager.formatShortTimestamp(result.timestamp)
             shaTimestamp.visibility = View.VISIBLE

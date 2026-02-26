@@ -17,6 +17,7 @@
     <color name="text_primary">#aaaaaa</color>
     <color name="orange">#aa5500</color>
     <color name="orange_light">#ffaa55</color>
+    <color name="orange_yellow">#FF9800</color>
     <color name="pink">#FF4081</color>
     <color name="light_orange">#FF9800</color>
     <color name="gray_3">#757575</color>

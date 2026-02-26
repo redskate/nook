@@ -752,5 +752,6 @@ Note: %3$s
     <string name="sha_version_not_found_in_file">Versione APK non trovata nel file SHA"</string>
     <string name="could_not_compute_apk_hash">Errore di calcolo nella verifica della APP</string>
     <string name="could_not_download_sha_file">Impossibile scaricare file SHA per verifica APP - Connessione assente!</string>
+    <string name="app_verified_offline">APP ver. OFFLINE</string>
 
 </resources>
