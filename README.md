@@ -30,16 +30,16 @@ Ready to take control of your SMS privacy? Getting started is easy.
 
         On your Android device, go to Settings > Security.
 
-        Enable the option "Install unknown apps" or "Allow from this source" for your file manager or browser.
+        In your device settings on privacy and security, enable the option "Install unknown apps" or "Allow from this source" or "disable APP block" for your file manager or browser (You may always enable that again after this installation).
 
-    NB: Android installer will want to understand that the APP be potentially dangerous
-    Well: maybe "potential-ly". But not dangerous at all -> see the code (SmsReceiver, SmsSender, SmsScanner)
+    NB: Android installer will want to "understand" that the APP be potentially dangerous
+    Well: maybe "potential-ly". But not dangerous at all -> see the code (SmsReceiver, SmsSender, SmsScanner) - NooK is safe.
     
-    💡 CHOOSE "more details" and then CONFIRM (INSTALL) ANYWAY (do not give up so quickly)
+    💡 In the Warning Android Instalation Popup, CHOOSE "more details" and then CONFIRM (INSTALL) ANYWAY  
     
-    🚀 Launch
+    🚀 Launch NooK APP
     
-    ❗ Accept disclaimer (!!) & Grant Permissions
+    ❗ READ and Accept disclaimer (!!) & Grant 3 Permissions
 
         Open the downloaded APK file and follow the installation prompts.
 
@@ -57,15 +57,15 @@ You might see a cyclic warning from Google Play Protect or other virus scanners.
 
     Why this happens: Scanners often flag any app with SMS permissions as potential malware.
 
-    The Truth: NooK is 100% safe and open source. It only sends SMS when you press NooK's send button, stores all data encrypted on your phone, and has no internet access to leak your information.
+    The Truth: NooK is 100% safe and open source - see yourself. It only sends an SMS when you press NooK's send button in one chat, stores all data encrypted on your phone and keeps them there.
 
     Install with Confidence: A permanent notification reminds you the app is active and safe.
 
 📖 First-Time User Tips
 
-    Set Up App Lock: Immediately enable the fingerprint or PIN lock in settings to secure the app when you're away.
+    Set Up NooK App Lock: Immediately enable the fingerprint or PIN lock in settings to secure the app when you're away.
 
-    Share Secrets Safely: Agree on your shared passwords with contacts through a secure secondary channel (like a quick call or in person) before starting a conversation.
+    Share Secrets Safely: Agree on your shared passwords with contacts through a secure secondary channel (like a quick call or in person) before starting a conversation. However, due to the Default Base256 encryption set, you might also use NooK fresh created chat to agree on encryption / encoding passwords (use with parsimony).
 
     Understand What's Visible: While your message content is encrypted, standard SMS metadata (like the sender's phone number and timestamp) remains visible to your cellular carrier—just like with any regular text message.
 
