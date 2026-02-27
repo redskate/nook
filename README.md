@@ -16,7 +16,7 @@ NOOK transforms your everyday SMS into truly private conversations. Built direct
 
     Open Source & Transparent: The entire codebase is public for anyone to audit. No secrets, no backdoors.
 
-🚀 Quick Installation Guide
+🚀 Quick Installation Guide from Android 8 (Oreo) on
 
 Ready to take control of your SMS privacy? Getting started is easy.
 
