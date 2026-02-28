@@ -82,6 +82,7 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
+                <!-- Header row with chat title and badges -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -97,6 +98,42 @@
                         android:text="@string/chats_section_title"
                         android:textSize="16sp"
                         android:textStyle="bold"/>
+
+                    <!-- UPDATE BADGE -->
+                    <LinearLayout
+                        android:id="@+id/update_badge_container"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginStart="8dp"
+                        android:visibility="gone"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackgroundBorderless">
+
+                        <TextView
+                            android:id="@+id/update_badge_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/new_version_available"
+                            android:textSize="16sp"
+                            android:textColor="@color/blue_version"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="4dp"
+                            android:clickable="false"
+                            android:focusable="false"/>
+
+                        <ImageView
+                            android:id="@+id/update_badge_icon"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_update"
+                            android:contentDescription="@string/content_description_update_available"
+                            android:clickable="false"
+                            android:layout_marginRight="10dp"
+                            android:focusable="false"/>
+                    </LinearLayout>
 
                     <!-- Vertical Container to position SHA text and SHA date-->
                     <LinearLayout
@@ -125,6 +162,7 @@
                             android:visibility="gone"/>
                     </LinearLayout>
 
+                    <!-- SHA Status Icon -->
                     <ImageView
                         android:id="@+id/sha_status_icon"
                         android:layout_width="24dp"
@@ -132,16 +170,19 @@
                         android:src="@drawable/ic_shield_green"
                         android:contentDescription="SHA Verification Status"
                         android:visibility="gone"/>
+
+
+
                 </LinearLayout>
 
+                <!-- RecyclerView -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/chat_recycler_view"
                     android:layout_width="match_parent"
                     android:layout_height="480dp"
                     android:layout_marginBottom="8dp"/>
 
-
-
+                <!-- Hint text -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -151,6 +192,7 @@
                     android:textAlignment="center"/>
 
             </LinearLayout>
+
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Settings -->
@@ -564,6 +606,17 @@
                             android:backgroundTint="@color/intensive_green"
                             android:textColor="@android:color/white"
                             android:textAllCaps="false"/>
+
+                        <!-- Third row: Upgrade NooK - NEW -->
+                        <Button
+                            android:id="@+id/upgrade_nook_btn"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/upgrade_nook_button"
+                            android:backgroundTint="@color/intensive_green"
+                            android:textColor="@android:color/white"
+                            android:textAllCaps="false"
+                            android:layout_marginTop="8dp"/>
 
                     </LinearLayout>
 

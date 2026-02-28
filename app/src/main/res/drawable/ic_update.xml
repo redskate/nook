@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    
+    <!-- Cerchio a 20dp (da 2 a 22) -->
+    <path
+        android:fillColor="#2196F3"
+        android:pathData="M12,2 C6.48,2 2,6.48 2,12 C2,17.52 6.48,22 12,22 C17.52,22 22,17.52 22,12 C22,6.48 17.52,2 12,2 Z"/>
+    
+    <!-- Punto esclamativo con punto quadrato, leggermente più in basso -->
+    <path
+        android:fillColor="#F0F0F0"
+        android:pathData="M12,7 L13,7 L13,15 L12,15 L11,15 L11,7 L12,7 Z M12,16 L13,16 L13,17 L12,17 L11,17 L11,16 L12,16 Z"/>
+</vector>

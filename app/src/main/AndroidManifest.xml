@@ -38,6 +38,12 @@
     <!-- For Android 16 Live Update Notifications -->
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 
+    <!-- For OWN APK installation -->
+    <!-- For Android 9 and below only -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+
     <queries>
         <intent>
             <action android:name="android.intent.action.SENDTO" />
@@ -108,6 +114,16 @@
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <!-- Foreground Service to actively contrast Google Play "Protect" false positives against this APP as malware -->
         <service

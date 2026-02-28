@@ -336,7 +336,7 @@ Notes : %3$s
     <string name="yes_generate">Oui, générer</string>
 
     <!-- ===== DISCLAIMER & SÉCURITÉ ===== -->
-    <string name="disclaimer_title">Bienvenue dans NooK !\nAvis Important</string>
+    <string name="disclaimer_title">Bienvenue dans NooK !\nAvis Legale</string>
     <string name="disclaimer_message">NooK Messenger protège vos SMS avec un chiffrement de bout en bout robuste (AES-256-GCM).\n\n⚠️ En poursuivant, vous déclarez avoir compris et acceptez que :\n\n• Conformité Légale : Vous êtes seul(e) responsable du respect des lois sur l\'utilisation du chiffrement dans votre juridiction.\n\n• Utilisation Légitime : Cet outil est conçu uniquement pour la confidentialité personnelle. Toute utilisation illégale est strictement interdite.\n\n• Limites Techniques : Les métadonnées standard des SMS (numéros de téléphone, horodatages) restent visibles pour votre opérateur.\n\n• Exigence du Destinataire : Le destinataire doit également utiliser NooK pour lire vos messages chiffrés.\n\n• Le Propriétaire de l\'application NooK définit les contacts de confiance, pour lesquels NooK - s\'il est en cours d\'exécution - déchiffre les SMS chiffrés (provenant d\'un autre NooK du numéro du contact de confiance).\n\n🔐 Autorisations Requises et Pourquoi :\n\n• SMS : Pour envoyer et recevoir des messages chiffrés.\n\n• CONTACTS : Pour sélectionner les destinataires et utiliser leurs numéros de téléphone pour créer des conversations (chiffrées).\n\n• TÉLÉPHONE (Lire l\'état du téléphone) : Pour Android jusqu\'a (excl. 16) - pour identifier votre numéro de téléphone dans le processus de chiffrement.\n\n• MÉDIA : Si vous effectuez une sauvegarde ou une restauration d\'une conversation, NooK doit pouvoir lire et écrire des fichiers sur votre appareil.\n\nNooK est open-source et ne collecte/ne partage pas de données.\n\nSOYEZ TOUJOURS ATTENTIF À :\n\na) Le clavier que vous utilisez (certains claviers partagent les données !)\nb) Les captures d\'écran prises à votre insu par d\'autres APPLICATIONS (activez la protection dans NooK),\nc) Soyez vigilant avec le Presse-papiers, qui partage le texte avec les applications qui en ont l\'autorisation !\n\n🚨 AVIS DE SÉCURITÉ ET DE RESPONSABILITÉ :\n\nL\'application a été testée pendant des mois sur des appareils Samsung et Google Pixel.\n\nCEPENDANT, UTILISEZ CETTE APPLICATION À VOS PROPRES RISQUES.\n\nL\'application, comme tout logiciel actif, peut contribuer à une utilisation accrue du processeur, une consommation de la batterie et une surchauffe conséquente de l\'appareil, surtout lorsqu\'elle est utilisée en combinaison avec d\'autres applications ou dans des conditions environnementales extrêmes (par exemple, à la lumière directe du soleil).\n\nEN AUCUN CAS LE DÉVELOPPEUR OU LES CONTRIBUTEURS DE NOOK NE PEUVENT ÊTRE TENUS RESPONSABLES des dommages directs ou indirects causés à votre appareil, y compris, à titre d\'exemple : surchauffe anormale, dommages à la batterie, perte de données, dysfonctionnements, explosions de batterie, incendies ou blessures corporelles résultant de l\'utilisation de cette application.\n\nIl est de votre responsabilité exclusive :\n1. De surveiller l\'état de votre téléphone ou tablette pendant l\'utilisation.\n2. D\'utiliser uniquement des batteries et chargeurs d\'origine ou certifiés.\n3. D\'arrêter immédiatement l\'utilisation et d\'éteindre l\'appareil en cas de surchauffe.\n4. De garantir une ventilation adéquate de l\'appareil.\n5. D\'utiliser l\'application conformément aux directives du fabricant de l\'appareil.</string>
     <string name="disclaimer_agree">J\'ACCEPTE ET CONTINUE</string>
     <string name="disclaimer_exit">ANNULER ET QUITTER</string>
@@ -491,7 +491,6 @@ Notes : %3$s
     <string name="alert_later">Plus tard</string>
     <string name="alert_database_critical_error_title">❌ ERREUR CRITIQUE DE BASE DE DONNÉES</string>
     <string name="alert_database_critical_error_message">Impossible de démarrer l\'application. La base de données est corrompue.\n\n%s</string>
-    <string name="alert_exit">QUITTER</string>
     <string name="alert_contacts_permission_title">Autorisation de contacts</string>
     <string name="alert_contacts_permission_message">Pour associer des noms aux numéros de téléphone, l\'autorisation de lecture des contacts est requise.</string>
     <string name="alert_permission_receive_sms">Recevoir des SMS</string>
@@ -695,7 +694,7 @@ Notes : %3$s
     <string name="load_last_message">Montre le derniere Message</string>
     <string name="simply_exit_app">Fermer NooK</string>
     <string name="sha_verification_title">Vérification de l\'empreinte de l\'APP</string>
-    <string name="sha_verification_no_internet_message">PAS D\'INTERNET</string>
+    <string name="sha_verification_no_internet_message">PAS DE CONNEXION INTERNET</string>
     <string name="sha_verification_retry">Réessayer AVEC INTERNET</string>
     <string name="sha_verification_continue_risk">Continuer SANS</string>
     <string name="sha_verification_exit">FERMER L\'APP</string>
@@ -707,5 +706,71 @@ Notes : %3$s
     <string name="could_not_compute_apk_hash">Erreur de calcul lors de la vérification de l\'APP</string>
     <string name="could_not_download_sha_file">Impossible de télécharger le fichier SHA pour la vérification de l\'APP - Pas de connexion Internet !</string>
     <string name="app_verified_offline">APP ver. OFFLINE</string>
+    <!-- Update checker strings -->
+    <string name="new_version_available">Mets-moi à jour</string>
+    <string name="content_description_update_available">Mise à jour disponible</string>
+    <string name="upgrade_nook_button">Mettre à jour NooK</string>
+    <string name="upgrade_dialog_title">Mise à jour NooK</string>
+    <string name="current_version">Version actuelle: %s</string>
+    <string name="latest_version">Dernière version: %s</string>
+    <string name="available_versions">Versions disponibles:</string>
+    <string name="upgrade">Mettre à jour</string>
+    <string name="downloading">Téléchargement... %d%%</string>
+    <string name="download_complete">Téléchargement terminé. Installation...</string>
+    <string name="download_failed">Échec du téléchargement: %s</string>
+    <string name="update_check_failed">Échec de la vérification des mises à jour</string>
+    <string name="already_latest">Vous avez déjà la dernière version</string>
+    <string name="checking_for_updates">Vérification des mises à jour...</string>
+    <string name="no_new_versions">Aucune nouvelle version disponible</string>
+    <string name="select_version_to_upgrade">Sélectionnez une version à installer</string>
+    <string name="preparing_installation">Préparation de l\'installation...</string>
+    <string name="installation_started">Installation lancée...</string>
+    <string name="confirm_installation_title">Confirmer l\'installation</string>
+    <string name="confirm_installation_message">Êtes-vous sûr de vouloir installer NooK version %s ?\n\nL\'application se fermera automatiquement après le téléchargement et ouvrirà l\'archive pour terminer l\'installation.</string>
+    <string name="install">Installer</string>
+    <string name="restarting_app">Redémarrage de l\'app...</string>
+    <string name="app_will_close">L\'application va se fermer</string>
+    <string name="launch_manually">Appuyez sur l\'icône NooK pour lancer la nouvelle version</string>
+    <string name="closing_in">Fermeture dans %d secondes...</string>
+    <string name="download_success_message">✅ Téléchargement terminé !\nVersion %s</string>
+    <string name="file_size">Taille : %s</string>
+    <string name="click_install_to_update">Cliquez sur INSTALLER pour mettre à jour NooK</string>
+    <string name="install_now">INSTALLER MAINTENANT</string>
+    <string name="apk_file_not_found">Fichier APK introuvable. Réessayez le téléchargement.</string>
+    <string name="installer_opened">Ouverture de l\'installateur... Installez la nouvelle version</string>
+    <string name="install_error">Erreur d\'installation : %s</string>
+    <string name="download_complete_instructions">✅ Téléchargement de la version %s terminé !\n\nL\'application va se fermer et le dossier Téléchargements va s\'ouvrir.</string>
+    <string name="file_location">📁 Emplacement du fichier :</string>
+    <string name="opening_downloads_in">Ouverture des Téléchargements dans %d secondes...</string>
+    <string name="click_apk_to_install">Appuyez maintenant sur le fichier APK pour installer la nouvelle version</string>
+    <string name="manual_installation_instructions">Ouvrez manuellement l\'application \"Fichiers\" et allez dans :\n%s\n\nTrouvez le fichier APK et appuyez dessus pour l\'installer.</string>
+    <string name="downloads_folder_not_found">Dossier Téléchargements introuvable</string>
+    <string name="download_failed_empty_file">Échec du téléchargement de la version (fichier vide)</string>
+    <string name="unknown_error">Erreur inconnue</string>
+    <string name="closing_app_for_install">NooK se ferme pour permettre l\'installation de la nouvelle version</string>
+    <string name="opening_installer_in">Ouverture du dossier Archives dans %d secondes pour installer la nouvelle version</string>
+    <string name="manual_install_required">Ouvrez manuellement %s pour l\'installation</string>
+    <string name="install_update_title">📲 Mettre à jour NooK</string>
+    <string name="install_update_instructions">La version %s a été téléchargée dans votre dossier Téléchargements.\n\n⚠️ Android peut afficher \"Source inconnue\" - c\'est normal pour les applications ne provenant pas du Play Store.\n\nProcédure:\n1. Appuyez sur \"Ouvrir APK\" ci-dessous\n2. Si demandé, autorisez l\'installation depuis votre gestionnaire de fichiers\n3. Installez la mise à jour</string>
+    <string name="show_file_location">Afficher l\'emplacement du fichier</string>
+    <string name="open_downloads_folder">Ouvrir le dossier Téléchargements</string>
+    <string name="remind_me_later">Me rappeler plus tard</string>
+    <string name="cannot_open_folder">Impossible d\'ouvrir le dossier</string>
+    <string name="open_apk">Ouvrir APK</string>
+    <string name="manual_install_instructions">Instructions pour l\'installation manuelle de %s</string>
+    <string name="update_explanation">⚠️ Après le téléchargement, Android peut afficher \"Source inconnue\" - normal pour les apps hors Play Store.\n\nVous devrez:\n• Ouvrir le fichier APK\n• Autoriser l\'installation si demandé\n• Installer la mise à jour</string>
+    <string name="installing_version">Installation de la version : %s</string>
+    <string name="downloading_version">Téléchargement de la version : %s</string>
+    <string name="download_location">Emplacement du téléchargement :</string>
+    <string name="update_explanation_complete">✅ Téléchargement terminé !\n\nL\'APK a été sauvegardé dans votre dossier Téléchargements.\n\nCliquez sur QUITTER pour ouvrir l\'app ARCHIVES et fermer NooK.</string>
+    <string name="title_manual_installation">Installation manuelle</string>
+    <string name="installation_apk_saved_in">APK sauvegardé dans</string>
+    <string name="installation_indication_apk_saved_in">APK enregistré dans %s\n\nDans l\'explorateur de fichiers (Téléchargements) appuyez sur le fichier pour l\'installer.</string>
+    <string name="proceed">CONTINUER</string>
+    <string name="downgrade_warning_message">⚠️ Vous avez sélectionné la version %1$s qui est PLUS ANCIENNE que la version actuelle %2$s.\n\nÊtes-vous sûr de vouloir faire une rétrogradation?</string>
+    <string name="select_file_explorer">Sélectionner l\'explorateur de fichiers</string>
+    <string name="find_nook_apk_in_downloads">Trouver l\'APK Nook dans le dossier Téléchargements</string>
+    <string name="manual_installation">Installation Manuelle</string>
+    <string name="error_opening_folder">Erreur lors de l\'ouverture du dossier</string>
 
 </resources>

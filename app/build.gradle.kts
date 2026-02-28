@@ -1,11 +1,12 @@
+import com.android.build.api.dsl.SigningConfig
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    kotlin("kapt")  // Plugin kapt per Kotlin Annotation Processing
+    kotlin("kapt")
 }
 
 // Function to read version constants from Constants.kt file
-// Renamed to avoid conflict with implicit getter
 fun loadVersionCodeFromConstants(): Int {
     val constantsFile = project.projectDir.resolve("src/main/java/solutions/semweb/nook/Constants.kt")
     if (!constantsFile.exists()) {
@@ -40,7 +41,7 @@ fun loadVersionCodeFromConstants(): Int {
 
 // Get version values from Constants.kt
 val versionCodeFromConstants = try {
-    loadVersionCodeFromConstants()  // Using renamed function
+    loadVersionCodeFromConstants()
 } catch (e: Exception) {
     println("⚠️ Warning: Error reading version from Constants.kt: ${e.message}")
     255 // Fallback value
@@ -55,7 +56,6 @@ val versionNameString = "$versionMajor.$versionMinor.$versionPatch.$versionCodeF
 println("📱 Building version: $versionNameString (code: $versionCodeFromConstants)")
 
 android {
-
     lint {
         baseline = file("lint-baseline.xml")
     }
@@ -65,8 +65,8 @@ android {
 
     defaultConfig {
         applicationId = "solutions.semweb.nook"
-        minSdk = 24
-        targetSdk = 34
+        minSdk = 26 // Oreo 8
+        targetSdk = 34 // Compat
         versionCode = versionCodeFromConstants
         versionName = versionNameString
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -81,19 +81,84 @@ android {
         }
     }
 
+    // ============================================================
+    // SINGLE KEYSTORE FOR ALL BUILDS (Debug + Release)
+    // ============================================================
+    signingConfigs {
+        // 🔐 MASTER KEYSTORE - Used for ALL builds (debug, release, testing)
+        // This file is located OUTSIDE version control for security
+        create("master") {
+            // Look for keystore in secure external location
+            // You can set this path via environment variable or local properties
+            val keystorePath = System.getenv("NOOK_KEYSTORE_PATH") ?:
+            project.findProperty("nook.keystore.path") as? String ?:
+            "/secure/keystore/nook-master.keystore" // Fallback - CHANGE THIS!
+
+            storeFile = file(keystorePath)
+
+            // Verify keystore exists
+            storeFile?.exists()?.let {
+                if (!it) {
+                    val error = """
+                            ⚠️⚠️⚠️ KEYSTORE NOT FOUND ⚠️⚠️⚠️
+                            Path: ${storeFile?.absolutePath}
+                            
+                            Please set NOOK_KEYSTORE_PATH environment variable or
+                            create a local.properties file with:
+                            nook.keystore.path=/path/to/your/keystore
+                            nook.keystore.password=your-password
+                            nook.key.alias=your-alias
+                            nook.key.password=your-key-password
+                        """.trimIndent()
+
+                    if (gradle.startParameter.taskRequests.any { it.args.any { arg ->
+                            arg.contains("assemble") || arg.contains("build")
+                        }}) {
+                        throw GradleException(error)
+                    } else {
+                        println(error)
+                    }
+                }
+            }
+
+            // Get passwords from environment variables (secure for CI/CD)
+            storePassword = System.getenv("NOOK_KEYSTORE_PASSWORD") ?:
+                    project.findProperty("nook.keystore.password") as? String ?: ""
+
+            keyAlias = System.getenv("NOOK_KEY_ALIAS") ?:
+                    project.findProperty("nook.key.alias") as? String ?: ""
+
+            keyPassword = System.getenv("NOOK_KEY_PASSWORD") ?:
+                    project.findProperty("nook.key.password") as? String ?: ""
+
+            // Enable debug signing if passwords are missing (for local development)
+            if (storePassword?.isEmpty() == true || keyAlias?.isEmpty() == true || keyPassword?.isEmpty() == true) {
+                println("⚠️ Using debug signing (unsigned) - only for local testing!")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+                storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
+            }
+        }
+    }
+
     buildTypes {
         getByName("debug") {
             isDebuggable = true
             versionNameSuffix = "-debug"
             isMinifyEnabled = false
 
+            // Use the master keystore for ALL builds
+            signingConfig = signingConfigs.getByName("master")
+
             buildConfigField("String", "BUILD_TYPE", "\"debug\"")
             buildConfigField("boolean", "DEBUG", "true")
-
-            // Version fields in DEBUG / use in Constants.kt
             buildConfigField("String", "VERSION_NAME", "\"${defaultConfig.versionName}\"")
             buildConfigField("int", "VERSION_CODE", "${defaultConfig.versionCode}")
             buildConfigField("String", "FULL_VERSION", "\"${defaultConfig.versionName}-debug\"")
+
+            // Add signing info to BuildConfig for debugging
+            buildConfigField("String", "SIGNING_CERT", "\"${getSigningCertificateSha256(signingConfig)}\"")
         }
 
         getByName("release") {
@@ -102,13 +167,18 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
+            // Use the SAME master keystore for release builds
+            signingConfig = signingConfigs.getByName("master")
+
             buildConfigField("String", "BUILD_TYPE", "\"release\"")
             buildConfigField("boolean", "DEBUG", "false")
-
-            // Version fields in release / use in Constants.kt
             buildConfigField("String", "VERSION_NAME", "\"${defaultConfig.versionName}\"")
             buildConfigField("int", "VERSION_CODE", "${defaultConfig.versionCode}")
             buildConfigField("String", "FULL_VERSION", "\"${defaultConfig.versionName}\"")
+
+            // Add signing info to BuildConfig for debugging
+            buildConfigField("String", "SIGNING_CERT", "\"${getSigningCertificateSha256(signingConfig)}\"")
         }
     }
 
@@ -124,6 +194,28 @@ android {
 
     kotlinOptions {
         jvmTarget = "11"
+    }
+}
+
+// Helper function to get certificate SHA-256 for debugging
+fun getSigningCertificateSha256(config: SigningConfig?): String {
+    if (config?.storeFile == null || !config.storeFile!!.exists()) {
+        return "unknown"
+    }
+
+    return try {
+        val process = ProcessBuilder(
+            "keytool", "-list", "-v",
+            "-keystore", config.storeFile!!.absolutePath,
+            "-storepass", config.storePassword ?: "",
+            "-alias", config.keyAlias ?: ""
+        ).start()
+
+        val output = process.inputStream.bufferedReader().readText()
+        val pattern = "SHA256: ([A-F0-9:]+)".toRegex()
+        pattern.find(output)?.groupValues?.get(1)?.replace(":", "")?.lowercase() ?: "unknown"
+    } catch (e: Exception) {
+        "unknown"
     }
 }
 
@@ -144,6 +236,8 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation(libs.protolite.well.known.types)
+    implementation(libs.androidx.datastore.core)
+    implementation(libs.litert)
 
     val room_version = "2.8.4"
     implementation("androidx.room:room-runtime:$room_version")
@@ -152,7 +246,7 @@ dependencies {
     implementation("commons-codec:commons-codec:1.16.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    //SHA download and APP security check:
+    // SHA download and APP security check:
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     implementation("com.google.guava:guava:31.1-android") {
@@ -170,6 +264,6 @@ dependencies {
 kapt {
     correctErrorTypes = true
     javacOptions {
-        option("-Xmaxerrs", 1000)
+        option("-Xmaxerrs", "1000")
     }
 }

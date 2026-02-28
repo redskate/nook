@@ -15,4 +15,10 @@
     <files-path
         name="files"
         path="." />
+    <external-path
+        name="downloads"
+        path="Download/" />
+    <root-path
+        name="root"
+        path="." />
 </paths>

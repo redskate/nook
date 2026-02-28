@@ -9,16 +9,22 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.graphics.Typeface
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.provider.DocumentsContract
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
@@ -29,11 +35,14 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -58,11 +67,21 @@ import solutions.semweb.nook.sound.SoundManagement
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.ref.WeakReference
+import java.net.URL
 import java.util.Timer
 import java.util.TimerTask
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.regex.Pattern
 
 class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
+    private var apkFileToInstall: File? = null
+    private lateinit var updateChecker: UpdateChecker
+    private lateinit var updateBadgeContainer: LinearLayout
+    private lateinit var updateBadgeIcon: ImageView
+    private lateinit var updateBadgeText: TextView
+    private lateinit var upgradeNookBtn: Button
+    private var isCheckingUpdates = AtomicBoolean(false)
     private lateinit var shaVerificationManager: ShaVerificationManager
     private lateinit var shaStatusIcon: ImageView
     private lateinit var shaTimestamp: TextView
@@ -300,6 +319,9 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             runOnUiThread {
                 chatCard.visibility = View.GONE
             }
+
+            // 2.5 Setup update checker
+            setupUpdateChecker()
 
             // 3. Setup app protection toggle
             setupAppProtectionToggle()
@@ -1315,6 +1337,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
     private fun Int.dpToPx(): Int = (this * resources.displayMetrics.density).toInt()
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onResume() {
         super.onResume()
         AppStateTracker.onActivityResumed(this)
@@ -1341,6 +1364,10 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         if (isUIInitialized) {
             applyScreenshotSecurity()
             updateUIStates()
+            // Check for updates periodically (once per day)
+            if (this::updateChecker.isInitialized) {
+                checkForUpdates()
+            }
         } else {
             LogUtils.e("MAIN", "⚠️ UI not yet initialized, skipping update in onResume")
         }
@@ -2159,5 +2186,627 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             }
             .show()
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun setupUpdateChecker() {
+        updateChecker = UpdateChecker.getInstance(this)
+        updateBadgeContainer = findViewById(R.id.update_badge_container)
+        updateBadgeIcon = findViewById(R.id.update_badge_icon)
+        updateBadgeText = findViewById(R.id.update_badge_text)
+        upgradeNookBtn = findViewById(R.id.upgrade_nook_btn)
+
+        // Make badge clickable
+        updateBadgeContainer.setOnClickListener {
+            showUpgradeDialog()
+        }
+
+        // Setup upgrade button
+        upgradeNookBtn.setOnClickListener {
+            showUpgradeDialog()
+        }
+
+        // Check for updates in background
+        checkForUpdates()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun checkForUpdates(forceCheck: Boolean = false) {
+        if (isCheckingUpdates.get()) return
+
+        isCheckingUpdates.set(true)
+
+        updateChecker.checkForUpdates(forceCheck) { updateInfo ->
+            runOnUiThread {
+                isCheckingUpdates.set(false)
+
+                if (updateInfo.isUpdateAvailable) {
+                    // Show badge
+                    updateBadgeContainer.visibility = View.VISIBLE
+
+                    // Optionally show a discreet toast
+                    if (forceCheck) {
+                        showToast(getString(R.string.new_version_available) + ": " + updateInfo.latestVersion)
+                    }
+                } else {
+                    // Hide badge
+                    updateBadgeContainer.visibility = View.GONE
+
+                    // Show message if force check
+                    if (forceCheck) {
+                        showToast(getString(R.string.already_latest))
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showUpgradeDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_upgrade, null)
+
+        val currentVersionText = dialogView.findViewById<TextView>(R.id.current_version_text)
+        val latestVersionText = dialogView.findViewById<TextView>(R.id.latest_version_text)
+        val versionsContainer = dialogView.findViewById<LinearLayout>(R.id.versions_container)
+        val downloadProgress = dialogView.findViewById<ProgressBar>(R.id.download_progress)
+        val progressText = dialogView.findViewById<TextView>(R.id.progress_text)
+        val cancelButton = dialogView.findViewById<Button>(R.id.cancel_button)
+        val upgradeButton = dialogView.findViewById<Button>(R.id.upgrade_button)
+        val versionsLabel = dialogView.findViewById<TextView>(R.id.available_versions_label)
+
+        val currentVersion = BuildConfig.VERSION_NAME
+
+        currentVersionText.text = getString(R.string.current_version, currentVersion)
+        latestVersionText.text = getString(R.string.checking_for_updates)
+
+        // HIDE THE UPGRADE BUTTON COMPLETELY
+        upgradeButton.visibility = View.GONE
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        dialog.show()
+
+        // Fetch available versions
+        Thread {
+            try {
+                val versions = fetchAvailableVersions()
+
+                runOnUiThread {
+                    if (versions.isEmpty()) {
+                        latestVersionText.text = getString(R.string.update_check_failed)
+                        versionsLabel.visibility = View.GONE
+                        return@runOnUiThread
+                    }
+
+                    val latestVersion = versions.last()
+                    latestVersionText.text = getString(R.string.latest_version, latestVersion)
+
+                    // Filtra le versioni, nascondendo quella corrente
+                    val filteredVersions = versions.filter { version ->
+                        version != currentVersion
+                    }
+
+                    // Se dopo il filtro non rimangono versioni, mostra messaggio
+                    if (filteredVersions.isEmpty()) {
+                        versionsLabel.visibility = View.GONE
+                        val noVersionsText = TextView(this@MainActivity).apply {
+                            text = getString(R.string.no_new_versions)
+                            textSize = 14f
+                            gravity = Gravity.CENTER
+                            setPadding(0, 20, 0, 20)
+                            setTextColor(ContextCompat.getColor(this@MainActivity, android.R.color.darker_gray))
+                        }
+                        versionsContainer.addView(noVersionsText)
+                        return@runOnUiThread
+                    }
+
+                    // Create version buttons solo per le versioni filtrate
+                    filteredVersions.forEach { version ->
+                        val versionButton = Button(this@MainActivity).apply {
+                            text = version
+                            layoutParams = LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.MATCH_PARENT,
+                                LinearLayout.LayoutParams.WRAP_CONTENT
+                            ).apply {
+                                setMargins(0, 4, 0, 4)
+                            }
+
+                            // Check if this is a downgrade
+                            val isDowngrade = UpdateChecker.VersionComparator().compare(version, currentVersion) < 0
+
+                            // Different color for downgrade
+                            if (isDowngrade) {
+                                backgroundTintList = ColorStateList.valueOf(
+                                    ContextCompat.getColor(this@MainActivity, R.color.gray_3)
+                                )
+                            } else {
+                                // Default state - intensive green for upgrades
+                                backgroundTintList = ColorStateList.valueOf(
+                                    ContextCompat.getColor(this@MainActivity, R.color.intensive_green)
+                                )
+                            }
+
+                            setTextColor(Color.WHITE)
+                            isAllCaps = false
+
+                            // WHEN VERSION IS TAPPED - START INSTALLATION IMMEDIATELY
+                            setOnClickListener {
+                                // Disable all buttons to prevent double-tap
+                                for (i in 0 until versionsContainer.childCount) {
+                                    versionsContainer.getChildAt(i).isEnabled = false
+                                }
+                                cancelButton.isEnabled = false
+
+                                // Show confirmation dialog with warning if downgrade
+                                val message = if (isDowngrade) {
+                                    "⚠️ ${getString(R.string.downgrade_warning_message, version, currentVersion)}"
+                                } else {
+                                    getString(R.string.confirm_installation_message, version)
+                                }
+
+                                AlertDialog.Builder(this@MainActivity)
+                                    .setTitle(getString(R.string.confirm_installation_title))
+                                    .setMessage(message)
+                                    .setPositiveButton(getString(R.string.install)) { _, _ ->
+                                        // Start download immediately
+                                        startVersionDownload(version, dialog, versionsContainer,
+                                            versionsLabel, cancelButton, downloadProgress, progressText)
+                                    }
+                                    .setNegativeButton(getString(R.string.cancel)) { _, _ ->
+                                        // Re-enable buttons if user cancels
+                                        for (i in 0 until versionsContainer.childCount) {
+                                            versionsContainer.getChildAt(i).isEnabled = true
+                                        }
+                                        cancelButton.isEnabled = true
+                                    }
+                                    .show()
+                            }
+                        }
+                        versionsContainer.addView(versionButton)
+                    }
+                }
+            } catch (e: Exception) {
+                LogUtils.e("MainActivity", "Error fetching versions", e)
+                runOnUiThread {
+                    latestVersionText.text = getString(R.string.update_check_failed)
+                }
+            }
+        }.start()
+
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+    }
+
+    /**
+     * Extracted method to start the download process
+     */
+    private fun startVersionDownload(
+        selectedVersion: String,
+        dialog: AlertDialog,
+        versionsContainer: LinearLayout,
+        versionsLabel: TextView,
+        cancelButton: Button,
+        downloadProgress: ProgressBar,
+        progressText: TextView
+    ) {
+        // Get references to all views
+        val versionsScrollview = dialog.findViewById<ScrollView>(R.id.versions_scrollview)
+        val explanationText = dialog.findViewById<TextView>(R.id.explanation_text)
+        val versionInstallingText = dialog.findViewById<TextView>(R.id.version_installing_text)
+        val downloadPathContainer = dialog.findViewById<LinearLayout>(R.id.download_path_container)
+        val downloadPathText = dialog.findViewById<TextView>(R.id.download_path_text)
+        val exitButton = dialog.findViewById<Button>(R.id.exit_button)
+
+        // Hide version selection completely
+        versionsScrollview?.visibility = View.GONE
+        versionsLabel.visibility = View.GONE
+        versionsContainer.visibility = View.GONE
+
+        // Change cancel button text initially
+        cancelButton.text = getString(R.string.cancel)
+        cancelButton.isEnabled = true
+
+        // SHOW DOWNLOAD PATH CONTAINER
+        downloadPathContainer?.visibility = View.VISIBLE
+        val downloadsPath = getDownloadsFolderPath()
+        downloadPathText?.text = "$downloadsPath/nook-v$selectedVersion.apk"
+
+        // SHOW EXPLANATORY TEXT
+        explanationText?.visibility = View.VISIBLE
+
+        // Show progress
+        downloadProgress.visibility = View.VISIBLE
+        progressText.visibility = View.VISIBLE
+
+        versionInstallingText?.visibility = View.VISIBLE
+        versionInstallingText?.text = getString(R.string.downloading_version, selectedVersion)
+
+        // Cancel button during download
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        // Start download
+        updateChecker.downloadAPKAndStopAPP(
+            version = selectedVersion,
+            onProgress = { progress ->
+                runOnUiThread {
+                    progressText.text = getString(R.string.downloading, progress)
+                    downloadProgress.progress = progress
+                }
+            },
+            onComplete = { success, result ->
+                runOnUiThread {
+                    if (success && result != null) {
+                        // Download completed successfully
+                        progressText.visibility = View.GONE
+                        downloadProgress.visibility = View.GONE
+                        versionInstallingText?.visibility = View.GONE
+
+                        // Update path text with actual final path
+                        downloadPathText?.text = result
+
+                        // Show PROCEED and CANCEL buttons
+                        cancelButton.text = getString(R.string.cancel)
+                        cancelButton.visibility = View.VISIBLE
+
+                        exitButton?.visibility = View.VISIBLE
+                        exitButton?.text = getString(R.string.proceed)
+
+                        // Update explanation text for completion
+                        explanationText?.text = getString(R.string.update_explanation_complete)
+
+                        // PROCEED button - opens Downloads folder AS IT WAS and closes app
+                        exitButton?.setOnClickListener {
+                            dialog.dismiss()
+
+                            // ✅ ORIGINAL file explorer launch - AS IT WAS
+                            openDownloadsFolder()
+
+                            // Wait a moment then close the app completely
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                stopForegroundService()
+                                finishAffinity()
+                                finishAndRemoveTask()
+                            }, 1000)
+                        }
+
+                        // CANCEL button - just dismiss dialog and stay in app
+                        cancelButton.setOnClickListener {
+                            dialog.dismiss()
+                        }
+
+                    } else {
+                        // Download failed - just show error and cancel button
+                        progressText.text = getString(R.string.download_failed,
+                            result ?: getString(R.string.unknown_error))
+                        downloadProgress.visibility = View.GONE
+                        versionInstallingText?.visibility = View.GONE
+
+                        // Hide explanatory text on failure
+                        explanationText?.visibility = View.GONE
+
+                        cancelButton.text = getString(R.string.cancel)
+                        cancelButton.visibility = View.VISIBLE
+                        exitButton?.visibility = View.GONE
+
+                        cancelButton.setOnClickListener {
+                            dialog.dismiss()
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    private fun proceedWithDownload(
+        selectedVersion: String,
+        dialog: AlertDialog,
+        versionsContainer: LinearLayout,
+        versionsLabel: TextView,
+        upgradeButton: Button,
+        cancelButton: Button,
+        downloadProgress: ProgressBar,
+        progressText: TextView
+    ) {
+        // Get references to all views
+        val versionsScrollview = dialog.findViewById<ScrollView>(R.id.versions_scrollview)
+        val explanationText = dialog.findViewById<TextView>(R.id.explanation_text)
+        val versionInstallingText = dialog.findViewById<TextView>(R.id.version_installing_text)
+        val downloadPathContainer = dialog.findViewById<LinearLayout>(R.id.download_path_container)
+        val downloadPathText = dialog.findViewById<TextView>(R.id.download_path_text)
+        val exitButton = dialog.findViewById<Button>(R.id.exit_button)
+
+        // Hide version selection completely
+        versionsScrollview?.visibility = View.GONE
+        versionsLabel.visibility = View.GONE
+        versionsContainer.visibility = View.GONE
+        upgradeButton.visibility = View.GONE
+
+        // Change cancel button text
+        cancelButton.text = getString(R.string.cancel)
+
+        // SHOW DOWNLOAD PATH CONTAINER
+        downloadPathContainer?.visibility = View.VISIBLE
+        val downloadsPath = getDownloadsFolderPath()
+        downloadPathText?.text = "$downloadsPath/nook-v$selectedVersion.apk"
+
+        // SHOW EXPLANATORY TEXT
+        explanationText?.visibility = View.VISIBLE
+
+        // Show progress
+        downloadProgress.visibility = View.VISIBLE
+        progressText.visibility = View.VISIBLE
+
+        versionInstallingText?.visibility = View.VISIBLE
+        versionInstallingText?.text = getString(R.string.downloading_version, selectedVersion)
+
+        // Start download
+        updateChecker.downloadAPKAndStopAPP(
+            version = selectedVersion,
+            onProgress = { progress ->
+                runOnUiThread {
+                    progressText.text = getString(R.string.downloading, progress)
+                    downloadProgress.progress = progress
+                }
+            },
+            onComplete = { success, result ->
+                runOnUiThread {
+                    if (success && result != null) {
+                        // Download completed successfully
+                        progressText.visibility = View.GONE
+                        downloadProgress.visibility = View.GONE
+                        versionInstallingText?.visibility = View.GONE
+
+                        // Update path text with actual final path
+                        downloadPathText?.text = result
+
+                        // SHOW EXIT BUTTON, HIDE CANCEL BUTTON
+                        cancelButton.visibility = View.GONE
+                        exitButton?.visibility = View.VISIBLE
+
+                        // Update explanation text for completion
+                        explanationText?.text = getString(R.string.update_explanation_complete)
+
+                        // Exit button opens Downloads folder AND closes app
+                        exitButton?.setOnClickListener {
+                            dialog.dismiss()
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW)
+                                intent.setDataAndType(Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownloads"),
+                                    "vnd.android.document/directory")
+                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                startActivity(intent)
+                            } catch (e: Exception) {
+                                // Fallback - try to open any file explorer
+                                try {
+                                    val intent = Intent(Intent.ACTION_GET_CONTENT)
+                                    intent.type = "*/*"
+                                    intent.addCategory(Intent.CATEGORY_OPENABLE)
+                                    startActivity(Intent.createChooser(intent, "Select file explorer"))
+                                } catch (e2: Exception) {
+                                    val completeApkPath = "${getDownloadsFolderPath()}/nook-v$selectedVersion.apk"
+                                    // Last resort - show message with path
+                                    AlertDialog.Builder(this@MainActivity)
+                                        .setTitle(getString(R.string.title_manual_installation))
+                                        .setMessage(getString(R.string.installation_indication_apk_saved_in, completeApkPath))
+                                        .setPositiveButton(R.string.ok) { d, _ -> d.dismiss() }
+                                        .show()
+                                }
+                            }
+
+                            // CLOSE APP
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                stopForegroundService()
+                                finishAffinity()
+                                finishAndRemoveTask()
+                            }, 2000)
+                        }
+
+
+                    } else {
+                        // Download failed
+                        progressText.text = getString(R.string.download_failed,
+                            result ?: getString(R.string.unknown_error))
+                        downloadProgress.visibility = View.GONE
+                        versionInstallingText?.visibility = View.GONE
+
+                        // Hide explanatory text on failure
+                        explanationText?.visibility = View.GONE
+
+                        cancelButton.text = getString(R.string.cancel)
+                        upgradeButton.visibility = View.GONE
+
+                        cancelButton.setOnClickListener {
+                            dialog.dismiss()
+                        }
+                    }
+                }
+            }
+        )
+
+        // Handle cancel button during download
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+    }
+
+    private fun showFileLocationDialog(apkPath: String) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.file_location)
+            .setMessage(getString(R.string.manual_install_instructions, apkPath.toString()))
+            .setPositiveButton(R.string.open_downloads_folder) { _, _ ->
+                openDownloadsFolder()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+
+    /**
+     * Open Downloads folder - FIXED for all Android versions
+     */
+    private fun openDownloadsFolder() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Android 10+ - Use ACTION_OPEN_DOCUMENT to show Downloads
+                try {
+                    // Try to open Downloads using DocumentsContract
+                    val uri = DocumentsContract.buildDocumentUri(
+                        "com.android.externalstorage.documents",
+                        "primary:Download"
+                    )
+
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "vnd.android.document/directory")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+
+                    if (intent.resolveActivity(packageManager) != null) {
+                        startActivity(intent)
+                        Toast.makeText(this, getString(R.string.click_apk_to_install), Toast.LENGTH_LONG).show()
+                        return
+                    }
+                } catch (e: Exception) {
+                    LogUtils.e(TAG, "Error opening Downloads with DocumentsContract", e)
+                }
+
+                // Fallback: Open Downloads using MediaStore
+                try {
+                    val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                        type = "*/*"
+                        addCategory(Intent.CATEGORY_OPENABLE)
+                        putExtra(Intent.EXTRA_LOCAL_ONLY, true)
+                    }
+                    startActivity(Intent.createChooser(intent, getString(R.string.select_file_explorer)))
+                    Toast.makeText(this, getString(R.string.find_nook_apk_in_downloads), Toast.LENGTH_LONG).show()
+                    return
+                } catch (e: Exception) {
+                    LogUtils.e(TAG, "Error opening file chooser", e)
+                }
+            } else {
+                // Android 9 and below - use file path
+                try {
+                    val downloadsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    val uri = Uri.fromFile(downloadsFolder)
+
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "vnd.android.document/directory")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+
+                    if (intent.resolveActivity(packageManager) != null) {
+                        startActivity(intent)
+                        Toast.makeText(this, getString(R.string.click_apk_to_install), Toast.LENGTH_LONG).show()
+                        return
+                    }
+                } catch (e: Exception) {
+                    LogUtils.e(TAG, "Error opening Downloads folder", e)
+                }
+            }
+
+            // Last resort: Show a dialog with the file location
+            val version = updateChecker.getLatestVersion()
+            val downloadsPath = getDownloadsFolderPath()
+            val apkPath = "$downloadsPath/nook-v$version.apk"
+
+            AlertDialog.Builder(this)
+                .setTitle(R.string.manual_installation)
+                .setMessage(getString(R.string.installation_indication_apk_saved_in, apkPath))
+                .setPositiveButton(R.string.ok, null)
+                .show()
+
+        } catch (e: Exception) {
+            LogUtils.e(TAG, "Error in openDownloadsFolder", e)
+            Toast.makeText(this, getString(R.string.error_opening_folder), Toast.LENGTH_LONG).show()
+        }
+    }
+
+
+
+    /**
+     * Get Downloads folder path for Android 10+ and older versions
+     */
+    private fun getDownloadsFolderPath(): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Android 10+ - use MediaStore
+            val contentResolver = contentResolver
+            val cursor = contentResolver.query(
+                MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                arrayOf(MediaStore.Downloads.DISPLAY_NAME, MediaStore.Downloads.DATA),
+                null,
+                null,
+                null
+            )
+
+            var path = ""
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val dataIndex = it.getColumnIndex(MediaStore.Downloads.DATA)
+                    if (dataIndex != -1) {
+                        val filePath = it.getString(dataIndex)
+                        path = filePath.substringBeforeLast("/")
+                    }
+                }
+            }
+
+            path.ifEmpty {
+                // Fallback to direct path
+                "/storage/emulated/0/Download"
+            }
+        } else {
+            // Android 9 and below - direct path works too
+            "/storage/emulated/0/Download"
+        }
+    }
+
+
+
+    private fun fetchAvailableVersions(): List<String> {
+        return try {
+            val url = URL("https://raw.githubusercontent.com/redskate/nook/refs/heads/master/app/sha256")
+            val content = url.readText()
+
+            val versionPattern = Pattern.compile("v(\\d+\\.\\d+\\.\\d+\\.\\d+)")
+            val matcher = versionPattern.matcher(content)
+
+            val versions = mutableListOf<String>()
+            while (matcher.find()) {
+                versions.add(matcher.group(1))
+            }
+
+            versions.sortWith(UpdateChecker.VersionComparator())
+            versions
+        } catch (e: Exception) {
+            LogUtils.e("MainActivity", "Error fetching versions", e)
+            emptyList()
+        }
+    }
+
+
+    private val installApkLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        LogUtils.e(TAG, "📦 Installer returned with result: ${result.resultCode}")
+        // App will close after installer returns
+        closeAppAfterDelay()
+    }
+
+    private fun closeAppAfterDelay() {
+        Handler(Looper.getMainLooper()).postDelayed({
+            try {
+                LogUtils.e(TAG, "🛑 CLOSING APP NOW")
+                stopForegroundService()
+                finishAffinity()
+                finishAndRemoveTask()
+            } catch (e: Exception) {
+                System.exit(0)
+            }
+        }, 1000)
+    }
+
 
 }

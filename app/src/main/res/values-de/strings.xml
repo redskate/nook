@@ -17,7 +17,7 @@
     <string name="api_url_title">API-URL</string>
     <string name="app_footer">NooK - SMS</string>
     <string name="app_name">NooK</string>
-    <string name="app_title">NooK - Secure Messenger</string>
+    <string name="app_title">NooK - Sicherer Messenger</string>
     <string name="associate_chat_y_user">Diesen Chat einem Y-Benutzer zuordnen, um Nachrichten zu erhalten</string>
     <string name="associate_y_user">Y-Benutzer zuordnen</string>
     <string name="associate_y_user_dialog_title">Y-Benutzer zu %s zuordnen</string>
@@ -193,7 +193,7 @@ Hinweise: %3$s
     <string name="encoding_password_info">Passwort für %1$s (mindestens %2$d Zeichen)</string>
     <string name="encoding_password_generated">Kodierungspasswort generiert</string>
     <string name="encoding_password_too_short">Kodierungspasswort zu kurz (mindestens %1$d Zeichen)</string>
-    <string name="toggle_password_visibility">Zeige/Verstecke das Kodierungspassword</string>
+    <string name="toggle_password_visibility">Zeige/Verstecke das Kodierungspasswort</string>
     <string name="generate_password">Passwort generieren</string>
 
     <string name="last_message_placeholder">Letzte Nachricht…</string>
@@ -209,7 +209,7 @@ Hinweise: %3$s
     <string name="messages">Nachrichten</string>
     <string name="modify_association">Zuordnung ändern</string>
     <string name="new_message_from">Neue Nachricht von: %s</string>
-    <string name="new_salt_generated_for_chat">🧂 Neues Salt generiert für Chat %s</string>
+    <string name="new_salt_generated_for_chat">🧂 Neues Salz generiert für Chat %s</string>
     <string name="new_sms_from">Neue SMS von %s</string>
     <string name="new_y_messages_count_for_chat">%s neue Y-Nachricht(en) für %s</string>
     <string name="no">Nein</string>
@@ -292,7 +292,7 @@ Hinweise: %3$s
     <string name="sisa_decryption_error">SISA-ENTSCHLÜSSELUNGSFEHLER</string>
     <string name="sisa_encryption_configured_auto">✅ Automatisches Passwort</string>
     <string name="sisa_encryption_configured_custom">✅ SiSa-Verschlüsselung konfiguriert (benutzerdefiniertes Passwort)</string>
-    <string name="sisa_simple_safe">SiSa (Simple Safe)</string>
+    <string name="sisa_simple_safe">SiSa (Einfach Sicher)</string>
     <string name="sms_chat_button">SMS-Chat</string>
     <string name="sms_chat_created_with_contact">SMS-Chat erstellt mit %s</string>
     <string name="sms_messages_notification_channel_description">Benachrichtigungen für neue SMS-Nachrichten</string>
@@ -341,15 +341,15 @@ Hinweise: %3$s
     <string name="yes">Ja</string>
     <string name="yes_generate">Ja, generieren</string>
 
-    <string name="disclaimer_title">Willkommen bei NooK!\nWichtiger Hinweis</string>
-    <string name="disclaimer_message">NooK Messenger schützt deine SMS mit einer robusten Ende-zu-Ende-Verschlüsselung (AES-256-GCM).\n\n⚠️ Durch Fortfahren erklärst du, dass du Folgendes verstanden hast und akzeptierst:\n\nRechtliche Einhaltung: Du bist allein* verantwortlich für die Einhaltung der Gesetze zur Verwendung von Verschlüsselung in deinem Rechtsgebiet.\n\nLegitime Nutzung: Dieses Tool ist ausschließlich für den persönlichen Datenschutz konzipiert. Jegliche illegale Nutzung ist strengstens untersagt.\n\nTechnische Grenzen: Standard-SMS-Metadaten (Telefonnummern, Zeitstempel) bleiben für deinen Mobilfunkanbieter sichtbar.\n\nEmpfängervoraussetzung: Der Empfänger muss ebenfalls NooK verwenden, um deine verschlüsselten Nachrichten zu lesen.\n\nDer Eigentümer der NooK-App definiert vertrauenswürdige Kontakte, für die NooK - wenn es ausgeführt wird - verschlüsselte SMS entschlüsselt (von einem anderen NooK mit der Nummer des vertrauenswürdigen Kontakts).\n\n🔐 Erforderliche Berechtigungen &amp; Warum:\n\nSMS: Zum Senden und Empfangen verschlüsselter Nachrichten.\n\nKONTAKTE: Zum Auswählen von Empfängern und Verwenden ihrer Telefonnummern zur Erstellung (verschlüsselter) Chats.\n\nTELEFON (Telefonstatus lesen): Zum Identifizieren deiner Telefonnummer als Teil des Verschlüsselungsprozesses.\n\nMEDIEN: Wenn du ein Backup oder eine Wiederherstellung eines Chats durchführst, muss NooK in der Lage sein, Dateien auf deinem Gerät zu lesen und zu schreiben.\n\nNooK ist Open-Source, und sammelt/teilt keine Daten.\n\nACHTE IMMER AUF:\n\na) Welche Tastatur du verwendest (einige Tastaturen teilen Daten!)\nB) Screenshots, die ohne dein Wissen von anderen APPS gemacht werden (aktiviere den Schutz in NooK),\nC) Sei vorsichtig mit der Zwischenablage, die Text mit Apps teilt, die die Berechtigung haben!\n\n🚨 SICHERHEITS- UND HAFTUNGSHINWEIS:\n\nDie Anwendung wurde monatelang auf Samsung- und Google-Pixel-Geräten getestet.\n\nTROTZDEM BENUTZEN SIE DIESE APP AUF EIGENE GEFAHR.\n\nDie App kann wie jede aktive Software zu einer erhöhten CPU-Auslastung, einem höheren Batterieverbrauch und einer daraus resultierenden Überhitzung des Geräts beitragen, insbesondere bei gleichzeitiger Nutzung mit anderen Anwendungen oder unter extremen Umweltbedingungen (z. B. bei direktem Sonnenlicht).\n\nIN KEINEM FALL KÖNNEN DER ENTWICKLER ODER DIE MITWIRKENDEN VON NOOK HAFTBAR GEMACHT WERDEN für direkte oder indirekte Schäden an Ihrem Gerät, einschließlich, aber nicht beschränkt auf: abnormale Überhitzung, Batterieschäden, Datenverlust, Fehlfunktionen, Batterieexplosionen, Brände oder persönliche Verletzungen, die sich aus der Nutzung dieser Anwendung ergeben.\n\nEs liegt in Ihrer alleinigen Verantwortung:\n1. Den Zustand Ihres Telefons (bis Android 16) oder Tablets während der Nutzung zu überwachen.\n2. Nur Original- oder zertifizierte Akkus und Ladegeräte zu verwenden.\n3. Die Nutzung sofort zu unterbrechen und das Gerät im Falle einer Überhitzung auszuschalten.\n4. Für eine angemessene Belüftung des Geräts zu sorgen.\n5. Die App gemäß den Richtlinien des Geräteherstellers zu verwenden.</string>
+    <string name="disclaimer_title">Willkommen bei NooK!\nRechtshinweis</string>
+    <string name="disclaimer_message">NooK Messenger schützt deine SMS mit einer robusten Ende-zu-Ende-Verschlüsselung (AES-256-GCM).\n\n⚠️ Durch Fortfahren erklärst du, dass du Folgendes verstanden hast und akzeptierst:\n\nRechtliche Einhaltung: Du bist allein* verantwortlich für die Einhaltung der Gesetze zur Verwendung von Verschlüsselung in deinem Rechtsgebiet.\n\nLegitime Nutzung: Dieses Tool ist ausschließlich für den persönlichen Datenschutz konzipiert. Jegliche illegale Nutzung ist strengstens untersagt.\n\nTechnische Grenzen: Standard-SMS-Metadaten (Telefonnummern, Zeitstempel) bleiben für deinen Mobilfunkanbieter sichtbar.\n\nEmpfängervoraussetzung: Der Empfänger muss ebenfalls NooK verwenden, um deine verschlüsselten Nachrichten zu lesen.\n\nDer Eigentümer der NooK-App definiert vertrauenswürdige Kontakte, für die NooK - wenn es ausgeführt wird - verschlüsselte SMS entschlüsselt (von einem anderen NooK mit der Nummer des vertrauenswürdigen Kontakts).\n\n🔐 Erforderliche Berechtigungen &amp; Warum:\n\nSMS: Zum Senden und Empfangen verschlüsselter Nachrichten.\n\nKONTAKTE: Zum Auswählen von Empfängern und Verwenden ihrer Telefonnummern zur Erstellung (verschlüsselter) Chats.\n\nTELEFON (Telefonstatus lesen): Zum Identifizieren deiner Telefonnummer als Teil des Verschlüsselungsprozesses.\n\nMEDIEN: Wenn du ein Backup oder eine Wiederherstellung eines Chats durchführst, muss NooK in der Lage sein, Dateien auf deinem Gerät zu lesen und zu schreiben.\n\nNooK ist Open-Source und sammelt/teilt keine Daten.\n\nACHTE IMMER AUF:\n\na) Welche Tastatur du verwendest (einige Tastaturen teilen Daten!)\nB) Screenshots, die ohne dein Wissen von anderen APPS gemacht werden (aktiviere den Schutz in NooK),\nC) Sei vorsichtig mit der Zwischenablage, die Text mit Apps teilt, die die Berechtigung haben!\n\n🚨 SICHERHEITS- UND HAFTUNGSHINWEIS:\n\nDie Anwendung wurde monatelang auf Samsung- und Google-Pixel-Geräten getestet.\n\nTROTZDEM BENUTZEN SIE DIESE APP AUF EIGENE GEFAHR.\n\nDie App kann wie jede aktive Software zu einer erhöhten CPU-Auslastung, einem höheren Batterieverbrauch und einer daraus resultierenden Überhitzung des Geräts beitragen, insbesondere bei gleichzeitiger Nutzung mit anderen Anwendungen oder unter extremen Umweltbedingungen (z. B. bei direktem Sonnenlicht).\n\nIN KEINEM FALL KÖNNEN DER ENTWICKLER ODER DIE MITWIRKENDEN VON NOOK HAFTBAR GEMACHT WERDEN für direkte oder indirekte Schäden an Ihrem Gerät, einschließlich, aber nicht beschränkt auf: abnormale Überhitzung, Batterieschäden, Datenverlust, Fehlfunktionen, Batterieexplosionen, Brände oder persönliche Verletzungen, die sich aus der Nutzung dieser Anwendung ergeben.\n\nEs liegt in Ihrer alleinigen Verantwortung:\n1. Den Zustand Ihres Telefons (bis Android 16) oder Tablets während der Nutzung zu überwachen.\n2. Nur Original- oder zertifizierte Akkus und Ladegeräte zu verwenden.\n3. Die Nutzung sofort zu unterbrechen und das Gerät im Falle einer Überhitzung auszuschalten.\n4. Für eine angemessene Belüftung des Geräts zu sorgen.\n5. Die App gemäß den Richtlinien des Geräteherstellers zu verwenden.</string>
     <string name="disclaimer_agree">ICH STIMME ZU &amp; FORTFAHREN</string>
     <string name="disclaimer_exit">ABBRECHEN &amp; BEENDEN</string>
 
     <string name="allow_screenshots_title">Screenshots erlauben</string>
     <string name="screenshot_permission_title">Screenshot-Berechtigung</string>
     <string name="screenshot_permission_message">Um Screenshots der App zu erlauben, müssen die Sicherheitseinschränkungen des Fensters entfernt werden. Möchten Sie fortfahren?</string>
-    <string name="keyboard_unknown_warning">⚠️ Tastatur nicht erkannt. Kontrolliere die Sicherheit.</string>
+    <string name="keyboard_unknown_warning">⚠️ Tastatur nicht erkannt. Überprüfe die Sicherheit.</string>
     <string name="screenshots_enabled">Screenshots aktiviert</string>
     <string name="clipboard_disabled_title">Zwischenablage deaktiviert</string>
     <string name="clipboard_disabled_message">Die Zwischenablage-Funktion ist derzeit in den Einstellungen deaktiviert. Möchten Sie zu den Einstellungen gehen, um sie zu aktivieren?</string>
@@ -361,15 +361,15 @@ Hinweise: %3$s
     <string name="open_app_info_for_clipboard">App-Einstellungen öffnen, um Zwischenablage-Berechtigung zu aktivieren</string>
     <string name="error_opening_app_info">Fehler beim Öffnen der App-Info</string>
     <string name="error_opening_app_info_manual">Manuell öffnen: Einstellungen → Apps → NooK → Berechtigungen</string>
-    <string name="lineageos_screenshot_info">⚠️ Auf LineageOS, Screenshots erlaubt</string>
-    <string name="lineageos_detected">LineageOS entdeckt</string>
+    <string name="lineageos_screenshot_info">⚠️ Auf LineageOS sind Screenshots erlaubt</string>
+    <string name="lineageos_detected">LineageOS erkannt</string>
     <string name="clipboard_permission_title">Zwischenablage-Einstellungen</string>
     <string name="clipboard_permission_message">Auf Android 10+, um die Zwischenablage zu verwenden:\n\n1. Gehen Sie zu Einstellungen → Apps\n2. Wählen Sie diese App\n3. Gehen Sie zu \'Erweiterte Einstellungen\' → \'Zwischenablage\'\n4. Aktivieren Sie die Option\n\nMöchten Sie jetzt die App-Einstellungen öffnen?</string>
     <string name="tap2open">Öffnen</string>
     <string name="keyboard_settings_opened">Tastatureinstellungen werden geöffnet…</string>
     <string name="cannot_open_settings">Einstellungen können nicht geöffnet werden</string>
     <string name="keyboard_security_alert_blacklisted_title">⚠️ Unsichere Tastatur erkannt</string>
-    <string name="keyboard_security_alert_blacklisted_message">Tastatur \"%1$s\" (%2$s) steht auf der Blacklist von Tastaturen mit bekannten Sicherheitsproblemen. Dringend empfohlen, die Tastatur zu wechseln.</string>
+    <string name="keyboard_security_alert_blacklisted_message">Tastatur \"%1$s\" (%2$s) steht auf der Blacklist von Tastaturen mit bekannten Sicherheitsproblemen. Es wird dringend empfohlen, die Tastatur zu wechseln.</string>
     <string name="keyboard_security_alert_unknown_title">⚠️ Unbekannte Tastatur erkannt</string>
     <string name="keyboard_security_alert_unknown_message">Tastatur \"%1$s\" (%2$s) steht nicht auf der Liste getesteter und genehmigter Tastaturen. Stellen Sie sicher, dass sie vertrauenswürdig ist, bevor Sie sensible Daten eingeben.</string>
     <string name="unknown_keyboard">Unbekannte Tastatur</string>
@@ -397,7 +397,7 @@ Hinweise: %3$s
     <string name="approved">Genehmigt</string>
     <string name="rejected">Abgelehnt</string>
     <string name="approve">Genehmigen</string>
-    <string name="manually_approved_from_settings">Manuell von den Einstellungen genehmigt</string>
+    <string name="manually_approved_from_settings">Manuell über die Einstellungen genehmigt</string>
     <string name="error_reading_installed_keyboards">Fehler beim Lesen installierter Tastaturen</string>
     <string name="keyboard_details">Tastaturdetails</string>
     <string name="reject">Ablehnen</string>
@@ -421,25 +421,25 @@ Hinweise: %3$s
     <string name="back">Zurück</string>
     <string name="manage_keyboards">NooK - Tastaturverwaltung</string>
     <string name="clear_all">Alles löschen</string>
-    <string name="reset_defaults">Standardeinstellungen</string>
+    <string name="reset_defaults">Auf Standard zurücksetzen</string>
 
     <string name="empty_password_error">Leeres Passwort für SiSa ungültig</string>
     <string name="encryption_configured">Verschlüsselung konfiguriert</string>
     <string name="scheme_configured">Schema %s konfiguriert</string>
 
-    <string name="menu_copy_safe">Sichere Kopie</string>
+    <string name="menu_copy_safe">Sicher kopieren</string>
     <string name="menu_copy_clipboard">In Zwischenablage kopieren</string>
     <string name="safe_copy_success">Text sicher kopiert</string>
     <string name="safe_copy_decoded">Decodierter Text zum Einfügen bereit</string>
     <string name="paste">Einfügen</string>
     <string name="paste_safe">Sicher einfügen</string>
-    <string name="safe_copy_error">Sicherer Text-Decodierungsfehler</string>
+    <string name="safe_copy_error">Fehler beim sicheren Dekodieren des Textes</string>
     <string name="text_copied">Text kopiert</string>
     <string name="copy_text">Text kopieren</string>
     <string name="delete_message">Nachricht löschen</string>
 
-    <string name="zoom_in">Zoom +</string>
-    <string name="zoom_out">Zoom -</string>
+    <string name="zoom_in">Vergrößern +</string>
+    <string name="zoom_out">Verkleinern -</string>
     <string name="font_size_set_to">Schriftgröße: %d</string>
     <string name="max_font_size_reached">Maximale Schriftgröße erreicht</string>
     <string name="min_font_size_reached">Minimale Schriftgröße erreicht</string>
@@ -447,7 +447,7 @@ Hinweise: %3$s
 
     <!-- WARNUNGEN FÜR KLARTEXT-SENDUNG -->
     <string name="plaintext_warning_title">Sicherheitswarnung</string>
-    <string name="plaintext_warning_message">Sie sind dabei, eine SMS-Klartextnachricht (unverschlüsselt und unkodiert) zu versenden.\n\nDer Mobilfunkanbieter kann den Inhalt lesen.\n\nMöchten Sie fortfahren?</string>
+    <string name="plaintext_warning_message">Sie sind dabei, eine SMS-Klartextnachricht (unverschlüsselt und unkodiert) zu senden.\n\nDer Mobilfunkanbieter kann den Inhalt lesen.\n\nMöchten Sie fortfahren?</string>
     <string name="send_anyway">Trotzdem senden</string>
     <string name="cancel_and_encrypt">Abbrechen</string>
 
@@ -466,15 +466,15 @@ Hinweise: %3$s
     <string name="content_description_change_sound">Benachrichtigungston ändern</string>
     <string name="vibration_title">Vibration</string>
     <string name="sound_selection_dialog_title">Benachrichtigungston auswählen</string>
-    <string name="sound_selection_dialog_message">Ton für neue Nachrichtenbenachrichtigungen wählen</string>
+    <string name="sound_selection_dialog_message">Wähle einen Ton für neue Nachrichtenbenachrichtigungen</string>
     <string name="sound_default_option">Standardton</string>
     <string name="sound_none_option">Kein Ton</string>
     <string name="test_sound_button">Ton testen</string>
     <string name="sound_description_default">Der normale SMS-Ton wird wie gewohnt abgespielt</string>
     <string name="sound_description_custom">Dieser Ton wird ZUSÄTZLICH zum normalen SMS-Ton abgespielt</string>
 
-    <string name="root_detected_title">Sicherheitswarnung:\nRoot-Zugang erkannt</string>
-    <string name="root_detected_message">NooK hat festgestellt, dass Sie Root-Zugang verwenden. Dies könnte die Sicherheit Ihrer NooK-Daten beeinträchtigen. Mit Root-Zugang:\n• Andere Apps könnten Ihre Nachrichten lesen\n• Verschlüsselungsschlüssel könnten extrahiert werden\n• Die KeyStore-Sicherheit wird reduziert\n\nWir empfehlen, den Root-Zugang zu deaktivieren, wenn Sie NooK für sensible Daten verwenden.</string>
+    <string name="root_detected_title">Sicherheitswarnung:\nRoot-Zugriff erkannt</string>
+    <string name="root_detected_message">NooK hat festgestellt, dass Sie Root-Zugriff verwenden. Dies könnte die Sicherheit Ihrer NooK-Daten beeinträchtigen. Mit Root-Zugriff:\n• Andere Apps könnten Ihre Nachrichten lesen\n• Verschlüsselungsschlüssel könnten extrahiert werden\n• Die KeyStore-Sicherheit wird reduziert\n\nWir empfehlen, den Root-Zugriff zu deaktivieren, wenn Sie NooK für sensible Daten verwenden.</string>
     <string name="root_ignore_button">Ignorieren</string>
     <string name="root_understand_button">Verstanden</string>
     <string name="root_settings_button">Sicherheitseinstellungen</string>
@@ -482,33 +482,33 @@ Hinweise: %3$s
     <string name="root_bootloader_unlocked">Entsperrter Bootloader erkannt</string>
     <string name="root_usb_debugging">USB-Debugging aktiv</string>
     <string name="root_risk_high">NooK erkennt, dass Ihr Telefon modifiziert ist. Dies verringert den Schutz Ihrer Nachrichten. Andere Apps könnten sie lesen.</string>
-    <string name="root_risk_medium">Ihr Telefon hat Sonderberechtigungen. NooK arbeitet ohne diese, aber andere Apps könnten auf Ihre Daten zugreifen.</string>
+    <string name="root_risk_medium">Ihr Telefon hat spezielle Berechtigungen. NooK arbeitet ohne diese, aber andere Apps könnten auf Ihre Daten zugreifen.</string>
     <string name="root_risk_low">Einige erweiterte Einstellungen sind aktiv. NooK schützt weiterhin Ihre Nachrichten.</string>
     <string name="root_dont_show_again_button">Nicht mehr anzeigen</string>
     <string name="screenshots_disabled">Screenshots deaktiviert</string>
     <string name="db_critical_error">SCHWERER DB-FEHLER</string>
-    <string name="db_critical_error_expl">APP-Start unmöglich</string>
-    <string name="exit">Tschüss</string>
+    <string name="db_critical_error_expl">APP-Start nicht möglich</string>
+    <string name="exit">Beenden</string>
     <string name="data_security">Datensicherheit</string>
     <string name="i_understand">Verstanden</string>
     <string name="donotshowthisagain">Nicht mehr zeigen</string>
-    <string name="highrisk_root_expl">⚠️ Achtung: Gerootetes Gerät mit entsperrtem Bootloader.\n\nDiese Konfiguration stellt ein hohes Sicherheitsrisiko dar. Anwendungen können vollständigen Systemzugriff erhalten.\n\nEmpfehlungen:\n• Verwenden Sie nur Apps aus vertrauenswürdigen Quellen\n• Entfernen Sie Root-Zugriff für den täglichen Gebrauch\n• Halten Sie das Gerät auf dem neuesten Stand</string>
+    <string name="highrisk_root_expl">⚠️ Achtung: Gerootetes Gerät mit entsperrtem Bootloader.\n\nDiese Konfiguration stellt ein hohes Sicherheitsrisiko dar. Anwendungen können vollständigen Systemzugriff erhalten.\n\nEmpfehlungen:\n• Verwenden Sie nur Apps aus vertrauenswürdigen Quellen\n• Entfernen Sie den Root-Zugriff für den täglichen Gebrauch\n• Halten Sie das Gerät auf dem neuesten Stand</string>
     <string name="middlerisk_root_expl">⚠️ Achtung: Gerootetes Gerät oder entsperrter Bootloader.\n\nDiese Konfiguration erhöht die Sicherheitsrisiken für Anwendungen.\n\nEmpfehlungen:\n• Überwachen Sie App-Berechtigungen\n• Nutzen Sie eine Firewall zur Kontrolle des Internetzugriffs\n• Regelmäßige Backups wichtiger Daten</string>
-    <string name="message_sent">Nachricht über SMS versendet</string>
+    <string name="message_sent">Nachricht über SMS gesendet</string>
     <string name="load_more_messages">Weitere Nachrichten laden...</string>
     <string name="loading_messages">Lade...</string>
     <string name="no_more_messages">(Keine weiteren Nachrichten vorhanden)</string>
 
-    <string name="sort_order_button">Anordnung</string>
-    <string name="sort_order_on">Ordne: letzte Nachricht zu unterst</string>
-    <string name="sort_order_off">Ordne: letzte Nachricht zu oberst</string>
-    <string name="sort_order_tooltip">Ordne Nachrichten: letzte unten/oben</string>
-    <string name="content_description_sort_order">Verändert die Nachrichtenordnung</string>
+    <string name="sort_order_button">Sortierung</string>
+    <string name="sort_order_on">Sortierung: letzte Nachricht unten</string>
+    <string name="sort_order_off">Sortierung: letzte Nachricht oben</string>
+    <string name="sort_order_tooltip">Nachrichtensortierung: letzte unten/oben</string>
+    <string name="content_description_sort_order">Ändert die Nachrichtensortierung</string>
     <string name="export_encrypted_success">Chat erfolgreich exportiert und verschlüsselt</string>
     <string name="export_success">Chat erfolgreich exportiert</string>
     <string name="export_failed">Fehler beim Exportieren des Chats</string>
     <string name="export_no_password_warning">Der Chat wird ohne Verschlüsselung exportiert. Fortfahren?</string>
-    <string name="export_with_password_instructions">Gib ein Passwort mit mindestens 16 Zeichen ein, um den Export zu sichern, oder lasse es leer, um ihn ungeschützt zu lassen.</string>
+    <string name="export_with_password_instructions">Gib ein Passwort mit mindestens 16 Zeichen ein, um den Export zu sichern, oder lass es leer, um ihn ungeschützt zu lassen.</string>
     <string name="export_encrypted_chat">Chat exportieren und schützen</string>
     <string name="export_failure">Fehler beim Exportieren des Chats</string>
     <string name="export_no_messages">Keine Nachrichten zum Exportieren</string>
@@ -518,17 +518,17 @@ Hinweise: %3$s
     <string name="chatexport_nofilescreated">Fehler: Dateien können nicht erstellt werden</string>
     <string name="chatexport_nozipscreated">Fehler: ZIP-Datei kann nicht erstellt werden</string>
     <string name="chatesport_no_crypt">Der Chat wird ohne Verschlüsselung exportiert. Fortfahren?</string>
-    <string name="chatesport_password_crypt">Gib ein Passwort mit mindestens 16 Zeichen ein, um den Export zu verschlüsseln, oder lasse es leer, um nicht zu verschlüsseln</string>
+    <string name="chatesport_password_crypt">Gib ein Passwort mit mindestens 16 Zeichen ein, um den Export zu verschlüsseln, oder lass es leer, um nicht zu verschlüsseln</string>
     <string name="appowner">Eigentümer/in</string>
-    <string name="app_owner_hint">PEPPA PIG</string>
-    <string name="chatexport_html_title">Nook Chat Exportiert</string>
+    <string name="app_owner_hint">PEPPA WUTZ</string>
+    <string name="chatexport_html_title">NooK Chat Export</string>
     <string name="disclaimer_further_permits">NooK benötigt außerdem die folgenden Berechtigungen:\n\n\n• Kontakte (zur Definition vertrauter Kontakte für Chats)\n• SMS (empfangen/lesen/senden)</string>
 
     <string name="export_pwhint_16chars">Passwort (mind. 16 Zeichen)</string>
     <string name="export_pwgeb_16chars">PASSWORT GENERIEREN</string>
     <string name="export_pw_procedi">FORTFAHREN</string>
     <string name="import_encrypted_chat">📥 Chat importieren</string>
-    <string name="share_chat_export">Chat speichern/teilen</string>
+    <string name="share_chat_export">Chat-Export teilen/speichern</string>
     <string name="export_chat">Chat exportieren</string>
     <string name="rescan_sms_for_this_chat">Heutige SMS für diesen Chat scannen</string>
 
@@ -550,7 +550,6 @@ Hinweise: %3$s
     <string name="alert_later">Später</string>
     <string name="alert_database_critical_error_title">KRITISCHER DATENBANKFEHLER</string>
     <string name="alert_database_critical_error_message">Die Anwendung kann nicht gestartet werden. Die Datenbank ist beschädigt.\n\n%s</string>
-    <string name="alert_exit">BEENDEN</string>
     <string name="alert_contacts_permission_title">Kontakte-Berechtigung</string>
     <string name="alert_contacts_permission_message">Um Namen Telefonnummern zuzuordnen, ist die Berechtigung zum Lesen von Kontakten erforderlich.</string>
     <string name="alert_permission_receive_sms">SMS empfangen</string>
@@ -565,16 +564,16 @@ Hinweise: %3$s
     <string name="alert_scan_result_error">Fehler: %s</string>
     <string name="alert_scan_result_success">✅ %1$d neue SMS für %2$s\n🔐 Entschlüsselt: %3$d\n📝 Klartext: %4$d\n⚠️ Fehler: %5$d\n📋 Bereits vorhanden: %6$d</string>
     <string name="alert_scan_result_no_sms">Keine SMS für %s in den letzten %d Stunden gefunden</string>
-    <string name="load_more_with_count">Zeige weitere %d Nachrichten (aus verbleibenden %d)</string>
+    <string name="load_more_with_count">Zeige %d weitere Nachrichten (von verbleibenden %d)</string>
     <string name="load_last_messages">Zeige letzte %d Nachrichten</string>
-    <string name="no_more_messages_to_load">Alle Nachrichten bereits visualisiert</string>
+    <string name="no_more_messages_to_load">Alle Nachrichten bereits angezeigt</string>
     <string name="error_renaming_chat">Fehler beim Umbenennen des Chats</string>
     <string name="Number">Nummer</string>
-    <string name="import_explanation">Wichtig: Um die fehlenden verschlüsselten oder kodierten SMS im Chat korrekt wiederzulesen/neu zu kodieren, dürfen die Verschlüsselungs- und Kodierungsparameter von NooK nicht geändert worden sein.</string>
+    <string name="import_explanation">Wichtig: Um die fehlenden verschlüsselten oder kodierten SMS im Chat korrekt wieder einzulesen/neu zu kodieren, dürfen die Verschlüsselungs- und Kodierungsparameter von NooK nicht geändert worden sein.</string>
 
     <string name="file_not_found">Datei nicht gefunden</string>
     <string name="import_invalid_file_format">Nicht unterstütztes Dateiformat. Verwenden Sie .nook oder .zip</string>
-    <string name="import_password_required">Passwort erforderlich für verschlüsselte Datei (.nook)</string>
+    <string name="import_password_required">Passwort für verschlüsselte Datei (.nook) erforderlich</string>
     <string name="import_password_too_short">Passwort zu kurz (mindestens 16 Zeichen)</string>
     <string name="import_error_temp_folder">Fehler beim Erstellen des temporären Ordners</string>
     <string name="import_decryption_failed">Entschlüsselung fehlgeschlagen. Falsches Passwort?</string>
@@ -639,7 +638,7 @@ Hinweise: %3$s
     <string name="insert_a_valid_number">Geben Sie eine gültige Zahl ein</string>
     <string name="error_chat_invalid">Fehler: Ungültiger Chat</string>
     <string name="scanning">⏳ Suche läuft</string>
-    <string name="scanning_sms_from_of_last_hours">Ich durchsuche die SMS von\n\n%s\n\nin den letzten %d Stunden...</string>
+    <string name="scanning_sms_from_of_last_hours">Durchsuche die SMS von\n\n%s\n\nin den letzten %d Stunden...</string>
     <string name="errorscaningfor">Fehler bei der Suche für %s: %s</string>
     <string name="scanning_completed">✅ Suche abgeschlossen</string>
     <string name="scanning_results_for">📊 Ergebnisse für %s:</string>
@@ -657,7 +656,7 @@ Hinweise: %3$s
     <string name="date_of_esport">Exportdatum</string>
     <string name="number_or_messages">Anzahl Nachrichten</string>
     <string name="exported_by">Exportiert von</string>
-    <string name="nook_messenger">NooK Secure Messenger</string>
+    <string name="nook_messenger">NooK Sicherer Messenger</string>
     <string name="share_exported_chatfile">Exportierten Chat teilen</string>
     <string name="error_filepicker">Fehler bei Dateiauswahl</string>
     <string name="import_no_file_selected">Keine Datei zum Importieren ausgewählt</string>
@@ -696,26 +695,92 @@ Hinweise: %3$s
     <string name="test_notification_sent">Testbenachrichtigung gesendet</string>
     <string name="test_notification_error">Fehler bei Testbenachrichtigung</string>
     <string name="multipart_complete">"✓ %d-teilige Nachricht vollständig "</string>
-    <string name="multipart_receiving">Ich empfange eine %d-teilige kodierte Nachricht… (Dekodierung in 1 Minute)</string>
+    <string name="multipart_receiving">Empfange eine %d-teilige kodierte Nachricht… (Dekodierung in 1 Minute)</string>
     <string name="notification_title">NooK aktiv</string>
     <string name="notification_content">NooK - SMS im Schutz</string>
-    <string name="notification_pamphlet">Genießen Sie NooK - unbedenkliche APP\nOpen Source auf GitHub\n═══════════════════════\nNB: ⚠️ GOOGLE PLAY PROTECT oder VIREN SCANNERS können eine unbedenkliche APP als Malware = potenziell schädlich - melden und Sie zur Deinstallation auffordern.</string>
+    <string name="notification_pamphlet">Genießen Sie NooK - unbedenkliche APP\nOpen Source auf GitHub\n═══════════════════════\nHinweis: ⚠️ GOOGLE PLAY PROTECT oder VIRENSCANNER KÖNNEN eine unbedenkliche APP als Malware = potenziell schädlich melden und Sie zur Deinstallation auffordern.</string>
     <string name="notification_action_open">APP öffnen</string>
     <string name="notification_action_stop">APP beenden</string>
     <string name="load_last_message">Zeige die letzte Nachricht</string>
-    <string name="simply_exit_app">NooK Verlassen</string>
-    <string name="sha_verification_title">APP Fingerabdruck-Verifizierung</string>
-    <string name="sha_verification_no_internet_message">KEIN INTERNET</string>
+    <string name="simply_exit_app">NooK beenden</string>
+    <string name="sha_verification_title">APP-Fingerabdruck-Verifizierung</string>
+    <string name="sha_verification_no_internet_message">KEINE INTERNETVERBINDUNG</string>
     <string name="sha_verification_retry">Erneut mit INTERNET versuchen</string>
     <string name="sha_verification_continue_risk">Fortfahren OHNE</string>
     <string name="sha_verification_exit">APP SCHLIESSEN</string>
-    <string name="sha_verification_compromised_message">Diese Version von NooK %s scheint KOMPROMITTIERT oder NICHT ÜBERPRÜFBAR zu sein, besser schließen, von einer sicheren Quelle neu herunterladen und neu installieren</string>
-    <string name="apk_hash_mismatch">APK HASH NICHT ÜBEREINSTIMMEND</string>
-    <string name="apk_hash_match">APK HASH ÜBEREINSTIMMUNG</string>
+    <string name="sha_verification_compromised_message">Diese Version von NooK %s scheint KOMPROMITTIERT oder NICHT ÜBERPRÜFBAR zu sein. Besser schließen, von einer sicheren Quelle neu herunterladen und neu installieren.</string>
+    <string name="apk_hash_mismatch">APK-HASH NICHT ÜBEREINSTIMMEND</string>
+    <string name="apk_hash_match">APK-HASH ÜBEREINSTIMMUNG</string>
     <string name="app_verified">App verifiziert</string>
     <string name="sha_version_not_found_in_file">APK-Version nicht in SHA-Datei gefunden</string>
-    <string name="could_not_compute_apk_hash">Berechnungsfehler bei der APP-Überprüfung</string>
+    <string name="could_not_compute_apk_hash">Fehler bei der Berechnung des APP-Fingerabdrucks</string>
     <string name="could_not_download_sha_file">SHA-Datei für APP-Überprüfung konnte nicht heruntergeladen werden - Keine Internetverbindung!</string>
     <string name="app_verified_offline">APP OFFLINE ver.</string>
+    <!-- Update checker strings -->
+    <string name="new_version_available">Aktualisierung verfügbar</string>
+    <string name="content_description_update_available">Update verfügbar</string>
+    <string name="upgrade_nook_button">NooK aktualisieren</string>
+    <string name="upgrade_dialog_title">NooK Update</string>
+    <string name="current_version">Aktuelle Version: %s</string>
+    <string name="latest_version">Neueste Version: %s</string>
+    <string name="available_versions">Verfügbare Versionen:</string>
+    <string name="upgrade">Aktualisieren</string>
+    <string name="downloading">Herunterladen... %d%%</string>
+    <string name="download_complete">Download abgeschlossen. Installation...</string>
+    <string name="download_failed">Download fehlgeschlagen: %s</string>
+    <string name="update_check_failed">Update-Prüfung fehlgeschlagen</string>
+    <string name="already_latest">Sie haben bereits die neueste Version</string>
+    <string name="checking_for_updates">Suche nach Updates...</string>
+    <string name="no_new_versions">Keine neuen Versionen verfügbar</string>
+    <string name="select_version_to_upgrade">Wählen Sie eine Version zum Aktualisieren</string>
+    <string name="preparing_installation">Installation wird vorbereitet...</string>
+    <string name="installation_started">Installation gestartet...</string>
+    <string name="confirm_installation_title">Installation bestätigen</string>
+    <string name="confirm_installation_message">Möchten Sie NooK Version %s wirklich installieren?\n\nDie App wird nach der Installation automatisch geschlossen und der Archivmanager gestartet (zur eigentlichen Installation).</string>
+    <string name="install">Installieren</string>
+    <string name="restarting_app">App wird neu gestartet...</string>
+    <string name="installing_version">Installiere Version: %s</string>
+    <string name="downloading_version">Lade Version herunter: %s</string>
+    <string name="app_will_close">App wird jetzt geschlossen</string>
+    <string name="launch_manually">Tippen Sie auf das NooK-Symbol, um die neue Version zu starten</string>
+    <string name="closing_in">Schließen in %d Sekunden...</string>
+    <string name="download_success_message">✅ Download abgeschlossen!\nVersion %s</string>
+    <string name="file_size">Größe: %s</string>
+    <string name="click_install_to_update">Klicken Sie auf INSTALLIEREN, um NooK zu aktualisieren</string>
+    <string name="install_now">JETZT INSTALLIEREN</string>
+    <string name="apk_file_not_found">APK-Datei nicht gefunden. Versuchen Sie es erneut.</string>
+    <string name="installer_opened">Installationsprogramm wird geöffnet... Neue Version installieren</string>
+    <string name="install_error">Installationsfehler: %s</string>
+    <string name="download_complete_instructions">✅ Download der Version %s abgeschlossen!\n\nDie App wird geschlossen und der Download-Ordner geöffnet.</string>
+    <string name="file_location">📁 Dateispeicherort:</string>
+    <string name="opening_downloads_in">Öffne Downloads in %d Sekunden...</string>
+    <string name="manual_installation_instructions">Öffnen Sie manuell die App \"Dateien\" und gehen Sie zu:\n%s\n\nFinden Sie die APK-Datei und tippen Sie darauf, um sie zu installieren.</string>
+    <string name="downloads_folder_not_found">Download-Ordner nicht gefunden</string>
+    <string name="download_failed_empty_file">Download der Version fehlgeschlagen (leer)</string>
+    <string name="unknown_error">Unbekannter Fehler</string>
+    <string name="closing_app_for_install">NooK wird geschlossen, um die Installation der neuen Version zu ermöglichen</string>
+    <string name="opening_installer_in">Öffne Archiv in %d Sekunden, um die neue Version zu installieren</string>
+    <string name="manual_install_required">Öffne %s manuell zur Installation</string>
+    <string name="install_update_title">📲 NooK aktualisieren</string>
+    <string name="install_update_instructions">Version %s wurde in Ihren Download-Ordner heruntergeladen.\n\n⚠️ Android zeigt möglicherweise \"Unbekannte Quelle\" an - dies ist normal für Apps, die nicht aus dem Play Store stammen.\n\nVorgehen:\n1. Tippen Sie unten auf \"APK öffnen\"\n2. Erlauben Sie bei Aufforderung die Installation über Ihren Dateimanager\n3. Installieren Sie das Update</string>
+    <string name="show_file_location">Dateispeicherort anzeigen</string>
+    <string name="open_downloads_folder">Download-Ordner öffnen</string>
+    <string name="remind_me_later">Später erinnern</string>
+    <string name="cannot_open_folder">Ordner kann nicht geöffnet werden</string>
+    <string name="open_apk">APK öffnen</string>
+    <string name="manual_install_instructions">Anleitung zur manuellen Installation von %s</string>
+    <string name="update_explanation">⚠️ Nach dem Download zeigt Android möglicherweise \"Unbekannte Quelle\" an - normal für Apps, die nicht aus dem Play Store stammen.\n\nSie müssen:\n• APK-Datei öffnen\n• Installation erlauben, wenn gefragt\n• Update installieren</string>
+    <string name="download_location">Download-Speicherort:</string>
+    <string name="update_explanation_complete">✅ Download abgeschlossen!\n\nDie APK wurde in Ihrem Download-Ordner gespeichert.\n\nKlicken Sie auf BEENDEN, um die ARCHIV App zu öffnen und NooK zu schließen.</string>
+    <string name="click_apk_to_install">Tippen Sie jetzt auf die APK-Datei, um die neue Version zu installieren</string>
+    <string name="title_manual_installation">Manuelle Installation</string>
+    <string name="installation_apk_saved_in">APK gespeichert in</string>
+    <string name="installation_indication_apk_saved_in">APK gespeichert in %s\n\nTippen Sie im Datei-Explorer (Downloads) auf die Datei, um sie zu installieren.</string>
+    <string name="proceed">WEITER</string>
+    <string name="downgrade_warning_message">⚠️ Sie haben Version %1$s ausgewählt, die ÄLTER ist als die aktuelle Version %2$s.\n\nSind Sie sicher, dass Sie ein Downgrade durchführen möchten?</string>
+    <string name="select_file_explorer">Datei-Explorer auswählen</string>
+    <string name="find_nook_apk_in_downloads">NooK-APK im Download-Ordner finden</string>
+    <string name="manual_installation">Manuelle Installation</string>
+    <string name="error_opening_folder">Fehler beim Öffnen des Ordners</string>
 
 </resources>
