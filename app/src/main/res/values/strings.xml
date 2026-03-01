@@ -519,7 +519,7 @@
     <string name="unknown_error">Errore sconosciuto</string>
     <string name="open_downloads_folder">Apri cartella Download</string>
     <string name="manual_install_instructions">Istruzioni per la installazione manuale di %s</string>
-    <string name="update_explanation">⚠️ Dopo il download, Android potrebbe mostrare "origine sconosciuta" - normale per app non dal Play Store.\n\nDovrai:\n• Aprire un file explorer\n• Toccare il file APK\n• Consentire l\'installazione se richiesto\n• Installare l\'aggiornamento</string>
+    <string name="update_explanation">⚠️ Dopo il download, Android potrebbe mostrare "origine sconosciuta" - normale per app non dal Play Store.\n\nDovrai:\n• Aprire un file explorer\n• Toccare il file apk appena scaricato\n• Consentire l\'installazione se richiesto\n• Installare l\'aggiornamento</string>
     <string name="download_location">Posizione apk nella cartella di download:</string>
     <string name="update_explanation_complete">✅ Download completato!\n\nL\'APK è stato salvato nella cartella Download.\n\nProcedi\n1. Nel file explorer tocca sul file apk per installare la app.\n2. Sblocca la installazione se necessario e segui le istruzioni.\n3. Lancia la app dalla raccolta standard</string>
     <string name="title_manual_installation">Installazione manuale</string>

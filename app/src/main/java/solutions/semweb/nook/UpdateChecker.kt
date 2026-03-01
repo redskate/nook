@@ -1,8 +1,12 @@
+
 package solutions.semweb.nook
 
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -15,6 +19,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
+import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
@@ -27,8 +32,6 @@ class UpdateChecker private constructor(private val context: Context) {
 
     companion object {
         private const val TAG = "UpdateChecker"
-        private const val GITHUB_RELEASES_URL = "https://github.com/redskate/nook/raw/refs/heads/master/app/releases/"
-        private const val SHA_FILE_URL = "https://github.com/redskate/nook/raw/refs/heads/master/app/sha256"
         private const val PREF_LAST_UPDATE_CHECK = "last_update_check_timestamp"
         private const val PREF_LATEST_VERSION = "latest_version"
         private const val PREF_UPDATE_AVAILABLE = "update_available"
@@ -60,7 +63,8 @@ class UpdateChecker private constructor(private val context: Context) {
         val currentVersion: String,
         val isUpdateAvailable: Boolean,
         val downloadUrl: String? = null,
-        val releaseNotes: String? = null
+        val releaseNotes: String? = null,
+        val hasNewerVersion: Boolean = false // New flag to indicate if there's actually a newer version
     )
 
     /**
@@ -81,13 +85,17 @@ class UpdateChecker private constructor(private val context: Context) {
                     val cachedLatest = prefs.getString(PREF_LATEST_VERSION, currentVersion)
                     val updateAvailable = prefs.getBoolean(PREF_UPDATE_AVAILABLE, false)
 
+                    // Check if the cached latest version is actually newer than current
+                    val hasNewerVersion = isNewerVersion(cachedLatest, currentVersion)
+
                     mainHandler.post {
                         onComplete(
                             UpdateInfo(
                                 latestVersion = cachedLatest,
                                 currentVersion = currentVersion,
                                 isUpdateAvailable = updateAvailable,
-                                downloadUrl = generateDownloadUrl(cachedLatest)
+                                downloadUrl = generateDownloadUrl(cachedLatest),
+                                hasNewerVersion = hasNewerVersion
                             )
                         )
                     }
@@ -95,10 +103,11 @@ class UpdateChecker private constructor(private val context: Context) {
                 }
 
                 // Perform actual check
-                val latestVersion = fetchLatestVersionFromGithub()
+                val versionCheckResult = fetchLatestVersionFromGithub(currentVersion)
 
-                if (latestVersion != null) {
-                    val isUpdateAvailable = isNewerVersion(latestVersion, currentVersion)
+                if (versionCheckResult != null) {
+                    val (latestVersion, hasNewerVersion) = versionCheckResult
+                    val isUpdateAvailable = hasNewerVersion
 
                     // Save to prefs
                     prefs.putString(PREF_LATEST_VERSION, latestVersion)
@@ -111,7 +120,8 @@ class UpdateChecker private constructor(private val context: Context) {
                                 latestVersion = latestVersion,
                                 currentVersion = currentVersion,
                                 isUpdateAvailable = isUpdateAvailable,
-                                downloadUrl = generateDownloadUrl(latestVersion)
+                                downloadUrl = generateDownloadUrl(latestVersion),
+                                hasNewerVersion = hasNewerVersion
                             )
                         )
                     }
@@ -123,7 +133,8 @@ class UpdateChecker private constructor(private val context: Context) {
                                 latestVersion = currentVersion,
                                 currentVersion = currentVersion,
                                 isUpdateAvailable = false,
-                                downloadUrl = null
+                                downloadUrl = null,
+                                hasNewerVersion = false
                             )
                         )
                     }
@@ -136,7 +147,8 @@ class UpdateChecker private constructor(private val context: Context) {
                             latestVersion = BuildConfig.VERSION_NAME,
                             currentVersion = BuildConfig.VERSION_NAME,
                             isUpdateAvailable = false,
-                            downloadUrl = null
+                            downloadUrl = null,
+                            hasNewerVersion = false
                         )
                     )
                 }
@@ -146,13 +158,15 @@ class UpdateChecker private constructor(private val context: Context) {
 
     /**
      * Fetch latest version from GitHub releases by parsing the SHA file
+     * Returns a Pair containing the latest version found and a boolean indicating
+     * if there's actually a newer version available
      */
-    private fun fetchLatestVersionFromGithub(): String? {
+    private fun fetchLatestVersionFromGithub(currentVersion: String): Pair<String, Boolean>? {
         return try {
             LogUtils.e(TAG, "📡 Checking for updates...")
 
             val request = okhttp3.Request.Builder()
-                .url(SHA_FILE_URL)
+                .url(Constants.GITHUB_SHA256_URL)
                 .header("User-Agent", "NooK-Android/${BuildConfig.VERSION_NAME}")
                 .get()
                 .build()
@@ -170,9 +184,20 @@ class UpdateChecker private constructor(private val context: Context) {
                         versions.add(matcher.group(1))
                     }
 
+                    if (versions.isEmpty()) {
+                        return null
+                    }
+
                     // Sort versions and return the latest
                     versions.sortWith(VersionComparator())
-                    return versions.lastOrNull()
+                    val latestVersion = versions.last()
+
+                    // Check if the latest version is actually newer than current
+                    val hasNewerVersion = isNewerVersion(latestVersion, currentVersion)
+
+                    LogUtils.e(TAG, "📡 Latest version found: $latestVersion, hasNewerVersion: $hasNewerVersion")
+
+                    return Pair(latestVersion, hasNewerVersion)
                 } else {
                     LogUtils.e(TAG, "❌ HTTP error: ${response.code}")
                     null
@@ -212,7 +237,9 @@ class UpdateChecker private constructor(private val context: Context) {
      * Generate download URL for a specific version
      */
     private fun generateDownloadUrl(version: String): String {
-        return "${GITHUB_RELEASES_URL}nook-v$version.apk"
+        val url = "${Constants.GITHUB_RELEASES_URL}nook-v$version.apk"
+        LogUtils.d("releaseDownload", "CALLING $url")
+        return url
     }
 
     /**
@@ -414,30 +441,60 @@ class UpdateChecker private constructor(private val context: Context) {
         outputStream: OutputStream,
         onProgress: (Int) -> Unit
     ) {
-        val url = URL(downloadUrl)
-        url.openConnection().let { connection ->
-            connection.connect()
-            val fileLength = connection.contentLength
+        var connection: HttpURLConnection? = null
+        try {
+            val url = URL(downloadUrl)
 
-            url.openStream().use { inputStream ->
-                val buffer = ByteArray(8192)
-                var total: Long = 0
-                var count: Int
-                var lastProgress = 0
+            // For Android 16, try with a custom DNS resolver
+            val config = NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+                .build()
 
-                while (inputStream.read(buffer).also { count = it } != -1) {
-                    total += count
-                    if (fileLength > 0) {
-                        val progress = (total * 100 / fileLength).toInt()
-                        if (progress != lastProgress) {
-                            onProgress(progress)
-                            lastProgress = progress
-                        }
-                    }
-                    outputStream.write(buffer, 0, count)
-                }
-                outputStream.flush()
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+            // Use the default network with explicit DNS
+            val network = connectivityManager.activeNetwork
+            if (network != null) {
+                connectivityManager.bindProcessToNetwork(network)
             }
+
+            connection = url.openConnection() as HttpURLConnection
+            connection.setRequestProperty("Connection", "close") // Prevent keep-alive issues
+            connection.connectTimeout = 15000
+            connection.readTimeout = 15000
+            connection.instanceFollowRedirects = true
+
+            connection.connect()
+
+            val responseCode = connection.responseCode
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                throw IOException("Server returned HTTP $responseCode")
+            }
+
+            val fileLength = connection.contentLength
+            val inputStream = connection.inputStream
+
+            val buffer = ByteArray(8192)
+            var bytesRead: Int
+            var totalBytesRead = 0
+
+            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                outputStream.write(buffer, 0, bytesRead)
+                totalBytesRead += bytesRead
+
+                if (fileLength > 0) {
+                    val progress = (totalBytesRead * 100 / fileLength)
+                    onProgress(progress)
+                }
+            }
+
+            outputStream.flush()
+        } finally {
+            // Unbind from network
+            ConnectivityManager.setProcessDefaultNetwork(null)
+            connection?.disconnect()
+            outputStream.close()
         }
     }
 

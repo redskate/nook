@@ -91,7 +91,7 @@
             android:id="@+id/download_path_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:textSize="14sp"
             android:textColor="@color/blue_version"
             android:padding="12dp"
             android:background="@android:drawable/editbox_background"

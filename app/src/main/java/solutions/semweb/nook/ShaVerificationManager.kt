@@ -26,7 +26,6 @@ class ShaVerificationManager private constructor(private val context: Context) {
 
     companion object {
         private const val TAG = "ShaVerification"
-        private const val SHA_FILE_URL = "https://raw.githubusercontent.com/redskate/nook/refs/heads/master/app/sha256"
         private const val PREF_LAST_SHA_CHECK = "last_sha_check_timestamp"
         private const val PREF_STORED_APK_HASH = "stored_apk_hash"
         private const val PREF_STORED_APK_VERSION = "stored_apk_version"
@@ -417,7 +416,7 @@ class ShaVerificationManager private constructor(private val context: Context) {
                 .build()
 
             val request = okhttp3.Request.Builder()
-                .url(SHA_FILE_URL)
+                .url(Constants.GITHUB_SHA256_URL)
                 .header("User-Agent", "NooK-Android/${BuildConfig.VERSION_NAME}")
                 .header("Accept", "text/plain")
                 .get()

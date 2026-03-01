@@ -7,8 +7,8 @@ object Constants {
     // 🔴 CENTRALIZED VERSIONING - Edit only these values
     const val VERSION_MAJOR = 1
     const val VERSION_MINOR = 3
-    const val VERSION_PATCH = 3
-    const val VERSION_CODE = 266  // 269 - but to test
+    const val VERSION_PATCH = 5
+    const val VERSION_CODE = 269  //release management working for 13 16
 
     // Computed version name (DO NOT EDIT DIRECTLY)
     const val VERSION_NAME = "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_CODE"
@@ -122,4 +122,8 @@ object Constants {
     const val SCANNER_TAG = "SmsScanner"
     const val KEY_MULTIPART_INFO = "multipart_info"
     const val MULTIPART_DUMMY_ID_PREFIX = "multipart_"
+
+    //Protected - Now using BuildConfig values from gradle
+    const val GITHUB_SHA256_URL = BuildConfig.GITHUB_SHA256_URL
+    const val GITHUB_RELEASES_URL = BuildConfig.GITHUB_RELEASES_URL
 }

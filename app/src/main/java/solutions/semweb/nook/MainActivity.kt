@@ -2,8 +2,10 @@ package solutions.semweb.nook
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.AlarmManager
 import android.app.BackgroundServiceStartNotAllowedException
 import android.app.Dialog
+import android.app.PendingIntent
 import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -68,6 +70,7 @@ import solutions.semweb.nook.sound.SoundManagement
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.ref.WeakReference
+import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Timer
 import java.util.TimerTask
@@ -464,43 +467,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
 
-    private fun startForegroundNotification() {
-        try {
-            LogUtils.d("MainActivity", "🔔 Starting foreground notification on API ${Build.VERSION.SDK_INT}")
 
-            // Check if we have notification permission
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    == PackageManager.PERMISSION_GRANTED) {
-                    LogUtils.d("MainActivity", "🔔 Notification permission granted, starting service")
-                    try {
-                        NotificationHelper.startForegroundNotification(this)
-                    } catch (e: BackgroundServiceStartNotAllowedException) {
-                        LogUtils.e("MainActivity", "🔔 Background start not allowed, will retry")
-                        // Retry after a short delay
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            startForegroundNotification()
-                        }, 2000)
-                    }
-                } else {
-                    LogUtils.d("MainActivity", "🔔 Notification permission not granted yet")
-                }
-            } else {
-                // Android 12 and below
-                LogUtils.d("MainActivity", "🔔 Android < 13, starting service directly")
-                try {
-                    NotificationHelper.startForegroundNotification(this)
-                } catch (e: BackgroundServiceStartNotAllowedException) {
-                    LogUtils.e("MainActivity", "🔔 Background start not allowed, will retry")
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        startForegroundNotification()
-                    }, 2000)
-                }
-            }
-        } catch (e: Exception) {
-            LogUtils.e("MainActivity", "🔔 Error starting notification", e)
-        }
-    }
     /**
      * Open APK directly with package installer
      */
@@ -1442,26 +1409,28 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
     private fun Int.dpToPx(): Int = (this * resources.displayMetrics.density).toInt()
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onResume() {
         super.onResume()
         AppStateTracker.onActivityResumed(this)
         weakInstance = WeakReference(this)
         prefsInstance = prefs
+
+        // Check if we need to start foreground service
+        if (prefs.getBoolean("pending_foreground_service", false)) {
+            LogUtils.e("MAIN", "🔔 Starting pending foreground service from onResume")
+            startForegroundNotification()
+        }
+
         if (prefs.appProtectionEnabled) {
             if (this::appLockManager.isInitialized && appLockManager.isAppCurrentlyLocked()) {
                 LogUtils.e("MAIN", "🔒 App blocked in onResume, show block screen")
-
-                // Hide asap interface if visible
                 if (isAppInitialized) {
-                    // If app initialized, show block screen
                     showPasswordPromptDialog()
                 }
                 return
             }
         }
 
-        // If it is not blocked, update activity timer
         if (this::appLockManager.isInitialized) {
             appLockManager.updateLastActiveTime()
         }
@@ -1469,7 +1438,6 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         if (isUIInitialized) {
             applyScreenshotSecurity()
             updateUIStates()
-            // Check for updates periodically (once per day)
             if (this::updateChecker.isInitialized) {
                 checkForUpdates()
             }
@@ -2199,7 +2167,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
         } else if (result.isOffline) {
             // 🌐 NO INTERNET - show only red shield
-            shaStatusIcon.setImageResource(R.drawable.ic_shield_red)
+            shaStatusIcon.setImageResource(R.drawable.ic_shield_aaa)
             shaStatusIcon.visibility = View.VISIBLE
             shaVerifiedText.visibility = View.GONE
             shaTimestamp.visibility = View.GONE
@@ -2233,7 +2201,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             .setNegativeButton(getString(R.string.sha_verification_continue_risk)) { dialog, _ ->
                 dialog.dismiss()
                 // Continue at risk - show red shield but proceed
-                shaStatusIcon.setImageResource(R.drawable.ic_shield_red)
+                shaStatusIcon.setImageResource(R.drawable.ic_shield_aaa)
                 shaStatusIcon.visibility = View.VISIBLE
 
                 // Ensure all SHA elements remain clickable
@@ -2571,26 +2539,19 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                         exitButton?.setOnClickListener {
                             dialog.dismiss()
 
-                            // Get the APK file
                             val version = selectedVersion
                             val fileName = "nook-v$version.apk"
-                            val apkFile = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                getApkFileFromMediaStore(fileName)
-                            } else {
-                                File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
-                            }
 
-                            if (apkFile != null && apkFile.exists()) {
-                                // Open APK directly with system installer via SAF
-                                openApkWithInstallerViaSAF(apkFile)
-                            } else {
-                                LogUtils.e(TAG, "❌ APK file not found: $fileName")
-                                // Fallback to showing folder
-                                openDownloadsFolder()
-                                closeAppAfterDelay(killing = true, delay = 2000)
-                            }
+                            // Launch installer using AlarmManager (survives app death)
+                            launchInstallerIndependent(fileName)
+
+                            // Close NooK
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                stopForegroundService()
+                                finishAffinity()
+                                finishAndRemoveTask()
+                            }, 500)
                         }
-
 
                     } else {
                         // Download failed - just show error and cancel button
@@ -2615,7 +2576,214 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         )
     }
 
+    /**
+     * Launches APK installer independent of app lifecycle using AlarmManager
+     * Works on all Android versions 7-16+
+     */
+    private fun launchInstallerIndependent(fileName: String) {
+        try {
+            LogUtils.e(TAG, "🚀 Launching installer independent of app")
 
+            // Get the APK file
+            val apkFile = getApkFile(fileName)
+
+            if (apkFile == null || !apkFile.exists()) {
+                LogUtils.e(TAG, "❌ APK file not found: $fileName")
+                // Fallback: open Downloads folder
+                launchExplorerViaAlarm()
+                return
+            }
+
+            // Create URI based on Android version
+            val apkUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                // For Android 7+, use FileProvider
+                androidx.core.content.FileProvider.getUriForFile(
+                    this,
+                    "${packageName}.fileprovider",
+                    apkFile
+                )
+            } else {
+                // For older Android, use direct file URI
+                Uri.fromFile(apkFile)
+            }
+
+            // Create install intent
+            val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(apkUri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+                addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
+                addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+                // Try to target package installer directly
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    // On newer Android, try common package installer packages
+                    val installerPackages = arrayOf(
+                        "com.android.packageinstaller",
+                        "com.google.android.packageinstaller",
+                        "com.samsung.android.packageinstaller",
+                        "com.xiaomi.packageinstaller",
+                        "com.huawei.packageinstaller"
+                    )
+
+                    for (pkg in installerPackages) {
+                        if (packageManager.resolveActivity(
+                                Intent(Intent.ACTION_VIEW).setPackage(pkg),
+                                0
+                            ) != null) {
+                            setPackage(pkg)
+                            break
+                        }
+                    }
+                }
+            }
+
+            // Create PendingIntent that will survive app death
+            val pendingIntent = PendingIntent.getActivity(
+                this,
+                (System.currentTimeMillis() % 10000).toInt(), // Unique ID
+                installIntent,
+                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            // Use AlarmManager to launch after app dies
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    System.currentTimeMillis() + 300, // 300ms delay
+                    pendingIntent
+                )
+            } else {
+                alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    System.currentTimeMillis() + 300,
+                    pendingIntent
+                )
+            }
+
+            LogUtils.e(TAG, "✅ Installer alarm scheduled")
+
+        } catch (e: Exception) {
+            LogUtils.e(TAG, "❌ Error launching installer", e)
+            // Fallback: open Downloads folder
+            launchExplorerViaAlarm()
+        }
+    }
+
+
+    private fun launchExplorerViaAlarm() {
+        try {
+            LogUtils.e(TAG, "⏰ Launching explorer via AlarmManager (nohup style)")
+
+            // Create intent to open Downloads folder
+            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val uri = DocumentsContract.buildDocumentUri(
+                    "com.android.externalstorage.documents",
+                    "primary:Download"
+                )
+                Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "vnd.android.document/directory")
+                }
+            } else {
+                Intent(Intent.ACTION_GET_CONTENT).apply {
+                    type = "*/*"
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                }
+            }
+
+            // Critical flags for independent task
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
+
+            // Create PendingIntent that will survive app death
+            val pendingIntent = PendingIntent.getActivity(
+                this,
+                System.currentTimeMillis().toInt(), // Unique request code
+                intent,
+                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            // Get AlarmManager
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+            // Schedule to fire in 100ms (after we close the app)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    System.currentTimeMillis() + 100,
+                    pendingIntent
+                )
+            } else {
+                alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    System.currentTimeMillis() + 100,
+                    pendingIntent
+                )
+            }
+
+            LogUtils.e(TAG, "⏰ Alarm scheduled, now closing app...")
+
+            // Close NooK immediately - the alarm will fire independently
+            stopForegroundService()
+            finishAffinity()
+            finishAndRemoveTask()
+
+        } catch (e: Exception) {
+            LogUtils.e(TAG, "❌ Error scheduling explorer via alarm", e)
+
+            // Fallback to regular explorer
+            launchExplorerIndependent()
+        }
+    }
+
+    private fun launchExplorerIndependent() {
+        try {
+            // For Android 10+ - Use DocumentsContract
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val uri = DocumentsContract.buildDocumentUri(
+                    "com.android.externalstorage.documents",
+                    "primary:Download"
+                )
+
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "vnd.android.document/directory")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+                    addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
+                    addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS) // Hide from recents
+                }
+
+                startActivity(intent)
+            } else {
+                // For older Android - use ACTION_GET_CONTENT
+                val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                    type = "*/*"
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+                    addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
+                    addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+                }
+
+                startActivity(Intent.createChooser(intent, "Select file explorer"))
+            }
+
+            // Close NooK immediately - the explorer is now independent
+            Handler(Looper.getMainLooper()).postDelayed({
+                stopForegroundService()
+                finishAffinity()
+                finishAndRemoveTask()
+            }, 500)
+
+        } catch (e: Exception) {
+            LogUtils.e(TAG, "Error launching explorer", e)
+        }
+    }
     /**
      * Open Downloads folder and trigger the APK file to open with installer
      */
@@ -2675,21 +2843,40 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
     /**
-     * Get APK file from MediaStore (Android 10+)
+     * Get APK file using appropriate method for Android version
      */
-    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun getApkFile(fileName: String): File? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Android 10+ - query MediaStore
+            getApkFileFromMediaStore(fileName)
+        } else {
+            // Android 7-9 - direct file access
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            File(downloadsDir, fileName)
+        }
+    }
     private fun getApkFileFromMediaStore(fileName: String): File? {
-        val resolver = contentResolver
-        val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
-        val projection = arrayOf(MediaStore.Downloads._ID, MediaStore.Downloads.DATA)
-        val selection = "${MediaStore.Downloads.DISPLAY_NAME} = ?"
+        val projection = arrayOf(
+            MediaStore.Files.FileColumns._ID,
+            MediaStore.Files.FileColumns.DATA
+        )
+
+        val selection = "${MediaStore.Files.FileColumns.DISPLAY_NAME} = ?"
         val selectionArgs = arrayOf(fileName)
 
-        resolver.query(collection, projection, selection, selectionArgs, null)?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                val dataIndex = cursor.getColumnIndex(MediaStore.Downloads.DATA)
-                if (dataIndex != -1) {
-                    val filePath = cursor.getString(dataIndex)
+        val cursor = contentResolver.query(
+            MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            selectionArgs,
+            null
+        )
+
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val dataColumn = it.getColumnIndex(MediaStore.Files.FileColumns.DATA)
+                if (dataColumn != -1) {
+                    val filePath = it.getString(dataColumn)
                     return File(filePath)
                 }
             }
@@ -2766,39 +2953,60 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                         // Update explanation text for completion
                         explanationText?.text = getString(R.string.update_explanation_complete)
 
-                        // Exit button opens Downloads folder AND closes app
+                        // PROCEED button - opens APK directly with system installer
                         exitButton?.setOnClickListener {
                             dialog.dismiss()
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW)
-                                intent.setDataAndType(Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownloads"),
-                                    "vnd.android.document/directory")
-                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                startActivity(intent)
-                            } catch (e: Exception) {
-                                // Fallback - try to open any file explorer
-                                try {
-                                    val intent = Intent(Intent.ACTION_GET_CONTENT)
-                                    intent.type = "*/*"
-                                    intent.addCategory(Intent.CATEGORY_OPENABLE)
-                                    startActivity(Intent.createChooser(intent, "Select file explorer"))
-                                } catch (e2: Exception) {
-                                    val completeApkPath = "${getDownloadsFolderPath()}/nook-v$selectedVersion.apk"
-                                    // Last resort - show message with path
-                                    AlertDialog.Builder(this@MainActivity)
-                                        .setTitle(getString(R.string.title_manual_installation))
-                                        .setMessage(getString(R.string.installation_indication_apk_saved_in, completeApkPath))
-                                        .setPositiveButton(R.string.ok) { d, _ -> d.dismiss() }
-                                        .show()
-                                }
+
+                            // Get the APK file
+                            val version = selectedVersion
+                            val fileName = "nook-v$version.apk"
+                            val apkFile = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                getApkFileFromMediaStore(fileName)
+                            } else {
+                                File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
                             }
 
-                            // CLOSE APP
-                            Handler(Looper.getMainLooper()).postDelayed({
-                                stopForegroundService()
-                                finishAffinity()
-                                finishAndRemoveTask()
-                            }, 2000)
+                            if (apkFile != null && apkFile.exists()) {
+                                try {
+                                    // Create URI with FileProvider for Android 7+
+                                    val apkUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                        androidx.core.content.FileProvider.getUriForFile(
+                                            this@MainActivity,
+                                            "${packageName}.fileprovider",
+                                            apkFile
+                                        )
+                                    } else {
+                                        Uri.fromFile(apkFile)
+                                    }
+
+                                    // Intent to install the APK
+                                    val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                                        setDataAndType(apkUri, "application/vnd.android.package-archive")
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+
+                                    // First, launch the installer
+                                    startActivity(installIntent)
+
+                                    // Then close NooK after a brief delay
+                                    Handler(Looper.getMainLooper()).postDelayed({
+                                        stopForegroundService()
+                                        finishAffinity()
+                                        finishAndRemoveTask()
+                                    }, 1000)
+
+                                } catch (e: Exception) {
+                                    LogUtils.e(TAG, "❌ Failed to launch installer", e)
+                                    // Fallback: just open Downloads folder and close
+                                    openDownloadsFolder()
+                                    closeAppAfterDelay(killing = true, delay = 2000)
+                                }
+                            } else {
+                                LogUtils.e(TAG, "❌ APK file not found: $fileName")
+                                openDownloadsFolder()
+                                closeAppAfterDelay(killing = true, delay = 2000)
+                            }
                         }
 
 
@@ -2826,6 +3034,51 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         // Handle cancel button during download
         cancelButton.setOnClickListener {
             dialog.dismiss()
+        }
+    }
+
+
+    private fun startForegroundNotification() {
+        try {
+            LogUtils.d("MainActivity", "🔔 Starting foreground notification on API ${Build.VERSION.SDK_INT}")
+
+            // Check if app is in foreground
+            if (!AppStateTracker.isAppInForeground) {
+                LogUtils.d("MainActivity", "🔔 App in background, cannot start service directly. Will start when app resumes")
+                // Mark that we need to start service when app resumes
+                prefs.putBoolean("pending_foreground_service", true)
+                return
+            }
+
+            // Check if we have notification permission
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    == PackageManager.PERMISSION_GRANTED) {
+                    LogUtils.d("MainActivity", "🔔 Notification permission granted, starting service")
+                    try {
+                        NotificationHelper.startForegroundNotification(this)
+                        // Clear pending flag
+                        prefs.putBoolean("pending_foreground_service", false)
+                    } catch (e: BackgroundServiceStartNotAllowedException) {
+                        LogUtils.e("MainActivity", "🔔 Background start not allowed, will retry when app resumes")
+                        prefs.putBoolean("pending_foreground_service", true)
+                    }
+                } else {
+                    LogUtils.d("MainActivity", "🔔 Notification permission not granted yet")
+                }
+            } else {
+                // Android 12 and below
+                LogUtils.d("MainActivity", "🔔 Android < 13, starting service directly")
+                try {
+                    NotificationHelper.startForegroundNotification(this)
+                    prefs.putBoolean("pending_foreground_service", false)
+                } catch (e: BackgroundServiceStartNotAllowedException) {
+                    LogUtils.e("MainActivity", "🔔 Background start not allowed, will retry")
+                    prefs.putBoolean("pending_foreground_service", true)
+                }
+            }
+        } catch (e: Exception) {
+            LogUtils.e("MainActivity", "🔔 Error starting notification", e)
         }
     }
 
@@ -3001,12 +3254,42 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         }
     }
 
+    fun fetchSha256FromGitHub(uri: String): String? {
+        var connection: HttpURLConnection? = null
+        try {
+            LogUtils.d("releaseDownload", "CALLING ${Constants.GITHUB_SHA256_URL}")
+
+            val url = URL(uri)
+            connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 15000
+            connection.readTimeout = 15000
+            connection.connect()
+
+            val responseCode = connection.responseCode
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                LogUtils.e("releaseDownload", "Server returned HTTP $responseCode")
+                return null
+            }
+
+            // Read the text response exactly like we read the binary file
+            return connection.inputStream.bufferedReader().use { reader ->
+                reader.readText().trim()
+            }
+
+        } catch (e: Exception) {
+            LogUtils.e("releaseDownload", "Failed to fetch SHA256", e)
+            return null
+        } finally {
+            connection?.disconnect()
+        }
+    }
 
 
     private fun fetchAvailableVersions(): List<String> {
         return try {
-            val url = URL("https://raw.githubusercontent.com/redskate/nook/refs/heads/master/app/sha256")
-            val content = url.readText()
+            LogUtils.d("releaseDownload","CALLING "+Constants.GITHUB_SHA256_URL)
+            val content = fetchSha256FromGitHub(Constants.GITHUB_SHA256_URL)
 
             val versionPattern = Pattern.compile("v(\\d+\\.\\d+\\.\\d+\\.\\d+)")
             val matcher = versionPattern.matcher(content)

@@ -151,6 +151,18 @@ android {
             // Use the master keystore for ALL builds
             signingConfig = signingConfigs.getByName("master")
 
+            // 🔐 DEBUG URLs from environment variables
+            val debugSha256Url = System.getenv("NOOK_DEBUG_SHA256_URL") ?:
+            project.findProperty("nook.debug.sha256.url") as? String ?:
+            "http://localhost/debug/sha256"  // Safe fallback
+
+            val debugReleasesUrl = System.getenv("NOOK_DEBUG_RELEASES_URL") ?:
+            project.findProperty("nook.debug.releases.url") as? String ?:
+            "http://localhost/debug/releases/"  // Safe fallback
+
+            buildConfigField("String", "GITHUB_SHA256_URL", "\"$debugSha256Url\"")
+            buildConfigField("String", "GITHUB_RELEASES_URL", "\"$debugReleasesUrl\"")
+
             buildConfigField("String", "BUILD_TYPE", "\"debug\"")
             buildConfigField("boolean", "DEBUG", "true")
             buildConfigField("String", "VERSION_NAME", "\"${defaultConfig.versionName}\"")
@@ -159,6 +171,11 @@ android {
 
             // Add signing info to BuildConfig for debugging
             buildConfigField("String", "SIGNING_CERT", "\"${getSigningCertificateSha256(signingConfig)}\"")
+
+            // Print warning if using fallback URLs
+            if (debugSha256Url.contains("localhost") || debugReleasesUrl.contains("localhost")) {
+                println("⚠️  WARNING: Using fallback debug URLs. Set NOOK_DEBUG_SHA256_URL and NOOK_DEBUG_RELEASES_URL environment variables")
+            }
         }
 
         getByName("release") {
@@ -170,6 +187,10 @@ android {
 
             // Use the SAME master keystore for release builds
             signingConfig = signingConfigs.getByName("master")
+
+            // 🔐 RELEASE URLs (these will be injected at build time, not hardcoded in Constants.kt)
+            buildConfigField("String", "GITHUB_SHA256_URL", "\"https://raw.githubusercontent.com/redskate/nook/refs/heads/master/app/sha256\"")
+            buildConfigField("String", "GITHUB_RELEASES_URL", "\"https://github.com/redskate/nook/raw/refs/heads/master/app/releases/\"")
 
             buildConfigField("String", "BUILD_TYPE", "\"release\"")
             buildConfigField("boolean", "DEBUG", "false")
