@@ -2,6 +2,7 @@ package solutions.semweb.nook
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.BackgroundServiceStartNotAllowedException
 import android.app.Dialog
 import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
@@ -304,6 +305,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         initializeAppLinearly()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun initializeAppLinearly() {
         LogUtils.e("MAIN", "🔄 Linear initialization...")
 
@@ -471,20 +473,123 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     == PackageManager.PERMISSION_GRANTED) {
                     LogUtils.d("MainActivity", "🔔 Notification permission granted, starting service")
-                    NotificationHelper.startForegroundNotification(this)
+                    try {
+                        NotificationHelper.startForegroundNotification(this)
+                    } catch (e: BackgroundServiceStartNotAllowedException) {
+                        LogUtils.e("MainActivity", "🔔 Background start not allowed, will retry")
+                        // Retry after a short delay
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            startForegroundNotification()
+                        }, 2000)
+                    }
                 } else {
                     LogUtils.d("MainActivity", "🔔 Notification permission not granted yet")
                 }
             } else {
                 // Android 12 and below
                 LogUtils.d("MainActivity", "🔔 Android < 13, starting service directly")
-                NotificationHelper.startForegroundNotification(this)
+                try {
+                    NotificationHelper.startForegroundNotification(this)
+                } catch (e: BackgroundServiceStartNotAllowedException) {
+                    LogUtils.e("MainActivity", "🔔 Background start not allowed, will retry")
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        startForegroundNotification()
+                    }, 2000)
+                }
             }
         } catch (e: Exception) {
             LogUtils.e("MainActivity", "🔔 Error starting notification", e)
         }
     }
+    /**
+     * Open APK directly with package installer
+     */
+    private fun openApkWithInstallerViaSAF(apkFile: File) {
+        try {
+            LogUtils.e(TAG, "📲 Opening APK with installer via SAF: ${apkFile.absolutePath}")
 
+            // For Android 7+, use FileProvider
+            val apkUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                val authority = "${packageName}.fileprovider"
+                androidx.core.content.FileProvider.getUriForFile(this, authority, apkFile)
+            } else {
+                Uri.fromFile(apkFile)
+            }
+
+            // Create intent specifically for package installer
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(apkUri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+                // Try to target package installer directly on some devices
+                setPackage("com.android.packageinstaller")
+            }
+
+            // First try: with specific package
+            if (intent.resolveActivity(packageManager) != null) {
+                LogUtils.e(TAG, "✅ Package installer found (specific package)")
+                startActivity(intent)
+                closeAppAfterDelay(killing = true, delay = 1500)
+                return
+            }
+
+            // Second try: without specific package, but with chooser title
+            val genericIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(apkUri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            // Create chooser with explicit title
+            val chooser = Intent.createChooser(
+                genericIntent,
+                getString(R.string.install_apk_chooser_title)
+            ).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            if (genericIntent.resolveActivity(packageManager) != null) {
+                LogUtils.e(TAG, "✅ Package installer found (via chooser)")
+                startActivity(chooser)
+                closeAppAfterDelay(killing = true, delay = 1500)
+                return
+            }
+
+            // Fallback: try different package installer package names
+            val packageInstallerPackages = arrayOf(
+                "com.google.android.packageinstaller",  // Google/Stock
+                "com.android.packageinstaller",          // AOSP
+                "com.samsung.android.packageinstaller",  // Samsung
+                "com.xiaomi.packageinstaller",           // Xiaomi
+                "com.huawei.packageinstaller"            // Huawei
+            )
+
+            for (pkg in packageInstallerPackages) {
+                val pkgIntent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(apkUri, "application/vnd.android.package-archive")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    setPackage(pkg)
+                }
+
+                if (pkgIntent.resolveActivity(packageManager) != null) {
+                    LogUtils.e(TAG, "✅ Package installer found: $pkg")
+                    startActivity(pkgIntent)
+                    closeAppAfterDelay(killing = true, delay = 1500)
+                    return
+                }
+            }
+
+            // Last resort: show the file location
+            LogUtils.e(TAG, "❌ No package installer found")
+            showFileLocationDialog(apkFile.absolutePath)
+
+        } catch (e: Exception) {
+            LogUtils.e(TAG, "❌ Error opening APK with installer", e)
+            showFileLocationDialog(apkFile.absolutePath)
+        }
+    }
     private fun requestAllRequiredPermissionsSimple() {
         LogUtils.e("MAIN", "🔐 Simple permission request...")
 
@@ -2209,7 +2314,6 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         checkForUpdates()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun checkForUpdates(forceCheck: Boolean = false) {
         if (isCheckingUpdates.get()) return
 
@@ -2287,8 +2391,13 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                         version != currentVersion
                     }
 
+                    // ✅ REVERSE THE LIST TO SHOW NEWEST FIRST
+                    // Create a comparator instance
+                    val comparator = UpdateChecker.VersionComparator()
+                    val sortedVersionsDescending = filteredVersions.sortedWith(comparator.reversed())
+
                     // Se dopo il filtro non rimangono versioni, mostra messaggio
-                    if (filteredVersions.isEmpty()) {
+                    if (sortedVersionsDescending.isEmpty()) {
                         versionsLabel.visibility = View.GONE
                         val noVersionsText = TextView(this@MainActivity).apply {
                             text = getString(R.string.no_new_versions)
@@ -2301,8 +2410,8 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                         return@runOnUiThread
                     }
 
-                    // Create version buttons solo per le versioni filtrate
-                    filteredVersions.forEach { version ->
+                    // Create version buttons for versions in descending order (newest first)
+                    sortedVersionsDescending.forEach { version ->
                         val versionButton = Button(this@MainActivity).apply {
                             text = version
                             layoutParams = LinearLayout.LayoutParams(
@@ -2348,7 +2457,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                                 AlertDialog.Builder(this@MainActivity)
                                     .setTitle(getString(R.string.confirm_installation_title))
                                     .setMessage(message)
-                                    .setPositiveButton(getString(R.string.install)) { _, _ ->
+                                    .setPositiveButton(getString(R.string.download)) { _, _ ->
                                         // Start download immediately
                                         startVersionDownload(version, dialog, versionsContainer,
                                             versionsLabel, cancelButton, downloadProgress, progressText)
@@ -2458,25 +2567,30 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                         // Update explanation text for completion
                         explanationText?.text = getString(R.string.update_explanation_complete)
 
-                        // PROCEED button - opens Downloads folder AS IT WAS and closes app
+                        // PROCEED button - opens APK directly with system installer
                         exitButton?.setOnClickListener {
                             dialog.dismiss()
 
-                            // ✅ ORIGINAL file explorer launch - AS IT WAS
-                            openDownloadsFolder()
+                            // Get the APK file
+                            val version = selectedVersion
+                            val fileName = "nook-v$version.apk"
+                            val apkFile = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                getApkFileFromMediaStore(fileName)
+                            } else {
+                                File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+                            }
 
-                            // Wait a moment then close the app completely
-                            Handler(Looper.getMainLooper()).postDelayed({
-                                stopForegroundService()
-                                finishAffinity()
-                                finishAndRemoveTask()
-                            }, 1000)
+                            if (apkFile != null && apkFile.exists()) {
+                                // Open APK directly with system installer via SAF
+                                openApkWithInstallerViaSAF(apkFile)
+                            } else {
+                                LogUtils.e(TAG, "❌ APK file not found: $fileName")
+                                // Fallback to showing folder
+                                openDownloadsFolder()
+                                closeAppAfterDelay(killing = true, delay = 2000)
+                            }
                         }
 
-                        // CANCEL button - just dismiss dialog and stay in app
-                        cancelButton.setOnClickListener {
-                            dialog.dismiss()
-                        }
 
                     } else {
                         // Download failed - just show error and cancel button
@@ -2499,6 +2613,88 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 }
             }
         )
+    }
+
+
+    /**
+     * Open Downloads folder and trigger the APK file to open with installer
+     */
+    private fun openDownloadsFolderAndHighlightApk(apkFile: File) {
+        try {
+            LogUtils.e(TAG, "📂 Opening APK with installer: ${apkFile.absolutePath}")
+
+            // First, try to open the APK directly with the installer
+            // This works on most Android versions
+            val apkUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                // For Android 7+, we need to use FileProvider
+                val authority = "${packageName}.fileprovider"
+                androidx.core.content.FileProvider.getUriForFile(this, authority, apkFile)
+            } else {
+                Uri.fromFile(apkFile)
+            }
+
+            val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(apkUri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            // Check if there's an app that can handle this (the package installer)
+            if (installIntent.resolveActivity(packageManager) != null) {
+                LogUtils.e(TAG, "📲 Launching package installer directly")
+                startActivity(installIntent)
+                return
+            }
+
+            // If direct install doesn't work, try to open the Downloads folder
+            // AND simultaneously broadcast the APK file to open
+            LogUtils.e(TAG, "📂 Falling back to Downloads folder with file open intent")
+
+            // Open Downloads folder
+            openDownloadsFolder()
+
+            // Also create a separate intent to open the APK file
+            // This will show a "Complete action using" dialog
+            Handler(Looper.getMainLooper()).postDelayed({
+                try {
+                    val openFileIntent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(apkUri, "application/vnd.android.package-archive")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    startActivity(openFileIntent)
+                } catch (e: Exception) {
+                    LogUtils.e(TAG, "❌ Failed to open APK file", e)
+                }
+            }, 500)
+
+        } catch (e: Exception) {
+            LogUtils.e(TAG, "❌ Error in openDownloadsFolderAndHighlightApk", e)
+            openDownloadsFolder()
+        }
+    }
+
+    /**
+     * Get APK file from MediaStore (Android 10+)
+     */
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun getApkFileFromMediaStore(fileName: String): File? {
+        val resolver = contentResolver
+        val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+        val projection = arrayOf(MediaStore.Downloads._ID, MediaStore.Downloads.DATA)
+        val selection = "${MediaStore.Downloads.DISPLAY_NAME} = ?"
+        val selectionArgs = arrayOf(fileName)
+
+        resolver.query(collection, projection, selection, selectionArgs, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val dataIndex = cursor.getColumnIndex(MediaStore.Downloads.DATA)
+                if (dataIndex != -1) {
+                    val filePath = cursor.getString(dataIndex)
+                    return File(filePath)
+                }
+            }
+        }
+        return null
     }
 
     private fun proceedWithDownload(
@@ -2633,27 +2829,36 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         }
     }
 
+    /**
+     * Show dialog with APK location and instructions
+     */
     private fun showFileLocationDialog(apkPath: String) {
         AlertDialog.Builder(this)
-            .setTitle(R.string.file_location)
-            .setMessage(getString(R.string.manual_install_instructions, apkPath.toString()))
+            .setTitle(R.string.update_explanation_complete)
+            .setMessage(getString(R.string.manual_install_instructions, apkPath))
             .setPositiveButton(R.string.open_downloads_folder) { _, _ ->
                 openDownloadsFolder()
+                closeAppAfterDelay(killing = true, delay = 2000)
             }
-            .setNegativeButton(R.string.cancel, null)
+            .setNegativeButton(R.string.cancel) { _, _ ->
+                closeAppAfterDelay(killing = true, delay = 500)
+            }
             .show()
     }
 
 
     /**
-     * Open Downloads folder - FIXED for all Android versions
+     * Open Downloads folder as a separate app (not inside NooK)
      */
     private fun openDownloadsFolder() {
         try {
+            LogUtils.e(TAG, "📂 Opening Downloads folder as separate app")
+
+            // Try multiple methods to open Downloads as a separate app
+
+            // Method 1: For Android 10+ - Use ACTION_VIEW with DocumentsContract but with FLAG_ACTIVITY_NEW_TASK
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // Android 10+ - Use ACTION_OPEN_DOCUMENT to show Downloads
                 try {
-                    // Try to open Downloads using DocumentsContract
                     val uri = DocumentsContract.buildDocumentUri(
                         "com.android.externalstorage.documents",
                         "primary:Download"
@@ -2662,33 +2867,46 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                     val intent = Intent(Intent.ACTION_VIEW).apply {
                         setDataAndType(uri, "vnd.android.document/directory")
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)  // Open in new task
+                        addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+                        addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)  // Don't keep in history
                     }
 
                     if (intent.resolveActivity(packageManager) != null) {
+                        LogUtils.e(TAG, "📂 Launching DocumentsUI as separate app")
                         startActivity(intent)
-                        Toast.makeText(this, getString(R.string.click_apk_to_install), Toast.LENGTH_LONG).show()
                         return
                     }
                 } catch (e: Exception) {
                     LogUtils.e(TAG, "Error opening Downloads with DocumentsContract", e)
                 }
+            }
 
-                // Fallback: Open Downloads using MediaStore
-                try {
-                    val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-                        type = "*/*"
-                        addCategory(Intent.CATEGORY_OPENABLE)
-                        putExtra(Intent.EXTRA_LOCAL_ONLY, true)
-                    }
-                    startActivity(Intent.createChooser(intent, getString(R.string.select_file_explorer)))
-                    Toast.makeText(this, getString(R.string.find_nook_apk_in_downloads), Toast.LENGTH_LONG).show()
-                    return
-                } catch (e: Exception) {
-                    LogUtils.e(TAG, "Error opening file chooser", e)
+            // Method 2: Use ACTION_GET_CONTENT with a file explorer - this opens as separate app
+            try {
+                val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                    type = "*/*"
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)  // Open in new task
+                    addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+                    addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
                 }
-            } else {
-                // Android 9 and below - use file path
+
+                val chooser = Intent.createChooser(intent, getString(R.string.select_file_explorer)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+                }
+
+                LogUtils.e(TAG, "📂 Launching file chooser as separate app")
+                startActivity(chooser)
+                return
+
+            } catch (e: Exception) {
+                LogUtils.e(TAG, "Error opening file chooser", e)
+            }
+
+            // Method 3: For Android 9 and below
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
                 try {
                     val downloadsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                     val uri = Uri.fromFile(downloadsFolder)
@@ -2696,11 +2914,13 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                     val intent = Intent(Intent.ACTION_VIEW).apply {
                         setDataAndType(uri, "vnd.android.document/directory")
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+                        addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
                     }
 
                     if (intent.resolveActivity(packageManager) != null) {
+                        LogUtils.e(TAG, "📂 Launching file manager as separate app")
                         startActivity(intent)
-                        Toast.makeText(this, getString(R.string.click_apk_to_install), Toast.LENGTH_LONG).show()
                         return
                     }
                 } catch (e: Exception) {
@@ -2708,7 +2928,25 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 }
             }
 
-            // Last resort: Show a dialog with the file location
+            // Method 4: Try to open any file manager app directly
+            try {
+                val intent = Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_APP_FILES)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+                    setPackage("com.android.documentsui")  // Try Android's DocumentsUI
+                }
+
+                if (intent.resolveActivity(packageManager) != null) {
+                    LogUtils.e(TAG, "📂 Launching DocumentsUI directly")
+                    startActivity(intent)
+                    return
+                }
+            } catch (e: Exception) {
+                LogUtils.e(TAG, "Error launching DocumentsUI", e)
+            }
+
+            // Last resort: Show a dialog with instructions
             val version = updateChecker.getLatestVersion()
             val downloadsPath = getDownloadsFolderPath()
             val apkPath = "$downloadsPath/nook-v$version.apk"
@@ -2786,26 +3024,79 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         }
     }
 
+    /**
+     * Open APK directly with system package installer (bypassing explorer)
+     */
+    private fun openApkWithInstaller(apkFile: File) {
+        try {
+            LogUtils.e(TAG, "📲 Opening APK directly with package installer: ${apkFile.absolutePath}")
 
-    private val installApkLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        LogUtils.e(TAG, "📦 Installer returned with result: ${result.resultCode}")
-        // App will close after installer returns
-        closeAppAfterDelay()
+            // Create URI for the APK file
+            val apkUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                // For Android 7+, use FileProvider
+                val authority = "${packageName}.fileprovider"
+                androidx.core.content.FileProvider.getUriForFile(this, authority, apkFile)
+            } else {
+                // For older Android, use direct file URI
+                Uri.fromFile(apkFile)
+            }
+
+            // Create intent for package installer
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(apkUri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION) // Add this for safety
+            }
+
+            // Verify there's an app to handle this (should be package installer)
+            if (intent.resolveActivity(packageManager) != null) {
+                LogUtils.e(TAG, "✅ Package installer found, launching...")
+                startActivity(intent)
+
+                // Close app after launching installer
+                closeAppAfterDelay(killing = true, delay = 1500)
+
+            } else {
+                LogUtils.e(TAG, "❌ No package installer found")
+                // Fallback to showing the folder
+                openDownloadsFolder()
+                closeAppAfterDelay(killing = true, delay = 2000)
+            }
+
+        } catch (e: Exception) {
+            LogUtils.e(TAG, "❌ Error opening APK with installer", e)
+            // Fallback to showing the folder
+            openDownloadsFolder()
+            closeAppAfterDelay(killing = true, delay = 2000)
+        }
     }
 
-    private fun closeAppAfterDelay() {
+    private fun closeAppAfterDelay(killing: Boolean = false, delay: Long = 1000) {
         Handler(Looper.getMainLooper()).postDelayed({
             try {
-                LogUtils.e(TAG, "🛑 CLOSING APP NOW")
+                LogUtils.e(TAG, "🛑 CLOSING APP NOW (killing=$killing)")
+
+                // Always do clean shutdown first
                 stopForegroundService()
                 finishAffinity()
                 finishAndRemoveTask()
+
+                // If killing is true, force process termination after clean shutdown
+                if (killing) {
+                    LogUtils.e(TAG, "💀 FORCE KILLING PROCESS")
+                    // Small delay to let clean shutdown complete
+                    Thread.sleep(100)
+                    android.os.Process.killProcess(android.os.Process.myPid())
+                    System.exit(0)
+                }
+
             } catch (e: Exception) {
+                LogUtils.e(TAG, "❌ Error during app close", e)
+                // Ultimate fallback
                 System.exit(0)
             }
-        }, 1000)
+        }, delay)
     }
 
 

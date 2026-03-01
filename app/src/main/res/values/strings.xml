@@ -11,43 +11,16 @@
     <string name="all_contacts_mode_active">✅ Modalità TUTTI attiva: decifra da qualsiasi numero</string>
     <string name="all_contacts_removed">✅ Tutti i contatti rimossi</string>
     <string name="all_trusted_contacts_already_in_chat">Tutti i contatti fidati sono già in chat!</string>
-    <string name="allow_phone_permission_and_regenerate_password">Consenti Autorizzazione Telefono e rigenera Password automatica</string>
     <string name="alarm_manager_available_android_12">AlarmManager disponibile su Android 12+</string>
     <string name="android_12_message">Su Android 12+, per garantire che il polling funzioni correttamente, potrebbe essere necessario concedere il permesso \"Imposta allarmi precisi\" nelle impostazioni dell\'app.</string>
     <string name="android_12_title">Android 12+ e AlarmManager</string>
-    <string name="api_url_hint">https://server:port/A/Y</string>
-    <string name="api_url_title">API URL</string>
     <string name="app_footer">NooK - SMS</string>
     <string name="app_name">NooK</string>
     <string name="app_title">NooK - Secure Messenger</string>
-    <string name="associate_chat_y_user">Associa questa chat a un utente Y per ricevere messaggi</string>
-    <string name="associate_y_user">Associa Y user</string>
-    <string name="associate_y_user_dialog_title">Associa Y user a %s</string>
-    <string name="associate_y_user_title">Associa Y a %s</string>
-    <string name="association_removed">✅ Associazione rimossa</string>
-    <string name="aes_key_hex">  AES key hex: %s…</string>
-    <string name="aes_key_size">  AES key (primi 32 byte): %s byte</string>
     <string name="auto_password_generated">✅ Password automatica generata</string>
-    <string name="base32">Base32</string>
-    <string name="base64">Base64</string>
-    <string name="base128">Base128</string>
-    <string name="base256">Base256</string>
-    <string name="base512">Base512</string>
-    <string name="base1024">Base1024</string>
 
-    <string name="base32_encryption_configured">✅ Coding Base32 configurato</string>
-    <string name="base64_encryption_configured">✅ Coding Base64 configurata</string>
-    <string name="base128_encryption_configured">✅ Coding Base128 configurata</string>
-    <string name="base256_encryption_configured">✅ Coding Base256 configurato</string>
-    <string name="base512_encryption_configured">✅ Coding Base512 configurato</string>
-    <string name="base1024_encryption_configured">✅ Coding Base1024 configurato</string>
-    <string name="base2048_encryption_configured">✅ Coding Base2048 configurato</string>
-
-    <string name="readable_text">Testo leggibile</string>
-    <string name="battery_optimization_message">Per un funzionamento corretto, disattivare le ottimizzazioni batteria per l\'app</string>
     <string name="cancel">Annulla</string>
     <string name="chat">Chat</string>
-    <string name="chat_associated_with">Chat associata a: %s</string>
     <string name="chat_creation_blocked_title">Creazione Chat impossibile</string>
     <string name="chat_creation_blocked_message">Estendi a \"Tutti i contatti\" o seleziona almeno un contatto fidato prima di creare una nuova chat.</string>
     <string name="configure_settings">Configura Impostazioni</string>
@@ -58,18 +31,12 @@
     <string name="chat_name_hint">es. asterix</string>
     <string name="chat_name_title">Nome Chat (opzionale):</string>
     <string name="chat_title">Chat</string>
-    <string name="chat_type_dialog_message">Vuoi creare una chat Y o una chat SMS?</string>
-    <string name="chat_type_dialog_title">Tipo di chat per %s</string>
     <string name="chat_update_receiver_registered">Receiver chat update registrato</string>
-    <string name="chats_loaded">✅ Chat caricate: %s</string>
     <string name="chats_section_hint">Tocca una chat per aprirla, premila a lungo per opzioni, oppure creane una nuova con la lente</string>
     <string name="chats_section_title">💬 Chat</string>
     <string name="check_permissions_button">Permessi</string>
-    <string name="clear_chat">🗑️ Svuota chat</string>
     <string name="clear_chat_message">Vuoi davvero eliminare tutti i messaggi della chat con %s?</string>
     <string name="clear_chat_question">Svuotare la chat?</string>
-    <string name="configure_y_credentials">Configura credenziali Y</string>
-    <string name="configure_y_credentials_in_settings">❌ Configura le credenziali Y nelle impostazioni</string>
     <string name="contact_already_exists">Contatto già esistente</string>
     <string name="contact_already_exists_message">Il numero %1$s è già presente nei contatti fidati come: %2$s</string>
     <string name="contact_name_placeholder">Nome Contatto</string>
@@ -87,66 +54,16 @@
     <string name="create_chat_title">Crea nuova chat</string>
     <string name="create_sms_chat_button">Crea chat SMS</string>
     <string name="create_y_chat_button">Crea chat Y</string>
-    <string name="create_y_chat_button_text">Crea Chat Y</string>
-    <string name="create_y_chat_title">Crea chat Y</string>
-    <string name="debug_aes_key">🔐 DEBUG AES KEY:</string>
-    <string name="debug_algorithm">• Algoritmo: %s</string>
-    <string name="debug_alias">  • Alias: %s</string>
-    <string name="debug_base64">  Base64: %s…</string>
-    <string name="debug_base64_full">  Base64: %s</string>
-    <string name="debug_bytes">  Byte: %s byte</string>
-    <string name="debug_common_passwords_test">  Test password comuni:</string>
-    <string name="debug_curve">• Curva: %s bit</string>
-    <string name="debug_decode_error">  ❌ Errore decodifica: %s</string>
-    <string name="debug_ecdh_keys_basic_info">📋 INFORMAZIONI BASE:</string>
-    <string name="debug_encrypted_bytes">  Byte cifrati: %s byte</string>
-    <string name="debug_encrypted_data">  Dati cifrati: %s byte</string>
-    <string name="debug_format">• Formato: %s</string>
-    <string name="debug_hash">  Hash: %s</string>
-    <string name="debug_iv_hex">  IV (hex): %s</string>
-    <string name="debug_length">  Lunghezza: %s caratteri</string>
-    <string name="debug_length_full">  Lunghezza: %s caratteri</string>
-    <string name="debug_metadata">📊 METADATI:</string>
-    <string name="debug_not_valid_base64">  ❌ Non è Base64 valido</string>
-    <string name="debug_password_found">✅ TROVATA: \'%s\'</string>
-    <string name="debug_password_hash">🔑 PASSWORD (HASH):</string>
-    <string name="debug_point">• Punto: (%s, %s)</string>
-    <string name="debug_private_key_base64">🔒 CHIAVE PRIVATA (Base64):</string>
-    <string name="debug_public_key">🔑 CHIAVE PUBBLICA:</string>
-    <string name="debug_stored_data">💾 DATI MEMORIZZATI:</string>
-    <string name="debug_valid_ec_key">  ✅ Chiave EC valida:</string>
     <string name="deactivated">disattivato</string>
     <string name="decoded_message_placeholder">Messaggio decifrato</string>
     <string name="decoded_message_preview_placeholder">Testo del messaggio decifrato…</string>
-    <string name="decode_result_dialog_message">📊 RISULTATO DECIFRATURA:
-Schema: %1$s
-Successo: %2$s
-Note: %3$s
-
-📤 TESTO DECIFRATO:
-%4$s</string>
-    <string name="decode_result_dialog_title">Risultato Decifratura</string>
-    <string name="decryption_failed">❌ Decifratura fallita</string>
-    <string name="deleting_existing_keys">🗑️ Cancello chiavi esistenti</string>
     <string name="delete_chat">❌ Elimina chat</string>
     <string name="delete_chat_message">Vuoi davvero eliminare completamente la chat con %s?</string>
     <string name="delete_chat_question">Eliminare la chat?</string>
     <string name="delete_message_question">Eliminare il messaggio?</string>
-    <string name="device_number_obtained">✅ Numero dispositivo: %s</string>
-    <string name="device_phone_number_not_available">⚠️ Numero telefono dispositivo non disponibile! SIM installata??</string>
     <string name="do_you_really_want_to_delete_this_message">Vuoi davvero eliminare questo messaggio?</string>
-    <string name="ecdh_key_deleted_for">🗑️ Chiave ECDH cancellata per: %s</string>
-    <string name="ecdh_key_stored">✅ Chiave ECDH memorizzata</string>
-    <string name="ecdh_keys_generated_regenerated">✅ Chiavi ECDH %s</string>
-    <string name="ecdh_metadata_stored_password_based">📋 Metadati ECDH memorizzati (password-based)</string>
     <string name="edit_chat_name">✏️ Modifica Nome Chat</string>
-    <string name="edit_y_or_chat">🔗 Rinomina Chat</string>
-    <string name="empty_chat_name">Il nome della chat non può essere vuoto</string>
-    <string name="empty_password">❌ Password vuota</string>
-    <string name="empty_password_generated_automatically">🔐 Password vuota -> generata automaticamente: %s</string>
-    <string name="empty_y_user_id">ID Y user non può essere vuoto</string>
     <string name="enable_log_title">Abilita Log/Toasts</string>
-    <string name="encryption_error">❌ Errore cifratura</string>
     <string name="encryption_for_contact">Cifratura/Codifica per:\n%s</string>
     <string name="encoding_title">Codifica</string>
     <string name="base32_encoding_configured">Codifica Base32 configurata</string>
@@ -162,27 +79,14 @@ Note: %3$s
     <string name="encryption_title">Cifratura</string>
     <string name="error">ERRORE</string>
     <string name="error_checking_alarm">Errore check alarm</string>
-    <string name="error_getting_device_number">Errore ottenimento numero dispositivo</string>
-    <string name="error_getting_identifier">Errore ottenimento identificatore</string>
-    <string name="error_generating_ecdh_keys">❌ Errore generazione chiavi ECDH</string>
     <string name="error_generating_keys">❌ Errore: %s</string>
-    <string name="error_missing_context_for_sisa">ERRORE: Contesto mancante per SiSa</string>
-    <string name="error_opening_battery_settings">Errore apertura impostazioni batteria</string>
-    <string name="error_opening_settings">Errore apertura impostazioni</string>
     <string name="error_opening_settings_manual">Apri manualmente: Impostazioni → App → NooK → Permessi</string>
-    <string name="error_processing_key_exchange">Errore processamento scambio chiavi</string>
     <string name="error_reading_contact_data">Impossibile leggere i dati del contatto</string>
     <string name="error_reading_contacts">Errore lettura contatti</string>
     <string name="error_reading_contacts_with_message">Errore lettura contatti: %s</string>
     <string name="error_registering_receiver">Errore registrazione receiver</string>
-    <string name="error_sisa_password_not_configured">ERRORE: Password SiSa non configurata</string>
-    <string name="error_storing_ecdh">❌ Errore memorizzazione ECDH</string>
-    <string name="existing_keys_force_regeneration">⚠️ Chiavi esistenti - FORZO RIGENERAZIONE</string>
     <string name="extend_to_all_contacts_title">Estendi a tutti i contatti</string>
-    <string name="fifteen_minutes">15 minuti</string>
-    <string name="five_minutes">5 minuti</string>
     <string name="generated">generate</string>
-    <string name="generating_regenerating_ecdh_keys">🔐 GENERAZIONE/RIGENERAZIONE CHIAVI ECDH</string>
     <string name="grant_permission_button">Concedi permesso</string>
     <string name="incoming_message_placeholder">Messaggio in arrivo</string>
     <string name="invalid_password">❌ Password non valida</string>
@@ -195,60 +99,30 @@ Note: %3$s
     <string name="encoding_password_info">Password per %1$s (minimo %2$d caratteri)</string>
     <string name="encoding_password_generated">Password di codifica generata</string>
     <string name="encoding_password_too_short">Password encoding troppo corta, minimo %1$d caratteri</string>
-    <string name="toggle_password_visibility">Mostra/Nascondi Password per encoding</string>
-    <string name="generate_password">Genera una password</string>
 
     <string name="last_message_placeholder">Ultimo messaggio…</string>
-    <string name="later">Più tardi</string>
     <string name="log_status">Log %s</string>
     <string name="manage_trusted_contacts_button">Contatti fidati</string>
-    <string name="mark_as_read">✅ Segna come letto</string>
     <string name="mark_as_read_toast">Messaggi contrassegnati come letti</string>
     <string name="message">Messaggio</string>
-    <string name="message_decrypted">✅ Messaggio decifrato</string>
     <string name="message_input_hint">Scrivi un messaggio…</string>
-    <string name="message_sent_to_y">✅ Messaggio inviato al destinatario Y</string>
     <string name="message_sent">✅ Messaggio inviato per SMS</string>
     <string name="messages">Messaggi</string>
-    <string name="modify_association">Modifica associazione</string>
     <string name="new_message_from">Nuovo messaggio da: %s</string>
-    <string name="new_salt_generated_for_chat">🧂 Nuovo salt generato per chat %s</string>
-    <string name="new_sms_from">Nuovo SMS da %s</string>
-    <string name="new_y_messages_count_for_chat">%s nuovo/i messaggio/i Y per %s</string>
     <string name="no">No</string>
-    <string name="no_data_found">  ❌ Nessun dato trovato!</string>
-    <string name="no_metadata">  ❌ Nessun metadato</string>
-    <string name="no_password_hash">  ❌ Nessun hash password</string>
-    <string name="no_private_key">  ❌ Nessuna chiave privata</string>
-    <string name="no_public_key">  ❌ Nessuna chiave pubblica</string>
-    <string name="no_public_key_available">Nessuna chiave pubblica disponibile</string>
     <string name="normal_mode_on">🔔 Modalità normale ON</string>
-    <string name="notification_channels_created">✅ Canali notifiche creati: SMS e Y</string>
-    <string name="notification_permission_message">NooK ha bisogno del permesso per mostrare notifiche quando ricevi nuovi messaggi in background.</string>
-    <string name="notification_permission_title">Permesso notifiche</string>
     <string name="number_id">Numero/ID</string>
     <string name="ok">OK</string>
-    <string name="one_hundred_twenty_minutes">120 minuti</string>
-    <string name="one_minute">1 minuto</string>
     <string name="open_chat">Apri Chat</string>
     <string name="open_settings_phone_permission">🔧 Vai su: Permessi → Telefono, poi torna qui</string>
     <string name="outgoing_message_placeholder">Messaggio in uscita</string>
     <string name="password_hint">password</string>
     <string name="password_info_text">La password di relazione verrà usata per generare chiavi DH per supportare una comunicazione cifrata AES-256. Condividila in maniera SICURA</string>
-    <string name="password_provided">🔑 Password fornita: %s… (%s caratteri)</string>
     <string name="password_relationship_hint">Lascia vuoto per generazione automatica</string>
-    <string name="password_title">Password</string>
-    <string name="pbkdf2_output_size">  PBKDF2 output: %s byte</string>
     <string name="permissions_granted">✅ Permessi concessi</string>
     <string name="phone_state_permission_message">Per generare automaticamente la password SiSa (basata sui numeri telefonici), l\'app ha bisogno del permesso per leggere il numero del dispositivo.\n\nConcedi il permesso \"Telefono\" nelle impostazioni.</string>
     <string name="phone_state_permission_title">Permesso \"Telefono\" richiesto</string>
-    <string name="plain_text_no_encryption">Testo leggibile (nessuna cifratura)</string>
     <string name="plain_text_set">✅ Testo in chiaro impostato</string>
-    <string name="polling_interval_title">Intervallo Polling</string>
-    <string name="polling_interval_updated">Intervallo polling aggiornato a: %dmin</string>
-    <string name="polling_started">✅ Polling avviato</string>
-    <string name="public_key_saved_for">Chiave pubblica salvata per</string>
-    <string name="read_phone_state_permission_not_granted">⚠️ Permesso READ_PHONE_STATE non concesso</string>
     <string name="regenerated">rigenerate</string>
     <string name="regenerating_keys">🔄 Rigenerazione chiavi…</string>
     <string name="regeneration_suppressed_keys_exist">🔄 Rigenerazione chiavi soppressa - chiavi esistono gia …</string>
@@ -256,85 +130,37 @@ Note: %3$s
     <string name="relationship_password_title">Password per la cifratura:</string>
     <string name="remove">🗑️ Rimuovi</string>
     <string name="remove_all_contacts_button">🗑️ Rimuovi Tutti i Contatti</string>
-    <string name="remove_association">Rimuovi associazione</string>
-    <string name="remove_association_message">Vuoi rimuovere l\'associazione per %s?</string>
-    <string name="remove_association_question">Rimuovere associazione?</string>
     <string name="remove_button_text">Rimuovi</string>
     <string name="remove_contact_confirmation">Rimuovere tutti i contatti?</string>
     <string name="remove_contact_message">Vuoi davvero rimuovere tutti i contatti fidati?</string>
-    <string name="remove_sisa_config_message">Rimuovere la configurazione SiSa per questa chat?</string>
-    <string name="remove_sisa_config_title">Rimuovi configurazione SiSa</string>
     <string name="save">Salva</string>
-    <string name="save_settings_y_button">💾 Salva Impostazioni Y</string>
-    <string name="scheme_set">Schema impostato: %s</string>
     <string name="search_contact_for_chat_title">Seleziona contatto per chat SMS</string>
     <string name="search_contact_for_new_chat_title">Seleziona contatto per nuova chat (tutti)</string>
     <string name="search_contact_for_trusted_chat_title">Seleziona contatto (fidato) per nuova chat</string>
     <string name="search_contact_to_trust_title">Cerca contatto da fidare</string>
     <string name="search_hint">Cerca nome o numero…</string>
-    <string name="select_contact_dialog_title">Seleziona numero per: %s</string>
     <string name="select_contact_hint">Seleziona un contatto dalla rubrica del cellulare</string>
     <string name="select_from_phonebook_button">📒 Seleziona dalla Rubrica</string>
     <string name="selective_mode_active">✅ Modalità selettiva: solo contatti fidati attivi</string>
     <string name="send_button_text">➤</string>
-    <string name="send_failed">❌ Invio fallito</string>
-    <string name="send_to_y_error">❌ Errore invio a Y</string>
-    <string name="send_to_y_failed">❌ Invio a Y fallito</string>
-    <string name="set_chat_name">Imposta nome chat</string>
-    <string name="set_chat_name_message">Imposta un nome per questa chat SMS</string>
     <string name="set_encryption">🔐 Imposta cifratura/encoding</string>
-    <string name="setup_saved">✅ Configurazione salvata</string>
     <string name="settings_section_title">⚙️ Impostazioni</string>
-    <string name="settings_y_section_title">🔄 Impostazioni Y</string>
-    <string name="sixty_minutes">60 minuti</string>
     <string name="silent_mode_on">🔇 Modalità silenziosa ON</string>
     <string name="silent_mode_title">Modalità Silenziosa</string>
-    <string name="sisa_configuration_removed">✅ Configurazione SiSa rimossa</string>
-    <string name="sisa_decryption_error">ERRORE DECIFRATURA SISA</string>
     <string name="sisa_encryption_configured_auto">✅ Password automatica</string>
     <string name="sisa_encryption_configured_custom">✅ Cifratura SiSa configurata (password personalizzata)</string>
-    <string name="sisa_simple_safe">SiSa (Simple Safe)</string>
-    <string name="sms_chat_button">Chat SMS</string>
     <string name="sms_chat_created_with_contact">Chat SMS creata con %s</string>
-    <string name="sms_messages_notification_channel_description">Notifiche per nuovi messaggi SMS</string>
-    <string name="sms_messages_notification_channel_name">Messaggi SMS NooK</string>
     <string name="sms_send_error">❌ Errore invio SMS: %s</string>
     <string name="sms_send_failed">❌ Invio SMS fallito</string>
     <string name="sms_sent">✅ SMS inviato</string>
     <string name="some_permissions_denied">❌ Alcuni permessi negati</string>
-    <string name="ten_minutes">10 minuti</string>
-    <string name="thirty_minutes">30 minuti</string>
-    <string name="this_is_y_chat">Questa è una chat Y (ID: %s). Associala a un nome.</string>
-    <string name="this_y_chat_associated">Questa chat Y è associata a: %s</string>
-    <string name="three_minutes">3 minuti</string>
     <string name="trusted_contact_added">✅ Contatto fidato aggiunto</string>
     <string name="trusted_contacts_info">ℹ️ Solo i contatti fidati ATTIVI possono decifrare SMS. Le SMS per gli altri contatti vengono ignorate.</string>
     <string name="trusted_contacts_title">Contatti Fidati</string>
-    <string name="two_minutes">2 minuti</string>
     <string name="unknown">Sconosciuto</string>
-    <string name="unknown_scheme">Schema sconosciuto</string>
     <string name="unread">Non letti</string>
-    <string name="use_global_scheme">Usa schema globale (%s)</string>
-    <string name="using_device_identifier">✅ Usando identificatore dispositivo: %s</string>
-    <string name="using_phone_number">✅ Usando numero telefono: %s</string>
-    <string name="username_hint">username</string>
-    <string name="username_title">Username</string>
-    <string name="welcome">Benvenuti!</string>
-    <string name="will_use_global_scheme">✅ Userà schema globale</string>
     <string name="write_message_before_sending">Scrivi un messaggio prima di inviare</string>
-    <string name="y_chat_button">Chat Y</string>
-    <string name="y_chat_created">Chat Y creata (%s)</string>
-    <string name="y_chat_created_for_contact">Chat Y creata per %s</string>
-    <string name="y_chat_migrated">✅ Chat Y migrata da %s a %s</string>
     <string name="y_chats_do_not_support_sms_encryption">⚠️ Le chat Y non supportano cifratura SMS</string>
-    <string name="y_credentials_not_configured">️ Credenziali Y non configurate</string>
-    <string name="y_id_not_found">❌ ID Y non trovato</string>
-    <string name="y_messages_notification_channel_description">Notifiche per nuovi messaggi da Y</string>
-    <string name="y_messages_notification_channel_name">Messaggi Y</string>
-    <string name="y_polling_success">✅ Y Polling</string>
-    <string name="y_settings_saved_with_interval">✅ Impostazioni Y salvate - Intervallo: %d minuti</string>
-    <string name="y_user_id_hint">es. 1028</string>
-    <string name="y_user_id_title">ID Utente Y:</string>
     <string name="yes">Sì</string>
     <string name="yes_generate">Sì, genera</string>
     <!-- Disclaimer/Welcome Dialog -->
@@ -350,25 +176,7 @@ Note: %3$s
 
     <string name="screenshots_enabled">Screenshot abilitati</string>
 
-    <string name="clipboard_disabled_title">Appunti disabilitati</string>
-    <string name="clipboard_disabled_message">La funzione appunti è attualmente disabilitata nelle impostazioni. Vuoi andare alle impostazioni per abilitarla?</string>
-
-    <string name="screenshots_disabled_message">Gli screenshot sono attualmente disabilitati nelle impostazioni. Vuoi abilitarli?</string>
-
-    <string name="enable_screenshots">Abilita screenshot</string>
-
     <string name="allow">consenti</string>
-    <string name="go_to_settings">Vai a Impostazioni</string>
-
-    <string name="open_app_info_for_clipboard">Apri impostazioni app per attivare permesso appunti</string>
-    <string name="error_opening_app_info">Errore apertura info app</string>
-    <string name="error_opening_app_info_manual">Apri manualmente impostazioni → App → NooK → Permessi</string>
-
-    <string name="clipboard_permission_title">Impostazioni Clipboard</string>
-    <string name="clipboard_permission_message">Su Android 10+, per usare gli appunti:\n\n1. Vai a Impostazioni → App\n2. Seleziona questa app\n3. Vai a \'Impostazioni avanzate\' → \'Appunti\'\n4. Abilita l\'opzione\n\nVuoi aprire le impostazioni dell\'app ora?</string>
-
-    <string name="lineageos_screenshot_info">⚠️ Su LineageOS, screenshot sempre</string>
-    <string name="lineageos_detected">LineageOS rilevato</string>
 
     <string name="tap2open">Visita</string>
 
@@ -383,7 +191,6 @@ Note: %3$s
     <string name="keyboard_security_alert_unknown_message">La tastiera \"%1$s\" (%2$s) non è nella lista delle tastiere testate e approvate. Assicurati che sia affidabile prima di inserire dati sensibili.</string>
 
     <string name="unknown_keyboard">Tastiera Sconosciuta</string>
-    <string name="keyboard_settings_opened">Apertura impostazioni tastiera…</string>
     <string name="cannot_open_settings">Impossibile aprire le impostazioni</string>
 
 
@@ -448,15 +255,11 @@ Note: %3$s
 
 
     <string name="empty_password_error">Password vuota non valida per SiSa</string>
-    <string name="encryption_configured">Cifratura configurata</string>
 
     <!-- Se non esistono, usa questi ID o sostituisci con quelli esistenti -->
-    <string name="scheme_configured">Schema %s configurato</string>
 
     <string name="menu_copy_safe">Copia sicura</string>
-    <string name="menu_copy_clipboard">Copia negli appunti</string>
     <string name="safe_copy_success">Testo copiato in modo sicuro</string>
-    <string name="safe_copy_decoded">Testo decodificato pronto per incollare</string>
     <string name="paste">Incolla</string>
     <string name="paste_safe">Incolla sicuro</string>
     <string name="safe_copy_error">Errore decodifica testo sicuro</string>
@@ -475,50 +278,23 @@ Note: %3$s
     <string name="plaintext_warning_title">Avviso sicurezza</string>
     <string name="plaintext_warning_message">Stai per inviare un messaggio per SMS in testo normale (non cifrato e non codificato).\n\nIl carrier potrà leggere il contenuto.\n\nVuoi procedere?</string>
     <string name="send_anyway">Invia comunque</string>
-    <string name="cancel_and_encrypt">Annulla</string>
 
     <!-- ICONA PER MESSAGGI RICEVUTI -->
-    <string name="plaintext_received_indicator">⚠️</string>
 
     <!-- STRINGHE AGGIUNTIVE -->
-    <string name="choose_encryption_scheme">Scegli schema di cifratura/coding</string>
-    <string name="plaintext_message_warning">Messaggio ricevuto in chiaro (non cifrato)</string>
     <string name="plaintext_message_placeholder">Messaggio in chiaro ricevuto</string>
-    <string name="warning_icon">⚠️</string>
 
     <string name="notification_sound_title">Suono notifica EXTRA</string>
     <string name="default_sound">Default</string>
     <string name="content_description_notification_sound">Icona suono notifica</string>
-    <string name="content_description_change_sound">Cambia suono notifica</string>
     <string name="vibration_title">Vibrazione</string>
     <string name="sound_selection_dialog_title">Seleziona suono notifica</string>
-    <string name="sound_selection_dialog_message">Scegli il suono per le notifiche dei nuovi messaggi</string>
-    <string name="sound_default_option">Suono predefinito</string>
-    <string name="sound_none_option">Nessun suono</string>
-    <string name="test_sound_button">Prova suono</string>
 
     <string name="notification_channel_name">NooK Notifiche</string>
     <string name="notification_channel_description">Notifiche per messaggi SMS e Y</string>
 
-    <string name="sound_description">Il suono SMS normale suonerà normalmente</string>
-    <string name="sound_description_default">Il suono SMS normale suonerà normalmente</string>
-    <string name="sound_description_custom">Questo suono suonerà IN AGGIUNTA al suono SMS normale</string>
-
     <string name="root_detected_title">Avviso sicurezza:\naccesso root rilevato</string>
-    <string name="root_detected_message">NooK ha notato che stai usando un accesso root. Questo può compromettere la sicurezza dei tuoi dati Nook. Con accesso root:\n• Altre app potrebbero leggere i messaggi\n• La chiave di cifratura potrebbe essere estratta\n• La sicurezza del KeyStore viene ridotta\n\nRaccomandiamo di disabilitare l\'accesso root quando usi Nook per dati sensibili.</string>
 
-    <string name="root_ignore_button">Ignora</string>
-    <string name="root_understand_button">Ho capito</string>
-    <string name="root_settings_button">Impostazioni sicurezza</string>
-    <string name="root_check_again_button">Controlla di nuovo</string>
-    <string name="root_bootloader_unlocked">Bootloader sbloccato rilevato</string>
-    <string name="root_usb_debugging">Debug USB attivo</string>
-
-    <string name="root_risk_high">NooK rileva che il tuo telefono è modificato. Questo riduce la protezione dei tuoi messaggi. Altre app potrebbero leggerli.</string>
-    <string name="root_risk_medium">Il tuo telefono ha permessi speciali. NooK lavora senza di essi, ma altre app potrebbero accedere ai dati.</string>
-    <string name="root_risk_low">Alcune impostazioni avanzate sono attive. NooK continua a proteggere i tuoi messaggi.</string>
-    <string name="root_dont_show_again_button">Non mostrare più</string>
-    <string name="screenshots_disabled">Screenshots disabilitati</string>
     <string name="db_critical_error">ERRORE CRITICO DATABASE</string>
     <string name="db_critical_error_expl">Impossibile avviare l\'applicazione\n\nContatta lo sviluppatore se l\'errore persiste</string>
     <string name="exit">Esci</string>
@@ -528,33 +304,23 @@ Note: %3$s
     <string name="highrisk_root_expl">\"⚠️ Attenzione: Dispositivo rootato con bootloader sbloccato.\n\nQuesta configurazione rappresenta un rischio elevato per la sicurezza. Le applicazioni possono avere accesso completo al sistema.\n\nRaccomandazioni:\n• Usa solo applicazioni da fonti attendibili\n• Considera di rimuovere l\'accesso root per uso quotidiano\n• Mantieni il dispositivo aggiornato"</string>
     <string name="middlerisk_root_expl">\"⚠️ Attenzione: Dispositivo rootato o con bootloader sbloccato.\n\nQuesta configurazione aumenta i rischi per la sicurezza delle applicazioni.\n\nConsigli:\n• Monitora le autorizzazioni delle app\n• Usa firewall per controllare l\'accesso a internet\n• Backup regolari dei dati importanti"</string>
 
-    <string name="load_more_messages">Carica più messaggi...</string>
-    <string name="loading_messages">Caricando...</string>
+    <string name="load_more_messages">Carica più messaggi…</string>
+    <string name="loading_messages">Caricando…</string>
     <string name="no_more_messages">(Non ci sono messaggi antecedenti)</string>
 
     <!-- AGGIUNTE: Ordinamento messaggi -->
     <string name="sort_order_button">Ordinamento</string>
     <string name="sort_order_on">Ordina: ultimo messaggio in basso</string>
     <string name="sort_order_off">Ordina: ultimo messaggio in alto</string>
-    <string name="sort_order_tooltip">Ordina messaggi: ultimo in basso/in alto</string>
-    <string name="content_description_sort_order">Cambia ordinamento messaggi</string>
 
     <!-- Export -->
-    <string name="export_encrypted_success">Chat esportata e cifrata!</string>
-    <string name="export_success">Chat esportata in %s</string>
     <string name="export_failed">Errore durante l\'esportazione della chat</string>
-    <string name="export_no_password_warning">La chat verrà esportata senza cifratura. Procedere?</string>
-    <string name="export_with_password_instructions">Inserisci una password di almeno 16 caratteri per securizzare l\'esportazione, o lascia vuoto per non proteggerla.</string>
-    <string name="export_failure">Errore durante l\'esportazione della chat</string>
     <string name="export_pwhint_16chars">Password (min 16 caratteri)</string>
     <string name="export_pwgeb_16chars">GENERA PASSWORD </string>
     <string name="export_pw_procedi">PROCEDI</string>
     <string name="import_encrypted_chat">📥 Importa chat</string>
-    <string name="share_chat_export">Memorizza/condividi la Chat</string>
     <string name="export_encrypted_chat">📤 Esporta chat</string>
     <string name="export_no_messages">Nessun messaggio da esportare</string>
-    <string name="export_saved_location">File salvato:\n%s</string>
-    <string name="you_label">Tu</string>
     <string name="chatesport_errorfolder">Errore: impossibile creare cartella temporanea</string>
     <string name="chatexport_nofilescreated">Errore: impossibile creare files</string>
     <string name="chatexport_nozipscreated">Errore: impossibile creare file ZIP</string>
@@ -564,16 +330,11 @@ Note: %3$s
     <string name="app_owner_hint">Il tuo nome</string>
     <string name="chatexport_html_title">Nook Chat Esportata</string>
     <string name="disclaimer_further_permits">NooK ha bisogno inoltre dei seguenti permessi:\n\n• Contatti\n(definire contatti fidati per le chat)\n\n• SMS\n(ricevere/leggere/inviare)</string>
-    <string name="screenshots_disabled_title">Screenshots disattivati</string>
-    <string name="export_chat">Esporta chat</string>
     <string name="rescan_sms_for_this_chat">Scansione SMS di oggi per questa chat</string>
-    <string name="toast_checking_database">Verifica database…</string>
     <string name="toast_initialization_error">Errore inizializzazione: %s</string>
     <string name="toast_notification_permission_granted">Permesso notifiche concesso</string>
     <string name="toast_notifications_may_not_work">Le notifiche potrebbero non funzionare correttamente</string>
     <string name="toast_grant_permissions_later">Potrai concedere i permessi più tardi dalle impostazioni</string>
-    <string name="toast_y_settings_saved">Impostazioni Y salvate</string>
-    <string name="toast_save_error">Errore nel salvataggio</string>
     <string name="toast_screenshot_disabled">Screenshot disabilitati</string>
     <string name="toast_vibration_enabled">Vibrazione attivata</string>
     <string name="toast_vibration_disabled">Vibrazione disattivata</string>
@@ -584,8 +345,6 @@ Note: %3$s
     <string name="alert_required_permissions_title">Permessi richiesti</string>
     <string name="alert_grant">Acconsenti</string>
     <string name="alert_later">Più tardi</string>
-    <string name="alert_database_critical_error_title">ERRORE CRITICO DATABASE</string>
-    <string name="alert_database_critical_error_message">Impossibile avviare l\'applicazione. Il database è corrotto.\n\n%s</string>
     <string name="alert_contacts_permission_title">Permesso Contatti</string>
     <string name="alert_contacts_permission_message">Per associare nomi ai numeri di telefono, serve il permesso di lettura contatti.</string>
     <string name="alert_permission_receive_sms">Ricevere SMS</string>
@@ -602,18 +361,14 @@ Note: %3$s
     <string name="alert_scan_result_no_sms">Nessun SMS trovato per %s nelle ultime %d ore</string>
     <string name="load_more_with_count">Visualizza altri %d messaggi (di %d rimanenti)</string>
     <string name="load_last_with_count">Visualizza ultimi %d messaggi</string>
-    <string name="load_last_messages">Visualizza ultimi %d messaggi</string>
     <string name="no_more_messages_to_load">Tutti i messaggi visualizzati</string>
     <string name="error_renaming_chat">Errore durante la rinomina della Chat</string>
-    <string name="Number">Numero</string>
     <string name="import_explanation">Importante: Per rileggere / ridecodificare correttamente le SMS cifrate o codificate mancanti nella chat, è necessario che i parametri di cifratura e codifica di NooK non siano cambiati</string>
 
     <string name="file_not_found">File non trovato</string>
     <string name="import_invalid_file_format">Formato file non supportato. Usa .nook o .zip</string>
     <string name="import_password_required">Password richiesta per file criptato (.nook)</string>
-    <string name="import_password_too_short">Password troppo corta (minimo 16 caratteri)</string>
     <string name="import_error_temp_folder">Errore creazione cartella temporanea</string>
-    <string name="import_decryption_failed">Decriptazione fallita. Password errata?</string>
     <string name="import_decompression_failed">Decompressione ZIP fallita</string>
     <string name="import_no_json_found">File JSON non trovato nell\'archivio</string>
     <string name="import_invalid_json">File JSON non valido</string>
@@ -623,18 +378,11 @@ Note: %3$s
     <string name="import_failed">Importazione fallita</string>
     <string name="imported_chat">Chat importata</string>
     <string name="dialog_import_title">Importa chat</string>
-    <string name="dialog_import_message_password">Il file è criptato. Inserisci la password:</string>
-    <string name="dialog_import_message_no_password">Importa chat da file?</string>
-    <string name="button_cancel">Annulla</string>
-    <string name="select_file_to_import">Seleziona file da importare</string>
     <string name="select_import_file_message">Seleziona un file (.nook o .zip) da importare</string>
     <string name="confirm_password_hint">Conferma password</string>
-    <string name="password_min_length_info">La password deve avere almeno 16 caratteri</string>
     <string name="button_import">Importa chat</string>
     <string name="browse_files">Trova chat esportata</string>
     <string name="selected_file_label">File chat selezionato</string>
-    <string name="select_contact_for_import">Seleziona un contatto per importare una chat</string>
-    <string name="share_exported_file">Condividi file esportato</string>
     <string name="import_file_path_error">Errore nel cammino del file</string>
 
     <!-- Protezione APP -->
@@ -647,16 +395,12 @@ Note: %3$s
     <string name="app_protection_password_too_short">La password deve avere almeno 6 caratteri</string>
     <string name="app_protection_passwords_not_match">Le password non corrispondono</string>
     <string name="app_protection_set_success">Password di protezione impostata</string>
-    <string name="app_protection_removed">Protezione rimossa</string>
     <string name="app_protection_enter_password">Inserisci la password di sblocco</string>
-    <string name="app_protection_wrong_password">Password errata</string>
-    <string name="app_protection_enabled">Protezione APP abilitata</string>
     <string name="app_protection_disabled">Protezione APP rimossa</string>
     <string name="password">Password</string>
     <string name="confirm_password">Confirm password</string>
     <string name="set">Set</string>
     <string name="unlock">Sblocca</string>
-    <string name="app_unlocked">App sbloccata</string>
     <string name="error_generic">❌ Errore impostazione protezione</string>
     <string name="stop_retry">APP temporaneamente bloccata per motivi di sicurezza. Riprova più tardi.</string>
     <string name="owner_name">Nome proprietario</string>
@@ -664,9 +408,9 @@ Note: %3$s
     <string name="errorsavingkconfig">Errore nel salvataggio della configurazione: %s</string>
     <string name="errorwhilechatdeleting">Errore durante l\'eliminazione della chat</string>
     <string name="errorloadingmessages">Errore durante il caricamento dei messaggi</string>
-    <string name="lasthours_scan_hours">... nelle ultime %d ore</string>
-    <string name="lasthours_scan_days">\n... negli ultimi %d giorni</string>
-    <string name="smsscanduration_personalized">personalizzata ...</string>
+    <string name="lasthours_scan_hours">… nelle ultime %d ore</string>
+    <string name="lasthours_scan_days">\n… negli ultimi %d giorni</string>
+    <string name="smsscanduration_personalized">personalizzata …</string>
     <string name="personalized_sms_scanning">Scansione personalizzata per %s</string>
     <string name="howmanyhoursbackcheck">Quante ore indietro vuoi esaminare?</string>
     <string name="hourstoscansms_72">Ore da esaminare (es: 72)</string>
@@ -674,7 +418,7 @@ Note: %3$s
     <string name="insert_a_valid_number">Inserisci un numero valido</string>
     <string name="error_chat_invalid">Errore: chat non valida</string>
     <string name="scanning">⏳ Scansione in corso</string>
-    <string name="scanning_sms_from_of_last_hours">Sto scansionando gli SMS da\n\n%s\n\nnelle ultime %d ore...</string>
+    <string name="scanning_sms_from_of_last_hours">Sto scansionando gli SMS da\n\n%s\n\nnelle ultime %d ore…</string>
     <string name="errorscaningfor">Errore durante la scansione per %s: %s</string>
     <string name="scanning_completed">✅ Scansione completata</string>
     <string name="scanning_results_for">📊 Risultati per %s:</string>
@@ -698,7 +442,6 @@ Note: %3$s
     <string name="import_no_file_selected">Nessun file selezionato per l\'import</string>
     <string name="password_for_import_must_have_16">La password deve avere almeno 16 caratteri</string>
     <string name="no_safe_text_saved_found">Nessun testo sicuro trovato da incollare</string>
-    <string name="reaphonestatereq">Autorizzazione richiesta per %s</string>
     <string name="manually_approved_by_user">Approvata manualmente dall\'utente il %s</string>
     <string name="user">Utente</string>
     <string name="added_to_keyboards_whitelist">✅ Tastiera %s aggiunta alla whitelist</string>
@@ -730,13 +473,9 @@ Note: %3$s
     <string name="test_nook_notification">🔔 Test Notifika NooK</string>
     <string name="test_notification_sent">Notifica di test inviata</string>
     <string name="test_notification_error">Errore test notifica</string>
-    <string name="multipart_complete">"✓ messaggio a %d parti completo "</string>
-    <string name="multipart_receiving">Decodifico messaggio a %d parti…</string>
     <string name="notification_title">NooK attiva</string>
     <string name="notification_content">NooK - SMS in vera privacy</string>
     <string name="notification_pamphlet">Enjoy NooK - APP SICURA\nOpen Source su GitHub\n═══════════════════════\nNB: ⚠️ GOOGLE PLAY PROTECT o altri VIRUS SCANNERS potrebbero segnalare erroneamente una APP sicura come malware - cioè potenzialmente dannosa - ed invitarti a disinstallarla.</string>
-    <string name="notification_action_open">Apri APP</string>
-    <string name="notification_action_stop">Termina APP</string>
     <string name="load_last_message">Mostra l\'ultimo messaggio</string>
     <string name="simply_exit_app">Chiudi NooK</string>
     <string name="sha_verification_title">Verifica Impronta Digitale APP</string>
@@ -761,64 +500,37 @@ Note: %3$s
     <string name="latest_version">Ultima versione: %s</string>
     <string name="available_versions">Versioni disponibili:</string>
     <string name="upgrade">Aggiorna</string>
-    <string name="downloading">Download... %d%%</string>
-    <string name="download_complete">Download completato. Installazione...</string>
+    <string name="downloading">Download… %d%%</string>
     <string name="download_failed">Download fallito: %s</string>
     <string name="update_check_failed">Controllo aggiornamenti fallito</string>
     <string name="already_latest">Hai già l\'ultima versione</string>
-    <string name="checking_for_updates">Controllo aggiornamenti...</string>
+    <string name="checking_for_updates">Controllo aggiornamenti…</string>
     <string name="no_new_versions">Nessuna nuova versione disponibile</string>
-    <string name="select_version_to_upgrade">Seleziona una versione da installare</string>
-    <string name="preparing_installation">Preparazione installazione...</string>
-    <string name="installation_started">Installazione avviata...</string>
     <string name="confirm_installation_title">Conferma Installazione</string>
-    <string name="confirm_installation_message">Sei sicuro di voler installare NooK versione %s?\n\nL\'app si chiuderà e lancerà l\'archivio per l\'installazione.</string>
+    <string name="confirm_installation_message">Confermi di voler scaricare ed installare NooK versione %s?\n\nDopo averla scaricata, L\'app si chiuderà e lancerà l\'archivio per l\'installazione.</string>
     <string name="install">Installa</string>
-    <string name="restarting_app">Riavvio app...</string>
-    <string name="installing_version">Installazione della versione: %s</string>
-    <string name="downloading_version">Download della versione: %s</string>
-    <string name="app_will_close">L\'app ora si chiuderà</string>
-    <string name="launch_manually">Tocca l\'icona di NooK per avviare la nuova versione</string>
-    <string name="closing_in">Chiusura tra %d secondi...</string>
+    <string name="download">Scarica</string>
 
-    <string name="download_success_message">✅ Download completato!\nVersione %s</string>
-    <string name="file_size">Dimensione: %s</string>
-    <string name="click_install_to_update">Clicca AGGIORNA per aggiornare NooK</string>
-    <string name="install_now">AGGIORNA ORA</string>
-    <string name="apk_file_not_found">File APK non trovato. Riprova il download.</string>
-    <string name="installer_opened">Aprendo l\'installer... Aggiorna la nuova versione</string>
-    <string name="install_error">Errore installazione: %s</string>
-    <string name="download_complete_instructions">✅ Download versione %s completato!\n\nL\'app si chiuderà e verrà aperta la cartella Downloads.</string>
+    <string name="downloading_version">Download della versione: %s</string>
+
     <string name="file_location">📁 Posizione file:</string>
-    <string name="opening_downloads_in">Apro Downloads tra %d secondi...</string>
     <string name="click_apk_to_install">Ora tocca il file APK per installare la nuova versione</string>
-    <string name="manual_installation_instructions">Apri manualmente l\'app \"File\" o \"Archivio\" e vai in:\n%s\n\nTrova il file APK e toccalo per installare.</string>
-    <string name="downloads_folder_not_found">Cartella di Download non trovata</string>
     <string name="download_failed_empty_file">Download della versione fallito (vuota)</string>
     <string name="unknown_error">Errore sconosciuto</string>
-    <string name="closing_app_for_install">NooK si chiude per permettere la installazione della nuova versione</string>
-    <string name="opening_installer_in">Apro Archivio in %d secondi per installare la nuova versione</string>
-    <string name="manual_install_required">Apri manualmente %s per la installazione</string>
-    <string name="install_update_title">📲 Aggiorna NooK</string>
-    <string name="install_update_instructions">La versione %s è stata scaricata nella cartella Download.\n\n⚠️ Android potrebbe mostrare "origine sconosciuta" - questo è normale per app non provenienti dal Play Store.\n\nProcedura:\n1. Tocca "Apri APK" qui sotto\n2. Se richiesto, consenti l\'installazione dal tuo file manager\n3. Installa l\'aggiornamento</string>
-    <string name="show_file_location">Mostra posizione file</string>
     <string name="open_downloads_folder">Apri cartella Download</string>
-    <string name="remind_me_later">Ricordamelo dopo</string>
-    <string name="cannot_open_folder">Impossibile aprire la cartella</string>
-    <string name="open_apk">Apri APK</string>
     <string name="manual_install_instructions">Istruzioni per la installazione manuale di %s</string>
-    <string name="update_explanation">⚠️ Dopo il download, Android potrebbe mostrare "origine sconosciuta" - normale per app non dal Play Store.\n\nDovrai:\n• Disinstallare la app\n• Aprire il file APK\n• Consentire l\'installazione se richiesto\n• Installare l\'aggiornamento</string>
-    <string name="download_location">Posizione download:</string>
+    <string name="update_explanation">⚠️ Dopo il download, Android potrebbe mostrare "origine sconosciuta" - normale per app non dal Play Store.\n\nDovrai:\n• Aprire un file explorer\n• Toccare il file APK\n• Consentire l\'installazione se richiesto\n• Installare l\'aggiornamento</string>
+    <string name="download_location">Posizione apk nella cartella di download:</string>
     <string name="update_explanation_complete">✅ Download completato!\n\nL\'APK è stato salvato nella cartella Download.\n\nProcedi\n1. Nel file explorer tocca sul file apk per installare la app.\n2. Sblocca la installazione se necessario e segui le istruzioni.\n3. Lancia la app dalla raccolta standard</string>
     <string name="title_manual_installation">Installazione manuale</string>
-    <string name="installation_apk_saved_in">APK salvato in</string>
     <string name="installation_indication_apk_saved_in">APK salvato in %s\n\nNel file explorer (Downloads) tocca sul file per installarlo.</string>
     <string name="proceed">PROCEDI</string>
-    <string name="downgrade_warning_message">⚠️ Hai selezionato la versione %1$s che è PIÙ VECCHIA della versione corrente %2$s.\n\nSei sicuro di voler fare un downgrade?</string>
+    <string name="downgrade_warning_message">⚠️ Hai selezionato la versione %1$s che è PRECEDENTE alla versione corrente %2$s.\n\nSe procedi, dovrai prima disinstallare la versione attuale, perdendo dati e chat. Fa prima un Backup delle chat che ti interessano. Confermi di voler fare un downgrade?</string>
     <string name="select_file_explorer">Seleziona file explorer</string>
     <string name="find_nook_apk_in_downloads">Trova APK di Nook nella cartella Download</string>
     <string name="manual_installation">Installazione Manuale</string>
     <string name="error_opening_folder">Errore nell\'aprire la cartella</string>
+    <string name="install_apk_chooser_title">Installa l\'aggiornamento di NooK usando:\n</string>
 
 
 </resources>

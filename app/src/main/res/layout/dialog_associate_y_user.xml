@@ -29,7 +29,6 @@
 
     <!-- Titolo per il nome chat -->
     <TextView
-        android:id="@+id/text_chat_name_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/chat_name_title"
