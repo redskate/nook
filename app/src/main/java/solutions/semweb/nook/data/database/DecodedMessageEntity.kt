@@ -99,18 +99,26 @@ data class DecodedMessageEntity(
     )
 
     fun toDomain(context: android.content.Context): DecodedMessageDomain {
-        // Decifra i dati
-        val decryptedOriginal = AppCryptoManager.decrypt64Value(originalMessage)
-        val decryptedDecoded = AppCryptoManager.decrypt64Value(decodedMessage)
-        val decryptedSender = AppCryptoManager.decrypt64Value(sender)
-        val decryptedSenderName = senderName?.let { AppCryptoManager.decrypt64Value(it) }
+        // Decifra i dati con validazione
+        val decryptedOriginal = DecryptionValidator.safeDecryptNonNull(
+            originalMessage, "originalMessage", context, "DecodedMessage"
+        )
+        val decryptedDecoded = DecryptionValidator.safeDecryptNonNull(
+            decodedMessage, "decodedMessage", context, "DecodedMessage"
+        )
+        val decryptedSender = DecryptionValidator.safeDecryptNonNull(
+            sender, "sender", context, "DecodedMessage"
+        )
+        val decryptedSenderName = DecryptionValidator.safeDecryptOptional(
+            senderName, "senderName", context, "DecodedMessage"
+        )
         val decryptedAdditionalInfo = additionalInfo?.let {
-            AppCryptoManager.decrypt64Value(it).let { json ->
-                try {
-                    com.google.gson.Gson().fromJson(json, Map::class.java) as Map<String, Any>
-                } catch (e: Exception) {
-                    null
-                }
+            DecryptionValidator.safeDecryptOptional(it, "additionalInfo", context, "DecodedMessage")
+        }?.let { json ->
+            try {
+                com.google.gson.Gson().fromJson(json, Map::class.java) as Map<String, Any>
+            } catch (e: Exception) {
+                null
             }
         }
 

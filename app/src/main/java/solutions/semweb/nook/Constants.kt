@@ -7,8 +7,8 @@ object Constants {
     // 🔴 CENTRALIZED VERSIONING - Edit only these values
     const val VERSION_MAJOR = 1
     const val VERSION_MINOR = 3
-    const val VERSION_PATCH = 5
-    const val VERSION_CODE = 269  //release management working for 13 16
+    const val VERSION_PATCH = 6
+    const val VERSION_CODE = 271  // next: 272
 
     // Computed version name (DO NOT EDIT DIRECTLY)
     const val VERSION_NAME = "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_CODE"
@@ -20,7 +20,7 @@ object Constants {
 
     // This is the only "brand" I have:
     const val COPYRIGHT = "©2026 semweb.solutions"
-    const val VISITME = "https://semweb.solutions"
+    const val VISITME = "https://semweb.solutions/nook"
 
     // App Protection Constants
     const val KEY_APP_PROTECTION_ENABLED = "app_protection_enabled"

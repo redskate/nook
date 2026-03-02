@@ -19,13 +19,21 @@ import javax.crypto.spec.SecretKeySpec
  */
 object SisaCrypto {
 
+    const val workaround_1_char_adding_constant = "ῲῳῴῶ" // special rare symbol constant
     // =============================================
-    // 1. CIFRATURA SISA con Encoding
+    // 1. SiSa with Encoding
     // =============================================
    
     fun encryptEncMessage(context: Context, phoneNumber: String, plainText: String, encoding: String): String {
         return try {
             LogUtils.d(context, "SisaCrypto", "🔐 Sisa Encryption with $encoding Encoding for: $phoneNumber")
+
+            val textToEncrypt = if (plainText.length == 1) {
+                // Add char (invisible)
+                plainText + workaround_1_char_adding_constant
+            } else {
+                plainText
+            }
 
             // 1. Get password
             val password = PasswordManager.getStoredPassword(context, phoneNumber)
@@ -45,7 +53,7 @@ object SisaCrypto {
             val gcmSpec = GCMParameterSpec(128, iv)
             cipher.init(Cipher.ENCRYPT_MODE, aesKey, gcmSpec)
 
-            val cipherText = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
+            val cipherText = cipher.doFinal(textToEncrypt.toByteArray(Charsets.UTF_8))
             val combined = iv + cipherText
 
             // 5. Encode and add prefix
@@ -78,7 +86,7 @@ object SisaCrypto {
         return try {
             LogUtils.d(context, "SisaCrypto", "🔓 SiSa Decription for: $phoneNumber")
 
-            // 1. Verifica formato
+            // 1. Verify format
             if (!encryptedMessage.startsWith(EncryptionMapper.SISA_ENCR_PREFIX)) {
                 return DecodeResult(
                     original = encryptedMessage,
@@ -155,6 +163,9 @@ object SisaCrypto {
                     result = result.copy(notes = "SiSa decrypted with success (using timestamp -1 day)")
                 }
             }
+
+            // correct here result in case we had 1 char
+            result.decoded = result.decoded.replace(workaround_1_char_adding_constant,"")
 
             return result
 

@@ -1224,7 +1224,8 @@ class ChatActivity : AppCompatActivity() {
                 builder.setTitle(this.getString(R.string.scanning_completed))
                     .setMessage(
                                 this.getString(R.string.scanning_results_for, contactName)+"\n\n" +
-                                this.getString(R.string.scanning_new_sms_added, result.processed) + "\n" +
+                                this.getString(R.string.sms_total_scanned, result.totalScanned) + "\n" +
+                                this.getString(R.string.sms_processed, result.processed) + "\n" +
                                 this.getString(R.string.scanning_sms_decrypted, result.decrypted) + "\n" +
                                 this.getString(R.string.scanning_sms_plaintext, result.plaintext) + "\n" +
                                 this.getString(R.string.scanning_sms_present, result.alreadyExist) + "\n" +

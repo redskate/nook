@@ -87,10 +87,18 @@ data class ChatConversationEntity(
 
     // Read
     fun toDomain(context: android.content.Context): ChatConversation {
-        val decryptedPhone = AppCryptoManager.decrypt64Value(phoneNumber)
-        val decryptedContactName = contactName?.let { AppCryptoManager.decrypt64Value(it) }
-        val decryptedLastMessage = AppCryptoManager.decrypt64Value(lastMessage)
-        val decryptedEncodingPassword = AppCryptoManager.decrypt64Value(encodingPassword)
+        val decryptedPhone = DecryptionValidator.safeDecryptNonNull(
+            phoneNumber, "phoneNumber", context, "ChatConversation"
+        )
+        val decryptedContactName = DecryptionValidator.safeDecryptOptional(
+            contactName, "contactName", context, "ChatConversation"
+        )
+        val decryptedLastMessage = DecryptionValidator.safeDecryptNonNull(
+            lastMessage, "lastMessage", context, "ChatConversation"
+        )
+        val decryptedEncodingPassword = DecryptionValidator.safeDecryptNonNull(
+            encodingPassword, "encodingPassword", context, "ChatConversation"
+        )
 
         return ChatConversation(
             id = this.id,

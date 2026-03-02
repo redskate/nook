@@ -5,7 +5,7 @@ package solutions.semweb.nook.crypto
  */
 data class DecodeResult(
     val original: String,
-    val decoded: String,
+    var decoded: String,
     val scheme: String,
     val success: Boolean,
     val notes: String,

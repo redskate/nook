@@ -17,9 +17,13 @@ data class TrustedContactEntity(
     val updatedAt: Long = System.currentTimeMillis()
 ) {
     fun toDomain(context: Context): TrustedContact {
-        // Decrypt data just before you read them from DB
-        val decryptedPhone = AppCryptoManager.decrypt64Value(phoneNumber)
-        val decryptedName = AppCryptoManager.decrypt64Value(displayName)
+        // Decrypt data with validation just before reading from DB
+        val decryptedPhone = DecryptionValidator.safeDecryptNonNull(
+            phoneNumber, "phoneNumber", context, "TrustedContact"
+        )
+        val decryptedName = DecryptionValidator.safeDecryptNonNull(
+            displayName, "displayName", context, "TrustedContact"
+        )
 
         return TrustedContact(
             contactId = contactId,

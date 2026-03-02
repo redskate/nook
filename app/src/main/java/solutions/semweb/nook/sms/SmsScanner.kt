@@ -59,7 +59,8 @@ class SmsScanner(private val context: Context) {
         var errors: Int = 0,
         var alreadyExist: Int = 0,
         var skippedUntrusted: Int = 0,
-        var multipartRecovered: Int = 0,  // NEW: track multipart recoveries
+        var multipartRecovered: Int = 0,
+        var totalScanned: Int = 0,
         var error: String? = null,
         var existingMessages: List<ChatMessage> = emptyList()
     )
@@ -173,6 +174,7 @@ class SmsScanner(private val context: Context) {
                 for (sms in sortedSmsList) {
                     try {
                         if (isSmsFromTargetContact(sms, phoneNumber)) {
+                            result.totalScanned++ // track # of results from target
                             val processed = processSmsLikeReceiver(
                                 sms,
                                 scanTimeWindow = hoursBack,
@@ -212,7 +214,7 @@ class SmsScanner(private val context: Context) {
     private fun processSmsLikeReceiver(
         sms: SmsData,
         scanTimeWindow: Int,
-        result: ScanResult,
+        result: ScanResult, //structured passed for every sms
         existingMessages: List<ChatMessage>
     ): Boolean {
         var dummyDeleted = false

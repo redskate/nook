@@ -387,9 +387,9 @@
     <string name="scanning">⏳ Scanning in progress</string>
     <string name="scanning_sms_from_of_last_hours">Scanning SMS from\n\n%s\n\nin the last %d hours…</string>
     <string name="errorscaningfor">Error during scan for %s: %s</string>
-    <string name="scanning_completed">✅ Scan completed</string>
+    <string name="scanning_completed">✅ SMS Scan completed</string>
     <string name="scanning_results_for">📊 Results for %s:</string>
-    <string name="scanning_new_sms_added">✅ New SMS added: %d</string>
+    <string name="sms_processed">✅ SMS processed: %d</string>
     <string name="scanning_sms_decrypted">🔐 SMS decrypted: %d</string>
     <string name="scanning_sms_plaintext">📝 Plaintext SMS: %d</string>
     <string name="scanning_sms_present">📋 Already present: %d</string>
@@ -494,5 +494,6 @@
     <string name="manual_installation">Manual Installation</string>
     <string name="error_opening_folder">Error opening folder</string>
     <string name="install_apk_chooser_title">Install NooK update using:\n</string>
+    <string name="sms_total_scanned">📨 SMS scanned: %d</string>
 
 </resources>

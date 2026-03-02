@@ -37,7 +37,9 @@ data class AppSettingEntity(
     }
 
     fun getDecryptedValue(context: android.content.Context): String {
-        return AppCryptoManager.decrypt64Value(value)
+        return DecryptionValidator.safeDecryptNonNull(
+            value, "value", context, "AppSettingEntity"
+        )
     }
 
     fun getValueAsBoolean(context: android.content.Context): Boolean {
@@ -55,4 +57,5 @@ data class AppSettingEntity(
     fun getValueAsFloat(context: android.content.Context): Float {
         return getDecryptedValue(context).toFloatOrNull() ?: 0f
     }
+
 }

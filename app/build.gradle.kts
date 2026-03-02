@@ -71,6 +71,11 @@ android {
         versionName = versionNameString
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        ndk {
+            // Supports only physical devices
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a"))
+        }
+
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments += mapOf(

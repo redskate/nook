@@ -392,9 +392,9 @@
     <string name="scanning">⏳ Suche läuft</string>
     <string name="scanning_sms_from_of_last_hours">Durchsuche die SMS von\n\n%s\n\nin den letzten %d Stunden…</string>
     <string name="errorscaningfor">Fehler bei der Suche für %s: %s</string>
-    <string name="scanning_completed">✅ Suche abgeschlossen</string>
+    <string name="scanning_completed">✅ SMS Suche abgeschlossen</string>
     <string name="scanning_results_for">📊 Ergebnisse für %s:</string>
-    <string name="scanning_new_sms_added">✅ Neue SMS hinzugefügt: %d</string>
+    <string name="sms_processed">✅ SMS bearbeitet: %d</string>
     <string name="scanning_sms_decrypted">🔐 SMS entschlüsselt: %d</string>
     <string name="scanning_sms_plaintext">📝 SMS im Klartext: %d</string>
     <string name="scanning_sms_present">📋 Bereits vorhanden: %d</string>
@@ -499,5 +499,6 @@
     <string name="manual_installation">Manuelle Installation</string>
     <string name="error_opening_folder">Fehler beim Öffnen des Ordners</string>
     <string name="install_apk_chooser_title">NooK-Update installieren mit:\n</string>
+    <string name="sms_total_scanned">📨 SMS gescannt: %d</string>
 
 </resources>

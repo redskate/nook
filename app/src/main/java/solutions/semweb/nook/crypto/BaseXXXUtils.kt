@@ -48,58 +48,137 @@ object BaseXXXUtils {
         }
     }
 
+    private fun validateAlphabet(alphabet: String, expectedBase: Int): ValidationResult {
+        val length = alphabet.length
+
+        if (length != expectedBase) {
+            return ValidationResult(
+                isValid = false,
+                length = length,
+                missingChars = expectedBase - length
+            )
+        }
+
+        // Check for duplicates
+        val charSet = mutableSetOf<Char>()
+        val duplicates = mutableSetOf<Char>()
+
+        for (char in alphabet) {
+            if (!charSet.add(char)) {
+                duplicates.add(char)
+            }
+        }
+
+        return ValidationResult(
+            isValid = duplicates.isEmpty() && length == expectedBase,
+            length = length,
+            duplicates = duplicates,
+            missingChars = if (length < expectedBase) expectedBase - length else 0
+        )
+    }
 
     private fun getAlphabet(base: Int, scramblePasswd: String = ""): String {
         // Create a unique key for combination base+password
         val cacheKey = if (scramblePasswd.isEmpty()) {
             base
         } else {
-            // Use password hash as key part
-            val passwordHash = scramblePasswd.hashCode()
-            // Combine base and hash deterministically
+            // Use deterministic hash instead of hashCode()
+            val passwordHash = getDeterministicHash(scramblePasswd)
             base * 31 + passwordHash
         }
 
-        // Check it is already in cache
+        // Check if already in cache
         alphabetCache[cacheKey]?.let { return it }
 
-        var alphabet = when (base) {
-            32  -> alphabet.take(32)
+        // Use the CONSTANT alphabet (from top of file) to generate the base alphabet
+        val baseAlphabet = when (base) {
+            32  -> alphabet.take(32)      // 'alphabet' here is the constant
             64  -> alphabet.take(64)
             128 -> alphabet.take(128)
             256 -> alphabet.take(256)
             512 -> alphabet.take(512)
             1024 -> alphabet.take(1024)
             2048 -> alphabet.take(2048)
-            else -> generateCustomalphabet(base) // TODO
+            else -> generateCustomAlphabet(base)
         }
 
-        // Validate alphabet
-        val validation = validatealphabet(alphabet, base)
+        // Validate the alphabet
+        val validation = validateAlphabet(baseAlphabet, base)
 
         if (!validation.isValid) {
-            val errorMsg = "alphabet per base $base non valido: " +
-                    "lunghezza=${validation.length} (attesa=$base), " +
-                    "duplicati=${validation.duplicates.size}, " +
-                    "mancanti=${validation.missingChars}"
+            val errorMsg = "Alphabet for base $base is invalid: " +
+                    "length=${validation.length} (expected=$base), " +
+                    "duplicates=${validation.duplicates.size}, " +
+                    "missing=${validation.missingChars}"
             LogUtils.e(null, "BaseXXXUtils", errorMsg)
             throw IllegalArgumentException(errorMsg)
         }
 
-        // se password allora scramble
-        if (scramblePasswd.isNotEmpty())
-            alphabet = scrambleAlphabet(alphabet, scramblePasswd)
+        // Apply password scrambling if needed
+        val finalAlphabet = if (scramblePasswd.isNotEmpty()) {
+            scrambleAlphabet(baseAlphabet, scramblePasswd)
+        } else {
+            baseAlphabet
+        }
 
-        // Memorizza in cache con la chiave unica base+password
-        alphabetCache[cacheKey] = alphabet
+        // Normalize to NFC form to ensure consistent Unicode representation
+        val normalizedAlphabet = normalizeAlphabet(finalAlphabet)
+
+        // Store in cache
+        alphabetCache[cacheKey] = normalizedAlphabet
         validationStats[cacheKey] = validation
 
         LogUtils.d(null, "BaseXXXUtils",
-            "📊 alphabet base $base${if (scramblePasswd.isNotEmpty()) " (scrambled)" else ""} " +
-                    "generato e validato: lunghezza=${validation.length}, " +
-                    "duplicati=${validation.duplicates.size}")
+            "📊 Alphabet base $base${if (scramblePasswd.isNotEmpty()) " (scrambled)" else ""} " +
+                    "generated and validated: length=${validation.length}")
 
-        return alphabet
+        return normalizedAlphabet
+    }
+
+    // Helper method for deterministic hash
+    private fun getDeterministicHash(password: String): Int {
+        var hash = 0
+        for (char in password) {
+            hash = hash * 31 + char.code
+        }
+        return hash and 0x7FFFFFFF
+    }
+
+    // Helper method for Unicode normalization
+    private fun normalizeAlphabet(alphabet: String): String {
+        return java.text.Normalizer.normalize(alphabet, java.text.Normalizer.Form.NFC)
+    }
+
+    // Helper method for custom alphabet generation (fixed typo from 'generateCustomalphabet')
+    private fun generateCustomAlphabet(base: Int): String {
+        LogUtils.w(null, "BaseXXXUtils", "⚠️ Generating custom alphabet for base $base")
+
+        val builder = StringBuilder()
+        val usedChars = mutableSetOf<Char>()
+        var codePoint = 33 // Start from '!'
+
+        while (builder.length < base) {
+            if (isValidCodePoint(codePoint) && !usedChars.contains(codePoint.toChar())) {
+                builder.appendCodePoint(codePoint)
+                usedChars.add(codePoint.toChar())
+            }
+
+            codePoint++
+
+            // Safety loop
+            if (codePoint > 0x10FFFF) {
+                codePoint = 33 // Restart
+                LogUtils.w(null, "BaseXXXUtils", "↩️ Restarting alphabet generation for base $base")
+            }
+
+            // Timeout safety
+            if (builder.length > base * 2) {
+                LogUtils.e(null, "BaseXXXUtils", "⏱️ Timeout generating alphabet for base $base")
+                break
+            }
+        }
+
+        return builder.toString().take(base)
     }
 
     init {
@@ -391,10 +470,7 @@ object BaseXXXUtils {
      * Decode BASEXXX returning byte array without text validation
      * (raw version for internal use)
      */
-    fun decodeToBytes(
-        encoded: String,
-        base: Int = DEFAULT_BASE
-    ): ByteArray {
+    fun decodeToBytes(encoded: String, base: Int = DEFAULT_BASE): ByteArray {
         val alphabet = getAlphabet(base)
         val bitsPerChar = getBitsPerChar(base)
 
@@ -403,6 +479,7 @@ object BaseXXXUtils {
         val byteList = mutableListOf<Byte>()
         var buffer = 0
         var bitsInBuffer = 0
+        var totalBits = 0
 
         for (char in encoded) {
             val value = alphabet.indexOf(char)
@@ -410,6 +487,7 @@ object BaseXXXUtils {
 
             buffer = (buffer shl bitsPerChar) or value
             bitsInBuffer += bitsPerChar
+            totalBits += bitsPerChar
 
             while (bitsInBuffer >= 8) {
                 val byte = (buffer ushr (bitsInBuffer - 8)) and 0xFF
@@ -418,6 +496,12 @@ object BaseXXXUtils {
                 buffer = buffer and ((1 shl bitsInBuffer) - 1)
             }
         }
+
+        // CRITICAL: Check if we have leftover padding bits
+        // For GCM, we know the expected length from the IV (first 12 bytes)
+        // So we can trust the byteList as is
+
+        LogUtils.d(null, "BaseXXXUtils", "Decoded ${byteList.size} bytes from ${encoded.length} chars (total bits: $totalBits)")
 
         return byteList.toByteArray()
     }
@@ -621,16 +705,23 @@ object BaseXXXUtils {
          * @param base Base used for decoding
          * @return Timestamp in milliseconds UTC
          */
-        fun decodeToLong(
-            encoded: String,
-            length: Int = 5,
-            base: Int = 128
-        ): Long {
+        fun decodeToLong(encoded: String, length: Int = 5, base: Int = 128): Long {
             require(encoded.length == length) {
-                "The code for timestamp should be $length chars long, got: ${encoded.length}"
+                "Timestamp should be $length chars, got: ${encoded.length}"
+            }
+
+            LogUtils.d(null, "TimestampDebug", "Decoding timestamp: '$encoded'")
+
+            // Log each character's position in alphabet
+            val alphabet = getAlphabet(base)
+            encoded.forEachIndexed { index, char ->
+                val pos = alphabet.indexOf(char)
+                LogUtils.d(null, "TimestampDebug", "  char[$index] = '$char' (U+${char.code.toString(16)}) -> position $pos")
             }
 
             val seconds = decodeTimestamp(encoded, base)
+            LogUtils.d(null, "TimestampDebug", "  -> seconds: $seconds")
+
             return EPOCH_2026 + (seconds * GRANULARITY_MS)
         }
 

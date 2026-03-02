@@ -134,9 +134,15 @@ data class ChatMessageEntity(
     fun toDomain(context: Context): ChatMessage {
         return ChatMessage(
             id = this.id,
-            text = AppCryptoManager.decrypt64Value(text),
-            sender = AppCryptoManager.decrypt64Value(sender),
-            senderName = senderName?.let { AppCryptoManager.decrypt64Value(it) },
+            text = DecryptionValidator.safeDecryptNonNull(
+                text, "text", context, "ChatMessage"
+            ),
+            sender = DecryptionValidator.safeDecryptNonNull(
+                sender, "sender", context, "ChatMessage"
+            ),
+            senderName = DecryptionValidator.safeDecryptOptional(
+                senderName, "senderName", context, "ChatMessage"
+            ),
             timestamp = timestamp,
             trans_timestamp = trans_timestamp,
             isDecoded = isDecoded,
@@ -145,15 +151,10 @@ data class ChatMessageEntity(
             isYMessage = isYMessage,
             isSystemMessage = isSystemMessage,
             isReplaced = isReplaced,
-            metadata = metadataJson?.let { encryptedJson ->
-                try {
-                    val json = AppCryptoManager.decrypt64Value(encryptedJson)
-                    gson.fromJson(json, Map::class.java) as Map<String, String>
-                } catch (e: Exception) {
-                    null
-                }
-            }
-            // Note: updated_at is an internal field, not exposed to domain
+            metadata = DecryptionValidator.safeDecryptMap(
+                metadataJson, context, "ChatMessage"
+            )
         )
     }
+
 }
