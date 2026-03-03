@@ -508,13 +508,10 @@
     <string name="no_new_versions">Nessuna nuova versione disponibile</string>
     <string name="confirm_installation_title">Conferma Installazione</string>
     <string name="confirm_installation_message">Confermi di voler scaricare ed installare NooK versione %s?\n\nDopo averla scaricata, L\'app si chiuderà e lancerà l\'archivio per l\'installazione.</string>
-    <string name="install">Installa</string>
     <string name="download">Scarica</string>
 
     <string name="downloading_version">Download della versione: %s</string>
 
-    <string name="file_location">📁 Posizione file:</string>
-    <string name="click_apk_to_install">Ora tocca il file APK per installare la nuova versione</string>
     <string name="download_failed_empty_file">Download della versione fallito (vuota)</string>
     <string name="unknown_error">Errore sconosciuto</string>
     <string name="open_downloads_folder">Apri cartella Download</string>
@@ -522,12 +519,10 @@
     <string name="update_explanation">⚠️ Dopo il download, Android potrebbe mostrare "origine sconosciuta" - normale per app non dal Play Store.\n\nDovrai:\n• Aprire un file explorer\n• Toccare il file apk appena scaricato\n• Consentire l\'installazione se richiesto\n• Installare l\'aggiornamento</string>
     <string name="download_location">Posizione apk nella cartella di download:</string>
     <string name="update_explanation_complete">✅ Download completato!\n\nL\'APK è stato salvato nella cartella Download.\n\nProcedi\n1. Nel file explorer tocca sul file apk per installare la app.\n2. Sblocca la installazione se necessario e segui le istruzioni.\n3. Lancia la app dalla raccolta standard</string>
-    <string name="title_manual_installation">Installazione manuale</string>
     <string name="installation_indication_apk_saved_in">APK salvato in %s\n\nNel file explorer (Downloads) tocca sul file per installarlo.</string>
     <string name="proceed">PROCEDI</string>
     <string name="downgrade_warning_message">⚠️ Hai selezionato la versione %1$s che è PRECEDENTE alla versione corrente %2$s.\n\nSe procedi, dovrai prima disinstallare la versione attuale, perdendo dati e chat. Fa prima un Backup delle chat che ti interessano. Confermi di voler fare un downgrade?</string>
     <string name="select_file_explorer">Seleziona file explorer</string>
-    <string name="find_nook_apk_in_downloads">Trova APK di Nook nella cartella Download</string>
     <string name="manual_installation">Installazione Manuale</string>
     <string name="error_opening_folder">Errore nell\'aprire la cartella</string>
     <string name="install_apk_chooser_title">Installa l\'aggiornamento di NooK usando:\n</string>

@@ -248,13 +248,13 @@ class SMSReceiver : BroadcastReceiver() {
         val chatManager = ChatManager(context)
 
         // Extract timestamp (fast)
-        val (cleanMessage, transTimestamp) = extractTimestampFromPrefix(body, conversation.encoding)
+        val (messageWithoutTimestamp, transTimestamp) = extractTimestampFromPrefix(body, conversation.encoding)
 
         // Decryption (may be slow - run in IO context)
         val result = withContext(Dispatchers.IO) {
             CryptoManager.decodeMessage(
                 context,
-                cleanMessage,
+                messageWithoutTimestamp,
                 conversation.encryptionScheme,
                 conversation.encoding,
                 conversation.encodingPassword,

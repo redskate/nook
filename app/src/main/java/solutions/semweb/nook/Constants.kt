@@ -7,8 +7,8 @@ object Constants {
     // 🔴 CENTRALIZED VERSIONING - Edit only these values
     const val VERSION_MAJOR = 1
     const val VERSION_MINOR = 3
-    const val VERSION_PATCH = 6
-    const val VERSION_CODE = 271  // next: 272
+    const val VERSION_PATCH = 8
+    const val VERSION_CODE = 273  // derived aes keys cached for 1 day
 
     // Computed version name (DO NOT EDIT DIRECTLY)
     const val VERSION_NAME = "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_CODE"

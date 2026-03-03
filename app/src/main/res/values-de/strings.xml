@@ -480,22 +480,18 @@
     <string name="no_new_versions">Keine neuen Versionen verfügbar</string>
     <string name="confirm_installation_title">Installation bestätigen</string>
     <string name="confirm_installation_message">Möchten Sie NooK Version %s wirklich herunterladen und installieren?\n\nNach ihrem Download, die App wird nach der Installation automatisch geschlossen und der Archivmanager gestartet (zur eigentlichen Installation).</string>
-    <string name="install">Installieren</string>
     <string name="download">Herunterladen</string>
     <string name="downloading_version">Lade Version herunter: %s</string>
-    <string name="file_location">📁 Dateispeicherort:</string>
     <string name="download_failed_empty_file">Download der Version fehlgeschlagen (leer)</string>
     <string name="unknown_error">Unbekannter Fehler</string>
     <string name="open_downloads_folder">Download-Ordner öffnen</string>
     <string name="manual_install_instructions">Anleitung zur manuellen Installation von %s</string>
     <string name="update_explanation">⚠️ Nach dem Download zeigt Android möglicherweise \"Unbekannte Quelle\" an - normal für Apps, die nicht aus dem Play Store stammen.\n\nSie müssen:\n• APK-Datei öffnen\n• Installation erlauben, wenn gefragt\n• Update installieren</string>
     <string name="download_location">Speicherort der neuen Apk:</string>
-    <string name="update_explanation_complete">✅ Download abgeschlossen!\n\nDie APK wurde im Download-Ordner gespeichert.\n\nWeiter vorgehen:\n1. Tippen Sie im Dateiexplorer auf die APK-Datei, um die App zu installieren.\n2. Entsperren Sie die Installation falls nötig und folgen Sie den Anweisungen.\n3. Starten Sie die App aus der normalen App-Übersicht</string>    <string name="click_apk_to_install">Tippen Sie jetzt auf die APK-Datei, um die neue Version zu installieren</string>
-    <string name="title_manual_installation">Manuelle Installation</string>
+    <string name="update_explanation_complete">✅ Download abgeschlossen!\n\nDie APK wurde im Download-Ordner gespeichert.\n\nWeiter vorgehen:\n1. Tippen Sie im Dateiexplorer auf die APK-Datei, um die App zu installieren.\n2. Entsperren Sie die Installation falls nötig und folgen Sie den Anweisungen.\n3. Starten Sie die App aus der normalen App-Übersicht</string>
     <string name="installation_indication_apk_saved_in">APK gespeichert in %s\n\nTippen Sie im Datei-Explorer (Downloads) auf die Datei, um sie zu installieren.</string>
     <string name="proceed">WEITER</string>
     <string name="downgrade_warning_message">⚠️ Sie haben Version %1$s ausgewählt, die ÄLTER ist als die aktuelle Version %2$s.\n\nWenn Sie fortfahren, müssen Sie zuerst die aktuelle Version deinstallieren, wobei Daten und Chats verloren gehen. Sichern Sie zuerst die Chats, die Ihnen wichtig sind. Sind Sie sicher, dass Sie ein Downgrade durchführen möchten?</string>    <string name="select_file_explorer">Datei-Explorer auswählen</string>
-    <string name="find_nook_apk_in_downloads">NooK-APK im Download-Ordner finden</string>
     <string name="manual_installation">Manuelle Installation</string>
     <string name="error_opening_folder">Fehler beim Öffnen des Ordners</string>
     <string name="install_apk_chooser_title">NooK-Update installieren mit:\n</string>

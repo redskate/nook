@@ -62,13 +62,15 @@ object CryptoManager {
                             success = false,
                             notes = "Context null",
                         )
-                    } else {
+                    }
+                    else {
                         cleanMessage = cleanMessage.substring(Constants.SMS_OBF_PREFIX.length) // eat prefix #e
                         SisaCrypto.decryptMessage(context, phoneNumber, encoding, cleanMessage, timestamp)
+                        // result of method
                     }
                 }
+                else -> {
 
-                EncryptionMapper.ENCRYPTION_TEXT -> {
                     if (encoding != EncryptionMapper.ENCRYPTION_TEXT) {
                         val base = EncryptionMapper.extractEncodingBase(encoding)
                         val payload = message.substring(Constants.SMS_OBF_PREFIX.length) // eat prefix
@@ -93,20 +95,6 @@ object CryptoManager {
                         )
                     }
                 }
-
-                "auto" -> {
-                    LogUtils.d(null, "CryptoManager", "  Auto format detection...")
-                    autoDetectAndDecode(cleanMessage, context, encoding, phoneNumber)
-                }
-
-                else -> DecodeResult(
-                    original = message,
-                    decoded = "Unknown Schema: $scheme",
-                    scheme = scheme,
-                    encoding = encoding,
-                    success = false,
-                    notes = "Schema not supported",
-                )
             }
 
             LogUtils.d(null, "CryptoManager", "  ✅ Decoding result:")
@@ -174,22 +162,25 @@ object CryptoManager {
                 if (context == null) {
                     LogUtils.e(null, "CryptoManager", "❌ null context for SiSa - no encryption possible")
                     text
-                } else {
+                } else
                     //encryption AND coding here:
                     SisaCrypto.encryptEncMessage(context, phoneNumber, text, encoding)
                 }
-            }
-            //else encode plain text only (for those cases where encryption is outer law):
-            EncryptionMapper.ENCODING_BASE32 -> encodeWithBaseScheme( text, 32, encodingPassword, EncryptionMapper.SISA_ENCR_PREFIX, EncryptionMapper.ENCODING_BASE32 )
-            EncryptionMapper.ENCODING_BASE64 -> encodeWithBaseScheme( text, 64, encodingPassword, EncryptionMapper.SISA_ENCR_PREFIX, EncryptionMapper.ENCODING_BASE64 )
-            EncryptionMapper.ENCODING_BASE128 -> encodeWithBaseScheme( text, 128,encodingPassword,  EncryptionMapper.SISA_ENCR_PREFIX, EncryptionMapper.ENCODING_BASE128 )
-            EncryptionMapper.ENCODING_BASE256 -> encodeWithBaseScheme( text, 256, encodingPassword, EncryptionMapper.SISA_ENCR_PREFIX, EncryptionMapper.ENCODING_BASE256 )
-            EncryptionMapper.ENCODING_BASE512 -> encodeWithBaseScheme( text, 512, encodingPassword, EncryptionMapper.SISA_ENCR_PREFIX, EncryptionMapper.ENCODING_BASE512 )
-            EncryptionMapper.ENCODING_BASE1024 -> encodeWithBaseScheme( text, 1024, encodingPassword, EncryptionMapper.SISA_ENCR_PREFIX, EncryptionMapper.ENCODING_BASE1024 )
-            EncryptionMapper.ENCODING_BASE2048 -> encodeWithBaseScheme( text, 2048, encodingPassword, EncryptionMapper.SISA_ENCR_PREFIX, EncryptionMapper.ENCODING_BASE2048 )
             else -> {
-                LogUtils.d(null, "CryptoManager", "  Plaintext wished (no obfuscation)")
-                text
+                when (encoding.lowercase()) {
+                    //else encode plain text only (for those cases where encryption is outer law):
+                    EncryptionMapper.ENCODING_BASE32 -> encodeWithBaseScheme( text, 32, encodingPassword, EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE32 )
+                    EncryptionMapper.ENCODING_BASE64 -> encodeWithBaseScheme( text, 64, encodingPassword, EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE64 )
+                    EncryptionMapper.ENCODING_BASE128 -> encodeWithBaseScheme( text, 128,encodingPassword,  EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE128 )
+                    EncryptionMapper.ENCODING_BASE256 -> encodeWithBaseScheme( text, 256, encodingPassword, EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE256 )
+                    EncryptionMapper.ENCODING_BASE512 -> encodeWithBaseScheme( text, 512, encodingPassword, EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE512 )
+                    EncryptionMapper.ENCODING_BASE1024 -> encodeWithBaseScheme( text, 1024, encodingPassword, EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE1024 )
+                    EncryptionMapper.ENCODING_BASE2048 -> encodeWithBaseScheme( text, 2048, encodingPassword, EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE2048 )
+                    else-> {
+                        LogUtils.d(null, "CryptoManager", "  Plaintext wished (no obfuscation)")
+                        text
+                    }
+                }
             }
         }
 
@@ -202,7 +193,7 @@ object CryptoManager {
 
     fun encodeWithBaseScheme(text: String, base: Int, encodingPassword: String, prefix: String, logLabel: String): String {
         val encoded = BaseXXXUtils.encode(text.toByteArray(Charsets.UTF_8), base, encodingPassword)
-        val result = prefix + encoded
+        val result = if (prefix == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) encoded else prefix + encoded
         LogUtils.d(null, "CryptoManager", "  $logLabel coded: '${result.take(50)}...'")
         return result
     }

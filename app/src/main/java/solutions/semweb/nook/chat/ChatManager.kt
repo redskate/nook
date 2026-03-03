@@ -421,9 +421,10 @@ class ChatManager(val context: Context) {
         }
         else {
             // Only encoding
+            val encodedMessageWithoutCode = encryptedMessage
             val scheme4msg = Constants.SMS_OBF_PREFIX
             // Construct message with right prefix: #e<timestamp>#...
-            return "$scheme4msg$decisecondTimestamp#$encryptedMessage"
+            return "$scheme4msg$decisecondTimestamp#$encodedMessageWithoutCode"
         }
     }
 
@@ -729,11 +730,11 @@ class ChatManager(val context: Context) {
         var messageToReturn: ChatMessage? = null
 
         return try {
-            val pendingMessage = conversation?.messages?.lastOrNull {
+            val pendingMessage = conversation.messages.lastOrNull {
                 it.isOutgoing && it.text == text && !it.isSent
             }
-            val encoding = conversation?.encoding?: Constants.DEFAULT_encoding
-            val encodingPassword = conversation?.encodingPassword?: ""
+            val encoding = conversation.encoding
+            val encodingPassword = conversation.encodingPassword
             val hasEncodingPassword = encodingPassword.isNotEmpty()
 
             if (pendingMessage != null) {
@@ -742,12 +743,12 @@ class ChatManager(val context: Context) {
             } else {
                 LogUtils.w(context, "ChatManager", "⚠️ No pending message found. Create backup.")
 
-                val scheme = conversation?.encryptionScheme
-                val schemeToUse = scheme?.ifEmpty { getGlobalDecodingScheme() }
+                val scheme = conversation.encryptionScheme
+                val schemeToUse = scheme.ifEmpty { getGlobalDecodingScheme() }
                 val schemeAbbr = EncryptionMapper.extractShortForEncrScheme(schemeToUse)
 
                 val short_encoding = if (encoding == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) "" else
-                    "${EncryptionMapper.extractShortForEncoding(encoding)}"
+                    EncryptionMapper.extractShortForEncoding(encoding)
                 val msgDisplayText = encIndicatorWithText(
                     schemeAbbr,
                     schemeToUse,
@@ -776,32 +777,31 @@ class ChatManager(val context: Context) {
             // Send SMS in background
             Thread {
                 try {
-                    val scheme = conversation?.encryptionScheme
-                    val schemeToUse = if (scheme?.isNotEmpty() ?: false) scheme else getGlobalDecodingScheme()
+                    val scheme = conversation.encryptionScheme
 
                     LogUtils.d(context, "ChatManager",
-                        "✈️ Send SMS to: ${conversation.phoneNumber}  with scheme: $schemeToUse " +
+                        "✈️ Send SMS to: ${conversation.phoneNumber}  with scheme: $scheme " +
                                 "(chat: $scheme, global: ${getGlobalDecodingScheme()})")
 
-                    val encodedText = if ( schemeToUse == EncryptionMapper.ENCRYPTION_TEXT
+                    val encodedText = if ( scheme == EncryptionMapper.ENCRYPTION_TEXT
                         && encoding == EncryptionMapper.ENCRYPTION_TEXT)  {
                         text
                     } else {
 
-                        if ( schemeToUse != EncryptionMapper.ENCRYPTION_TEXT )
-                            encEncodeMessage(context, text, schemeToUse, encoding, encodingPassword, conversation.phoneNumber)
+                        if ( scheme.isNotEmpty() && scheme != EncryptionMapper.ENCRYPTION_TEXT )
+                            encEncodeMessage(context, text, scheme, encoding, encodingPassword, conversation.phoneNumber)
                         else { // just encoding
                             encodeOlnyMessage(context, text, encoding, encodingPassword, conversation.phoneNumber)
                         }
                     }
 
                     LogUtils.d(context, "ChatManager",
-                        "📤 Text endoded (${encodedText.length} chars): '${encodedText.take(30)}...'")
+                        "📤 Text encoded (${encodedText.length} chars): '${encodedText.take(30)}...'")
 
                     SMSSender.sendSms(context, conversation.phoneNumber, encodedText)
 
                     updateSmsMessageStatus(conversation.phoneNumber, text, true)
-                    LogUtils.d(context, "ChatManager", "✅ SMS sent successfully with scheme: $schemeToUse")
+                    LogUtils.d(context, "ChatManager", "✅ SMS sent successfully with scheme: $scheme")
 
                 } catch (e: Exception) {
                     LogUtils.e(context, "ChatManager", "❌ Error sending SMS", e)
@@ -829,7 +829,7 @@ class ChatManager(val context: Context) {
     private fun updateSmsMessageStatus(phoneNumber: String, text: String, isSent: Boolean) {
         Thread {
             try {
-                // Trova il messaggio più recente con questo testo che è outgoing
+                // Find most recent message with this outgoing text
                 val conversation = getConversation(phoneNumber)
                 conversation?.let { conv ->
 
@@ -863,7 +863,7 @@ class ChatManager(val context: Context) {
     }
 
     /**
-     * Ottieni lo schema di cifratura per una chat specifica (con numero normalizzato)
+     * Get encryption scheme for a specific chat (with normalized number)
      */
     fun getEncryptionSchemeForChat(phoneNumber: String): String {
         val normalizedNumber = PhoneUtils.normalizePhoneNumber(phoneNumber)
@@ -957,9 +957,9 @@ class ChatManager(val context: Context) {
                         databaseActor.saveChatConversation(conversation)
                     }
                 }
-                LogUtils.d(context, "ChatManager", "✅ ${conversations.size} conversazioni salvate")
+                LogUtils.d(context, "ChatManager", "✅ ${conversations.size} saved conversations")
             } catch (e: Exception) {
-                LogUtils.e(context, "ChatManager", "❌ Errore salvataggio conversazioni", e)
+                LogUtils.e(context, "ChatManager", "❌ Error saving conversations", e)
             }
         }.start()
     }

@@ -475,22 +475,18 @@
     <string name="no_new_versions">No new versions available</string>
     <string name="confirm_installation_title">Confirm Installation</string>
     <string name="confirm_installation_message">Are you sure you want to install NooK version %s?\n\nAfter its download the app will close and will start the Archive app (to execute the real installation).</string>
-    <string name="install">Install</string>
     <string name="download">Download</string>
     <string name="downloading_version">Downloading version: %s</string>
-    <string name="file_location">📁 File location:</string>
-    <string name="click_apk_to_install">Now tap the APK file to install the new version</string>
     <string name="download_failed_empty_file">Version download failed (empty)</string>
     <string name="unknown_error">Unknown error</string>
     <string name="open_downloads_folder">Open Downloads folder</string>
     <string name="manual_install_instructions">Instructions for manual installation of %s</string>
     <string name="update_explanation">⚠️ After download, Android may show "Unknown source" - this is normal for apps not from Play Store.\n\nYou will need to:\n• Open the APK file\n• Allow installation if prompted\n• Install the update</string>
     <string name="download_location">Apk Download location:</string>
-    <string name="update_explanation_complete">✅ Download complete!\n\nThe APK has been saved in the Download folder.\n\nProceed:\n1. In the file explorer, tap on the APK file to install the app.\n2. Unlock installation if necessary and follow the instructions.\n3. Launch the app from the standard app drawer</string>    <string name="title_manual_installation">Manual installation</string>
+    <string name="update_explanation_complete">✅ Download complete!\n\nThe APK has been saved in the Download folder.\n\nProceed:\n1. In the file explorer, tap on the APK file to install the app.\n2. Unlock installation if necessary and follow the instructions.\n3. Launch the app from the standard app drawer</string>
     <string name="installation_indication_apk_saved_in">APK saved in %s\n\nIn the file explorer (Downloads) tap the file to install it.</string>
     <string name="proceed">PROCEED</string>
     <string name="downgrade_warning_message">⚠️ You have selected version %1$s which is OLDER than the current version %2$s.\n\nIf you proceed, you will first need to uninstall the current version, losing data and chats. Please back up any chats you care about first. Are you sure you want to downgrade?</string>    <string name="select_file_explorer">Select file explorer</string>
-    <string name="find_nook_apk_in_downloads">Find nook APK in Downloads folder</string>
     <string name="manual_installation">Manual Installation</string>
     <string name="error_opening_folder">Error opening folder</string>
     <string name="install_apk_chooser_title">Install NooK update using:\n</string>

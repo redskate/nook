@@ -1,6 +1,7 @@
 package solutions.semweb.nook.crypto
 
 import android.content.Context
+import android.os.Build
 import solutions.semweb.nook.LogUtils
 import solutions.semweb.nook.crypto.EncryptionMapper.extractEncodingBase
 import java.security.SecureRandom
@@ -9,21 +10,123 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
 import javax.crypto.Cipher
+import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * Gestione della crittografia SiSa
+ * Gestione della crittografia SiSa con caching delle chiavi in KeyStore
  */
 object SisaCrypto {
 
     const val workaround_1_char_adding_constant = "ῲῳῴῶ" // special rare symbol constant
+
     // =============================================
-    // 1. SiSa with Encoding
+    // 1. KEY DERIVATION AND CACHING
     // =============================================
-   
+
+    /**
+     * Get or create an AES key for a specific phone number and date
+     * Uses KeyStore cache if available, otherwise derives new key
+     */
+    private fun getOrCreateKeyForDate(
+        context: Context,
+        phoneNumber: String,
+        password: String,
+        dateStr: String,
+        timestamp: Long
+    ): SecretKey? {
+        // 1. Try to get from cache first (KeyStore only, no memory)
+        var key = SisaKeyCache.getCachedKey(context, phoneNumber, dateStr)
+
+        if (key != null) {
+            LogUtils.d(context, "SisaCrypto", "✅ Using cached KeyStore key for $phoneNumber on $dateStr")
+            return key
+        }
+
+        // 2. If not in cache, derive new key
+        LogUtils.d(context, "SisaCrypto", "🔑 Deriving new key for $phoneNumber on $dateStr")
+        key = deriveAesKeyFromPassword(context, password, timestamp)
+
+        if (key != null) {
+            // 3. Store in cache for future use
+            SisaKeyCache.cacheKey(context, phoneNumber, dateStr, key)
+
+            // 4. Clean up previous day's key (to prevent KeyStore bombing)
+            cleanupPreviousDayKey(context, phoneNumber, dateStr)
+
+            LogUtils.d(context, "SisaCrypto", "✅ New key derived and cached for $phoneNumber on $dateStr")
+        }
+
+        return key
+    }
+
+    /**
+     * Clean up the key from the previous day to prevent KeyStore bombing
+     */
+    private fun cleanupPreviousDayKey(context: Context, phoneNumber: String, currentDateStr: String) {
+        try {
+            // Parse current date
+            val dateFormat = SimpleDateFormat("yyyyMMdd", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+            val currentDate = dateFormat.parse(currentDateStr) ?: return
+
+            // Calculate previous day
+            val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+            calendar.time = currentDate
+            calendar.add(Calendar.DAY_OF_MONTH, -1)
+            val previousDateStr = dateFormat.format(calendar.time)
+
+            // For Android 6+, we can try to delete directly
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val keystoreAlias = generateKeystoreAlias(phoneNumber, previousDateStr)
+
+                val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore")
+                keyStore.load(null)
+
+                if (keyStore.containsAlias(keystoreAlias)) {
+                    keyStore.deleteEntry(keystoreAlias)
+                    LogUtils.d(context, "SisaCrypto", "🗑️ Cleaned up previous day key: $previousDateStr")
+                }
+            }
+
+            // Also clear from SisaKeyCache's internal structures
+            // Note: SisaKeyCache only uses memory cache temporarily, but we should also clear its references
+            // Since SisaKeyCache is an object, we can access its internal map via reflection or add a method
+            // For now, we rely on KeyStore deletion and SisaKeyCache's expiration mechanism
+        } catch (e: Exception) {
+            LogUtils.e(context, "SisaCrypto", "⚠️ Error cleaning up previous day key", e)
+        }
+    }
+
+    /**
+     * Generate a stable Keystore alias (mirroring SisaKeyCache's logic)
+     */
+    private fun generateKeystoreAlias(phoneNumber: String, dateStr: String): String {
+        val phoneHash = hashString(phoneNumber)
+        return "sisa_key_${phoneHash}_${dateStr}"
+    }
+
+    /**
+     * Generate a stable hash string (mirroring SisaKeyCache's logic)
+     */
+    private fun hashString(input: String): String {
+        return try {
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            val hash = digest.digest(input.toByteArray())
+            hash.joinToString("") { "%02x".format(it) }.take(16)
+        } catch (e: Exception) {
+            String.format("%016x", input.hashCode().toLong() and 0xFFFFFFFFFFFFFFF)
+        }
+    }
+
+    // =============================================
+    // 2. SISA ENCRYPTION WITH CACHING
+    // =============================================
+
     fun encryptEncMessage(context: Context, phoneNumber: String, plainText: String, encoding: String): String {
         return try {
             LogUtils.d(context, "SisaCrypto", "🔐 Sisa Encryption with $encoding Encoding for: $phoneNumber")
@@ -42,13 +145,21 @@ object SisaCrypto {
                 return plainText
             }
 
-            // 2. Generate IV ramdomly
+            // 2. Get current date for key derivation
+            val timestamp = System.currentTimeMillis()
+            val dateStr = getDateString(timestamp)
+
+            // 3. Get or create key for this date (uses cache)
+            val aesKey = getOrCreateKeyForDate(context, phoneNumber, password, dateStr, timestamp)
+            if (aesKey == null) {
+                LogUtils.e(context, "SisaCrypto", "❌ Failed to get/create encryption key")
+                return plainText
+            }
+
+            // 4. Generate IV randomly
             val iv = ByteArray(12).also { SecureRandom().nextBytes(it) }
 
-            // 3. Derive AES key
-            val aesKey = deriveAesKeyFromPassword(context, password)
-
-            // 4. Encrypt with AES-GCM
+            // 5. Encrypt with AES-GCM
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             val gcmSpec = GCMParameterSpec(128, iv)
             cipher.init(Cipher.ENCRYPT_MODE, aesKey, gcmSpec)
@@ -56,13 +167,13 @@ object SisaCrypto {
             val cipherText = cipher.doFinal(textToEncrypt.toByteArray(Charsets.UTF_8))
             val combined = iv + cipherText
 
-            // 5. Encode and add prefix
-            if (encoding == EncryptionMapper.ENCRYPTION_TEXT)
+            // 6. Encode and add prefix
+            if (encoding == EncryptionMapper.ENCRYPTION_TEXT) {
                 // no encoding specified (dangerous...)
                 "${EncryptionMapper.SISA_ENCR_PREFIX}$combined"
-            else {
+            } else {
                 val base = extractEncodingBase(encoding)
-                val encodedResult = BaseXXXUtils.encode(combined , base)
+                val encodedResult = BaseXXXUtils.encode(combined, base)
                 "${EncryptionMapper.SISA_ENCR_PREFIX}$encodedResult"
             }
         } catch (e: Exception) {
@@ -71,20 +182,16 @@ object SisaCrypto {
         }
     }
 
-
     /**
-     * Decrypts the timestamp (long)
-     * tries with iv date of today and of yesterday
+     * Decrypts the message trying current day and previous day
      */
-
     fun decryptMessage(context: Context,
                        phoneNumber: String,
                        encoding: String,
-                       encryptedMessage:
-                       String,
+                       encryptedMessage: String,
                        timestamp: Long = 0): DecodeResult {
         return try {
-            LogUtils.d(context, "SisaCrypto", "🔓 SiSa Decription for: $phoneNumber")
+            LogUtils.d(context, "SisaCrypto", "🔓 SiSa Decryption for: $phoneNumber")
 
             // 1. Verify format
             if (!encryptedMessage.startsWith(EncryptionMapper.SISA_ENCR_PREFIX)) {
@@ -97,15 +204,15 @@ object SisaCrypto {
                     notes = "Not identified as SiSa",
                 )
             }
-            // Encryption
-            // 2. Extract payload according to chat
+
+            // 2. Extract payload
             val payload = encryptedMessage.removePrefix(EncryptionMapper.SISA_ENCR_PREFIX).trim()
             val base = extractEncodingBase(encoding)
 
             val combined = try {
-                if (encoding == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) // no encoding specified (but encryption?)
+                if (encoding == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) {
                     payload.toByteArray()
-                else {
+                } else {
                     BaseXXXUtils.decodeToBytes(payload, base)
                 }
             } catch (e: Exception) {
@@ -120,23 +227,23 @@ object SisaCrypto {
                 )
             }
 
-            val grenze = 12
-            if (combined.size < grenze) {
+            val ivSize = 12
+            if (combined.size < ivSize) {
                 return DecodeResult(
                     original = encryptedMessage,
                     decoded = encryptedMessage,
                     scheme = EncryptionMapper.ENCRYPTION_TEXT,
                     encoding = encoding,
                     success = false,
-                    notes = "Data too short (${combined.size} byte, min $grenze)",
+                    notes = "Data too short (${combined.size} byte, min $ivSize)",
                 )
             }
 
             // 3. Extract IV and ciphertext
-            val iv = combined.copyOfRange(0, grenze)
-            val ciphertext = combined.copyOfRange(grenze, combined.size)
+            val iv = combined.copyOfRange(0, ivSize)
+            val ciphertext = combined.copyOfRange(ivSize, combined.size)
 
-            // 4. Get used encryption password
+            // 4. Get password
             val password = PasswordManager.getStoredPassword(context, phoneNumber)
             if (password.isEmpty()) {
                 return DecodeResult(
@@ -149,23 +256,36 @@ object SisaCrypto {
                 )
             }
 
-            // 5. Try decryption with delivered timestamp (first try)
-            var result = tryDecryptionWithTimestamp(context, password, ciphertext, iv, timestamp, encoding, encryptedMessage)
+            // 5. Try decryption with provided timestamp (or current time)
+            val decryptionTimestamp = if (timestamp > 0) timestamp else System.currentTimeMillis()
 
-            // 6. Try again with the day before timestamp
-            if (!result.success && timestamp > 0) {
-                val oneDayInMillis = 24 * 60 * 60 * 1000L
-                val previousDayTimestamp = timestamp - oneDayInMillis
-                LogUtils.d(context, "SisaCrypto", "🔄 First decryption try failed, retry with timestamp -1 day: $previousDayTimestamp")
+            // Try current day first
+            var result = tryDecryptionWithDate(
+                context, phoneNumber, password, ciphertext, iv,
+                decryptionTimestamp, encoding, encryptedMessage
+            )
 
-                result = tryDecryptionWithTimestamp(context, password, ciphertext, iv, previousDayTimestamp, encoding, encryptedMessage)
+            // 6. If failed, try previous day
+            if (!result.success) {
+                val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+                calendar.timeInMillis = decryptionTimestamp
+                calendar.add(Calendar.DAY_OF_MONTH, -1)
+                val previousDayTimestamp = calendar.timeInMillis
+
+                LogUtils.d(context, "SisaCrypto", "🔄 Current day failed, trying previous day")
+
+                result = tryDecryptionWithDate(
+                    context, phoneNumber, password, ciphertext, iv,
+                    previousDayTimestamp, encoding, encryptedMessage
+                )
+
                 if (result.success) {
-                    result = result.copy(notes = "SiSa decrypted with success (using timestamp -1 day)")
+                    result = result.copy(notes = "SiSa decrypted with previous day's key")
                 }
             }
 
-            // correct here result in case we had 1 char
-            result.decoded = result.decoded.replace(workaround_1_char_adding_constant,"")
+            // Remove workaround character if present
+            result.decoded = result.decoded.replace(workaround_1_char_adding_constant, "")
 
             return result
 
@@ -182,8 +302,12 @@ object SisaCrypto {
         }
     }
 
-    private fun tryDecryptionWithTimestamp(
+    /**
+     * Try decryption with a specific date
+     */
+    private fun tryDecryptionWithDate(
         context: Context,
+        phoneNumber: String,
         password: String,
         ciphertext: ByteArray,
         iv: ByteArray,
@@ -192,14 +316,27 @@ object SisaCrypto {
         encryptedMessage: String
     ): DecodeResult {
         return try {
-            // Derive AES key using specified timestamp
-            val aesKey = deriveAesKeyFromPassword(context, password, timestamp)
+            val dateStr = getDateString(timestamp)
+
+            // Get key for this date (from cache or derive)
+            val aesKey = getOrCreateKeyForDate(context, phoneNumber, password, dateStr, timestamp)
+
+            if (aesKey == null) {
+                return DecodeResult(
+                    original = encryptedMessage,
+                    decoded = "[ERROR: Failed to get decryption key]",
+                    scheme = EncryptionMapper.ENCRYPTION_SISA,
+                    encoding = encoding,
+                    success = false,
+                    notes = "Key unavailable for date $dateStr",
+                )
+            }
 
             // Decrypt
             val plaintextBytes = decryptWithRetries(ciphertext, aesKey, iv)
             val plaintext = String(plaintextBytes, Charsets.UTF_8)
 
-            // Verify that the decoded text be text
+            // Verify that the decoded text is valid
             if (isValidPlaintext(plaintext)) {
                 DecodeResult(
                     original = encryptedMessage,
@@ -207,98 +344,95 @@ object SisaCrypto {
                     scheme = EncryptionMapper.ENCRYPTION_SISA,
                     encoding = encoding,
                     success = true,
-                    notes = "SiSa decryption successful",
+                    notes = "SiSa decryption successful with date $dateStr",
                 )
             } else {
-                LogUtils.d(context, "SisaCrypto", "⚠️ SiSa  Decryption with timestamp $timestamp has produced an invalid text")
+                LogUtils.d(context, "SisaCrypto", "⚠️ Decryption with date $dateStr produced invalid text")
                 DecodeResult(
                     original = encryptedMessage,
                     decoded = "[ERROR: Invalid decoded text]",
                     scheme = EncryptionMapper.ENCRYPTION_SISA,
                     encoding = encoding,
                     success = false,
-                    notes = "Invalid text with timestamp $timestamp",
+                    notes = "Invalid text with date $dateStr",
                 )
             }
         } catch (e: Exception) {
-            LogUtils.d(context, "SisaCrypto", "⚠️ Decryption failed width timestamp $timestamp: ${e.message}")
+            LogUtils.d(context, "SisaCrypto", "⚠️ Decryption failed: ${e.message}")
             DecodeResult(
                 original = encryptedMessage,
                 decoded = "[ERROR SiSa Decryption: ${e.message}]",
                 scheme = EncryptionMapper.ENCRYPTION_SISA,
                 encoding = encoding,
                 success = false,
-                notes = "Failed with timestamp $timestamp: ${e.javaClass.simpleName}",
+                notes = "Failed: ${e.javaClass.simpleName}",
             )
         }
     }
 
-
     /**
-     * Validation function to verify decrypted text be ok
-     * Customisable
+     * Get date string from timestamp (YYYYMMDD format)
      */
-    private fun isValidPlaintext(plaintext: String): Boolean {
-        return plaintext.isNotBlank() &&
-                plaintext.length >= 1 &&
-                plaintext.length <= 10000 && // Reasonable length
-                !plaintext.contains(Char(0)) && // No null char
-                plaintext.all { char ->
-                    char.isLetterOrDigit() ||
-                            char.isWhitespace() ||
-                            char in ",.!?;:-_()[]{}@#$%&*+-=/\\\"'"
-                }
+    private fun getDateString(timestamp: Long): String {
+        val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+        calendar.timeInMillis = timestamp
+        return SimpleDateFormat("yyyyMMdd", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }.format(calendar.time)
     }
 
     // =============================================
-    // 2. DETERMINISTIC KEY DERIVATION
+    // 3. KEY DERIVATION (unchanged but now returns nullable)
     // =============================================
+
     private fun deriveAesKeyFromPassword(
         context: Context,
         password: String,
         timestamp: Long = 0
-    ): SecretKeySpec {
-        // Get the DAY of timestamp
-        val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-        calendar.timeInMillis = if (timestamp > 0) timestamp else System.currentTimeMillis()
+    ): SecretKey? {
+        return try {
+            // Get the DAY of timestamp
+            val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+            calendar.timeInMillis = if (timestamp > 0) timestamp else System.currentTimeMillis()
 
-        // Reset hours, minutes, seconds, millis....
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
+            // Reset to start of day
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
 
-        val dateStr = SimpleDateFormat("yyyyMMdd", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }.format(calendar.time)
+            val dateStr = SimpleDateFormat("yyyyMMdd", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }.format(calendar.time)
 
-        val salt = dateStr.toByteArray(Charsets.UTF_8)
+            val salt = dateStr.toByteArray(Charsets.UTF_8)
 
-        val iterations = 100000
-        val keyLength = 512
+            val iterations = 100000
+            val keyLength = 512
 
-        val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-        val spec = PBEKeySpec(password.toCharArray(), salt, iterations, keyLength)
-        val key = factory.generateSecret(spec)
+            val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+            val spec = PBEKeySpec(password.toCharArray(), salt, iterations, keyLength)
+            val key = factory.generateSecret(spec)
 
-        // Prendi i primi 256 bit (32 byte) per AES-256
-        val aesKeyBytes = key.encoded.copyOfRange(0, 32)
+            // Take first 256 bits (32 bytes) for AES-256
+            val aesKeyBytes = key.encoded.copyOfRange(0, 32)
 
-        // Log per debug
-        LogUtils.d(context, "SisaCrypto", "🔑 Key derived: ${aesKeyBytes.size} bytes, first byte: ${aesKeyBytes[0]}")
+            LogUtils.d(context, "SisaCrypto", "🔑 Key derived: ${aesKeyBytes.size} bytes")
 
-        return SecretKeySpec(aesKeyBytes, "AES")
+            SecretKeySpec(aesKeyBytes, "AES")
+        } catch (e: Exception) {
+            LogUtils.e(context, "SisaCrypto", "❌ Key derivation failed", e)
+            null
+        }
     }
 
-
     // =============================================
-    // 3. INTERNAL DECRYPTION FUNCTION WITH RETRY
-    // Sometimes it is necessary to add resiliency
+    // 4. UTILITY FUNCTIONS (unchanged)
     // =============================================
 
     private fun decryptWithRetries(
         ciphertext: ByteArray,
-        aesKey: SecretKeySpec,
+        aesKey: SecretKey,
         iv: ByteArray,
         maxAttempts: Int = 3
     ): ByteArray {
@@ -312,26 +446,41 @@ object SisaCrypto {
                 return cipher.doFinal(ciphertext)
             } catch (e: Exception) {
                 lastException = e
-                LogUtils.w(null,"SisaCrypto", "⚠️ Decryption Try $attempt failed: ${e.message}")
+                LogUtils.w(null, "SisaCrypto", "⚠️ Decryption attempt $attempt failed: ${e.message}")
 
                 if (attempt < maxAttempts) {
-                    Thread.sleep(50) // 50ms breath
+                    Thread.sleep(50)
                 }
             }
         }
 
-        // If we get here, all tries have failed
-        throw lastException ?: Exception("Decryption failed after $maxAttempts tries")
+        throw lastException ?: Exception("Decryption failed after $maxAttempts attempts")
     }
 
-
-    // =============================================
-    // 4. DETECTION
-    // =============================================
+    private fun isValidPlaintext(plaintext: String): Boolean {
+        return plaintext.isNotBlank() &&
+                plaintext.length >= 1 &&
+                plaintext.length <= 10000 &&
+                !plaintext.contains(Char(0)) &&
+                plaintext.all { char ->
+                    char.isLetterOrDigit() ||
+                            char.isWhitespace() ||
+                            char in ",.!?;:-_()[]{}@#$%&*+-=/\\\"'"
+                }
+    }
 
     fun isSisaEncrypted(message: String): Boolean {
         return message.startsWith(EncryptionMapper.SISA_ENCR_PREFIX) ||
                 (message.contains(EncryptionMapper.SISA_ENCR_PREFIX) &&
                         message.matches("^.*#[A-Za-z0-9+/=]+$".toRegex()))
+    }
+
+    /**
+     * Clean up old keys for a specific phone number
+     * Call this when password changes
+     */
+    fun cleanupPhoneKeys(context: Context, phoneNumber: String) {
+        SisaKeyCache.clearCacheForPhone(context, phoneNumber)
+        LogUtils.d(context, "SisaCrypto", "🗑️ Cleaned all keys for $phoneNumber")
     }
 }
