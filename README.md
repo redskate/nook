@@ -22,7 +22,7 @@ Ready to take control of your SMS privacy? Getting started is easy.
 
     Download the App
 
-        Download the latest NooK APK [https://semweb.solutions/nook/nook.apk] directly or (soon) from [https://f-droid.org/].
+        Download the latest NooK APK [https://semweb.solutions/nook/nook.apk] directly or from here in [https://github.com/redskate/nook/tree/master/app/releases]
 
         Note: Due to its SMS permissions, NooK is 🚫 not available on the Google Play Store.
 
