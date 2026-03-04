@@ -487,5 +487,20 @@
     <string name="error_opening_folder">Erreur lors de l\'ouverture du dossier</string>
     <string name="install_apk_chooser_title">Installer la mise à jour de NooK avec ::\n</string>
     <string name="sms_total_scanned">📨 SMS analysés: %d</string>
-
+    <string name="pure_sms_title">Mode SMS Pur</string>
+    <string name="pure_sms_description">Ne contacte pas automatiquement GitHub pour les mises à jour ou les vérifications SHA</string>
+    <string name="pure_sms_mode_active">Mode SMS Pur actif - aucune connexion à GitHub</string>
+    <string name="pure_sms_mode_inactive">Mode SMS Pur inactif</string>
+    <string name="sha_pure_sms_hint">Vérifiez le bouton Pure SMS et réessayez</string>
+    <string name="sha_retry_with_internet">Réessayer avec internet</string>
+    <string name="pure_sms_deactivation_title">Mode SMS Pur Actif</string>
+    <string name="pure_sms_deactivation_message">Pour vérifier avec internet, le mode SMS Pur doit être désactivé. Comment souhaitez-vous procéder?</string>
+    <string name="pure_sms_deactivation_just_now">Juste maintenant</string>
+    <string name="pure_sms_deactivation_always">Toujours</string>
+    <string name="pure_sms_temporarily_disabled">SMS Pur temporairement désactivé pour cette vérification</string>
+    <string name="pure_sms_permanently_disabled">SMS Pur définitivement désactivé</string>
+    <string name="update_check_pure_sms">Vérification des mises à jour désactivée:\nMode SMS Pur actif</string>
+    <string name="disable_pure_sms_for_updates">Désactiver SMS Pur pour vérifier les mises à jour</string>
+    <string name="pure_sms_active_title">Mode SMS Pur Actif</string>
+    <string name="pure_sms_upgrade_message">Pour télécharger les mises à jour, le mode SMS Pur doit être temporairement désactivé. Comment souhaitez-vous procéder?</string>
 </resources>

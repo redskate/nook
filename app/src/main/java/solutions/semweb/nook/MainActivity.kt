@@ -92,6 +92,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     private var isShaVerificationComplete = false
     private var shaVerificationReceiver: BroadcastReceiver? = null
     private lateinit var appProtectionToggle: Switch
+    private lateinit var pureSmsToggle: Switch
     private lateinit var keyboardSafetyManager: KeyboardSafetyManager
     private lateinit var prefs: SharedPreferencesManager
     private lateinit var chatManager: ChatManager
@@ -239,8 +240,16 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         }
     }
 
+    private var initialVerificationHandled = false
 
     private fun handleInitialShaResult(result: ShaVerificationManager.SHAVerificationResult) {
+        if (initialVerificationHandled) {
+            LogUtils.e("MAIN", "⚠️ Initial SHA result already handled, ignoring duplicate")
+            return
+        }
+
+        initialVerificationHandled = true
+
         if (result.isValid) {
             // ✅ SHA OK - normal
             proceedWithNormalInit()
@@ -254,20 +263,58 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
     private fun showInitialShaNoInternetDialog() {
-        AlertDialog.Builder(this)
+        val dialogView = if (prefs.pureSmsMode) {
+            // Create custom view with small hint text
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(40, 20, 40, 20)
+
+                // Main message
+                TextView(context).apply {
+                    text = getString(R.string.sha_verification_no_internet_message)
+                    textSize = 16f
+                    setPadding(0, 0, 0, 20)
+                }.also { addView(it) }
+
+                // Small hint text for Pure SMS mode
+                TextView(context).apply {
+                    text = "⚠️ ${getString(R.string.sha_pure_sms_hint)}"
+                    textSize = 12f
+                    setTextColor(ContextCompat.getColor(context, android.R.color.darker_gray))
+                    setPadding(0, 0, 0, 0)
+                }.also { addView(it) }
+            }
+        } else {
+            null
+        }
+
+        val dialog = AlertDialog.Builder(this)
             .setTitle(getString(R.string.sha_verification_title))
-            .setMessage(getString(R.string.sha_verification_no_internet_message))
+            .setMessage(if (!prefs.pureSmsMode) getString(R.string.sha_verification_no_internet_message) else null)
+            .setView(dialogView)
             .setCancelable(false)
-            .setPositiveButton(getString(R.string.sha_verification_retry)) { dialog, _ ->
-                dialog.dismiss()
-                // Riprova
-                shaVerificationManager.verifyApkIntegrity(forceDownload = true) { result ->
-                    runOnUiThread { handleInitialShaResult(result) }
+            .setPositiveButton(
+                if (prefs.pureSmsMode) getString(R.string.sha_retry_with_internet)
+                else getString(R.string.sha_verification_retry)
+            ) { dialog, _ ->
+                // If Pure SMS is active, ask for confirmation before retry
+                if (prefs.pureSmsMode) {
+                    dialog.dismiss()
+                    showPureSmsDeactivationDialog {
+                        shaVerificationManager.verifyApkIntegrity(forceDownload = true) { result ->
+                            runOnUiThread { handleInitialShaResult(result) }
+                        }
+                    }
+                } else {
+                    dialog.dismiss()
+                    shaVerificationManager.verifyApkIntegrity(forceDownload = true) { result ->
+                        runOnUiThread { handleInitialShaResult(result) }
+                    }
                 }
             }
             .setNegativeButton(getString(R.string.sha_verification_continue_risk)) { dialog, _ ->
                 dialog.dismiss()
-                // Continua a rischio
+                // Continue at risk
                 proceedWithNormalInit()
             }
             .setNeutralButton(getString(R.string.sha_verification_exit)) { dialog, _ ->
@@ -276,7 +323,9 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 finishAffinity()
                 finishAndRemoveTask()
             }
-            .show()
+            .create()
+
+        dialog.show()
     }
 
 
@@ -313,12 +362,11 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         LogUtils.e("MAIN", "🔄 Linear initialization...")
 
         try {
-
             // 0. SHA Verification
             setupShaVerificationUI()
 
             // 1. Setup basic views FIRST
-            setupBasicViews()
+            setupBasicViews()  // <-- QUI vengono inizializzati tutti i toggle
 
             // 2. HIDE CHATS
             runOnUiThread {
@@ -365,11 +413,11 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             chatRecyclerView.layoutManager = LinearLayoutManager(this)
             chatRecyclerView.adapter = chatAdapter
 
-            setupSpinnersAndToggles()
+            setupSpinnersAndToggles()  // <-- QUI SI USANO I TOGGLE GIÀ INIZIALIZZATI
             setupButtons()
             setVersionFooter()
             setupSettings()
-            setupToggleLabelClickListeners()
+            setupToggleLabelClickListeners()  // <-- QUESTA DEVE ESSERE DOPO setupSpinnersAndToggles
             setupNotificationSoundPreferences()
             setupOwnerNameField()
 
@@ -406,8 +454,10 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             startPollingForDatabaseReady()
 
         } catch (e: Exception) {
-            LogUtils.e("MAIN", "❌ Error", e)
-            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            LogUtils.e("MAIN", "❌ Error in initializeAppLinearly", e)
+            LogUtils.e("MAIN", "Error details: ${e.message}")
+            LogUtils.e("MAIN", "Stack trace: ${e.stackTraceToString()}")
+            Toast.makeText(this, "Initialization Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -673,15 +723,6 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         try {
             LogUtils.e("MAIN", "🎯 Setting up spinners and toggles")
 
-            appProtectionToggle.isChecked = prefs.appProtectionEnabled
-            appProtectionToggle.setOnCheckedChangeListener { _, isChecked ->
-                if (isChecked) {
-                    showSetAppProtectionPasswordDialog()
-                } else {
-                    removeAppProtection()
-                }
-            }
-
             // ==============================================
             // 1. SETUP DECODING SCHEME SPINNER
             // ==============================================
@@ -692,22 +733,28 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             )
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             decodingSchemeSpinner.adapter = adapter
-
-            // Disabilita lo spinner o mostra solo informativo
             decodingSchemeSpinner.isEnabled = false
             decodingSchemeSpinner.alpha = 0.7f
 
-            // Mostra quale è il default corrente
             val defaultEncryption = EncryptionMapper.DEFAULT_ENCRYPTION_SCHEME
             val defaultEncoding = EncryptionMapper.DEFAULT_ENCODING
-
             LogUtils.e("MAIN", "✅ Default - Encryption: $defaultEncryption, Encoding: $defaultEncoding")
 
             // ==============================================
-            // 2. SETUP TOGGLES
+            // 2. SETUP TOGGLES - SET DATA AND LISTENER
             // ==============================================
 
-            // Setup silent mode toggle
+            // App Protection Toggle
+            appProtectionToggle.isChecked = prefs.appProtectionEnabled
+            appProtectionToggle.setOnCheckedChangeListener { _, isChecked ->
+                if (isChecked) {
+                    showSetAppProtectionPasswordDialog()
+                } else {
+                    removeAppProtection()
+                }
+            }
+
+            // Silent Mode Toggle
             silentModeToggle.isChecked = prefs.silentMode
             silentModeToggle.setOnCheckedChangeListener { _, isChecked ->
                 prefs.silentMode = isChecked
@@ -715,26 +762,20 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 showToast(if (isChecked) getString(R.string.silent_mode_on) else getString(R.string.normal_mode_on))
             }
 
-            // IMPORTANTE: Setup log toggle
+            // Log Toggle
             logToggle.isChecked = prefs.logEnabled
-
-            // Init LogUtils with current value
             LogUtils.updateLoggingEnabled(prefs.logEnabled, this)
-
             logToggle.setOnCheckedChangeListener { _, isChecked ->
                 prefs.logEnabled = isChecked
                 LogUtils.updateLoggingEnabled(isChecked, this@MainActivity)
-
-                // Test Log
                 LogUtils.d(this@MainActivity, "MainActivity", "✅ Log toggle changed to: $isChecked")
-
                 LogUtils.e("MAIN", "Log ${if (isChecked) "enabled" else "disabled"}")
                 showToast(getString(R.string.log_status, if (isChecked) "ON" else "OFF"))
             }
 
+            // Use All Contacts Toggle
             useAllContactsToggle.isChecked = prefs.useAllContacts
             updateAllContactsInfoVisibility()
-
             useAllContactsToggle.setOnCheckedChangeListener { _, isChecked ->
                 prefs.useAllContacts = isChecked
                 updateAllContactsInfoVisibility()
@@ -742,6 +783,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 showToast(if (isChecked) getString(R.string.all_contacts_mode_active) else getString(R.string.selective_mode_active))
             }
 
+            // Allow Screenshots Toggle
             allowScreenshotsToggle.isChecked = prefs.allowScreenshots
             allowScreenshotsToggle.setOnCheckedChangeListener { _, isChecked ->
                 if (isChecked) {
@@ -753,6 +795,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 }
             }
 
+            // Vibration Toggle
             vibrationToggle.isChecked = prefs.vibrationEnabled
             vibrationToggle.setOnCheckedChangeListener { _, isChecked ->
                 prefs.vibrationEnabled = isChecked
@@ -760,11 +803,21 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 LogUtils.e("MAIN", "📳 Vibration: ${if (isChecked) "ON" else "OFF"}")
             }
 
+            // PURE SMS TOGGLE - ORA È INIZIALIZZATO!
+            pureSmsToggle.isChecked = prefs.pureSmsMode
+            pureSmsToggle.setOnCheckedChangeListener { _, isChecked ->
+                prefs.pureSmsMode = isChecked
+                LogUtils.e("MAIN", "${if (isChecked) "Pure SMS" else "Normal"} mode")
+                showToast(if (isChecked) getString(R.string.pure_sms_mode_active) else getString(R.string.pure_sms_mode_inactive))
+            }
+
             LogUtils.e("MAIN", "✅ Spinners and toggles setup complete")
 
         } catch (e: Exception) {
             LogUtils.e("MAIN", "❌ Error in setupSpinnersAndToggles", e)
-            Toast.makeText(this, "Error setting options", Toast.LENGTH_SHORT).show()
+            LogUtils.e("MAIN", "Error details: ${e.message}")
+            LogUtils.e("MAIN", "Stack trace: ${e.stackTraceToString()}")
+            Toast.makeText(this, "Error setting options: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -931,12 +984,11 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         chatRecyclerView = findViewById(R.id.chat_recycler_view)
         allowScreenshotsToggle = findViewById(R.id.allow_screenshots_toggle)
         vibrationToggle = findViewById(R.id.vibration_toggle)
-
+        pureSmsToggle = findViewById(R.id.pure_sms_toggle)
         settingsCard = findViewById(R.id.settings_card)
         settingsHeader = findViewById(R.id.settings_header)
         settingsContent = findViewById(R.id.settings_content)
         settingsExpandIcon = findViewById(R.id.settings_expand_icon)
-
         notificationSoundName = findViewById(R.id.notification_sound_name)
         notificationSoundContainer = findViewById(R.id.notification_sound_container)
         testNotificationContainer = findViewById(R.id.test_notification_container)
@@ -1162,8 +1214,8 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             }
 
             val tap2open = getString(R.string.tap2open)
-
-            versionFooter.text = "NooK ${Constants.VERSION} - secure SMS ${Constants.COPYRIGHT} [${tap2open}]"
+            val debuginfo = if (BuildConfig.DEBUG) "D" else ""
+            versionFooter.text = "NooK ${Constants.VERSION}${debuginfo} - secure SMS ${Constants.COPYRIGHT} [${tap2open}]"
             versionFooter.setOnClickListener {
                 openUrlInBrowser(Constants.VISITME)
             }
@@ -1210,7 +1262,8 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             Pair(useAllContactsToggle, getString(R.string.extend_to_all_contacts_title)),
             Pair(allowScreenshotsToggle, getString(R.string.allow_screenshots_title)),
             Pair(vibrationToggle, getString(R.string.vibration_title)),
-            Pair(appProtectionToggle, getString(R.string.app_protection_title))
+            Pair(appProtectionToggle, getString(R.string.app_protection_title)) ,
+            Pair(pureSmsToggle, getString(R.string.pure_sms_title))
         )
 
         togglePairs.forEach { (toggle, labelText) ->
@@ -2047,6 +2100,16 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         }
     }
 
+    private fun performManualShaVerification() {
+        // Questa è SOLO per verifiche manuali (click dell'utente)
+        shaVerificationManager.verifyApkIntegrity(
+            forceDownload = false
+        ) { result ->
+            runOnUiThread {
+                handleShaVerificationResult(result)
+            }
+        }
+    }
 
     private fun setupShaVerificationUI() {
         shaStatusIcon = findViewById(R.id.sha_status_icon)
@@ -2058,10 +2121,11 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         // Create a common click listener for all SHA elements
         val shaClickableListener = View.OnClickListener {
             LogUtils.e("MAIN", "🔄 Manual SHA verification triggered by user click")
-            performShaVerification()
+            // SOLO verifiche manuali, non automatiche
+            performManualShaVerification()
         }
 
-        // Add click listener to all SHA elements (icon and both text views)
+        // Add click listener to all SHA elements
         shaStatusIcon.setOnClickListener(shaClickableListener)
         shaTimestamp.setOnClickListener(shaClickableListener)
         shaVerifiedText.setOnClickListener(shaClickableListener)
@@ -2074,10 +2138,8 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
         // Register receiver for background failure notifications
         registerShaVerificationReceiver()
-
-        // Start verification
-        performShaVerification()
     }
+
 
     /**
      * Setup SHA Failure notifications
@@ -2102,7 +2164,10 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                         shaStatusIcon.visibility = View.VISIBLE
                         shaTimestamp.visibility = View.GONE
 
-                        showShaCompromisedDialog(result)
+                        // Show only it not yet shown
+                        if (!initialVerificationHandled) {
+                            showShaCompromisedDialog(result)
+                        }
                     }
                 }
             }
@@ -2156,10 +2221,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 shaStatusIcon.setImageResource(R.drawable.ic_shield_green)
             }
             shaStatusIcon.visibility = View.VISIBLE
-
             shaVerifiedText.visibility = View.VISIBLE
-
-
             shaTimestamp.text = shaVerificationManager.formatShortTimestamp(result.timestamp)
             shaTimestamp.visibility = View.VISIBLE
 
@@ -2172,7 +2234,10 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             shaVerifiedText.visibility = View.GONE
             shaTimestamp.visibility = View.GONE
 
-            showShaNoInternetDialog()
+            // Show dialog only if it is a manual verification or not yet shown
+            if (!initialVerificationHandled) {
+                showShaNoInternetDialog()
+            }
 
         } else {
             // ❌ COMPROMISED APP - show skull
@@ -2181,65 +2246,145 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             shaVerifiedText.visibility = View.GONE
             shaTimestamp.visibility = View.GONE
 
-            showShaCompromisedDialog(result)
+            // Show dialog only if manual verification or not yet shown once
+            if (!initialVerificationHandled) {
+                showShaCompromisedDialog(result)
+            }
         }
     }
+
+
+    private var isNoInternetDialogShowing = false
+    private var isCompromisedDialogShowing = false
 
     /**
      * Show dialog for missing internet
      */
     private fun showShaNoInternetDialog() {
-        AlertDialog.Builder(this)
+        // Prevent multiple dialogs
+        if (isNoInternetDialogShowing) return
+        isNoInternetDialogShowing = true
+
+        val dialogView = if (prefs.pureSmsMode) {
+            // Create custom view with small hint text
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(40, 20, 40, 20)
+
+                // Main message
+                TextView(context).apply {
+                    text = getString(R.string.sha_verification_no_internet_message)
+                    textSize = 16f
+                    setPadding(0, 0, 0, 20)
+                }.also { addView(it) }
+
+                // Small hint text for Pure SMS mode
+                TextView(context).apply {
+                    text = "⚠️ ${getString(R.string.sha_pure_sms_hint)}"
+                    textSize = 12f
+                    setTextColor(ContextCompat.getColor(context, android.R.color.darker_gray))
+                    setPadding(0, 0, 0, 0)
+                }.also { addView(it) }
+            }
+        } else {
+            null
+        }
+
+        val dialog = AlertDialog.Builder(this)
             .setTitle(getString(R.string.sha_verification_title))
-            .setMessage(getString(R.string.sha_verification_no_internet_message))
+            .setMessage(if (!prefs.pureSmsMode) getString(R.string.sha_verification_no_internet_message) else null)
+            .setView(dialogView)
             .setCancelable(false)
-            .setPositiveButton(getString(R.string.sha_verification_retry)) { dialog, _ ->
-                dialog.dismiss()
-                // Retry
-                performShaVerification()
+            .setPositiveButton(
+                if (prefs.pureSmsMode) getString(R.string.sha_retry_with_internet)
+                else getString(R.string.sha_verification_retry)
+            ) { dialog, _ ->
+                // If Pure SMS is active, ask for confirmation before retry
+                if (prefs.pureSmsMode) {
+                    dialog.dismiss()
+                    showPureSmsDeactivationDialog {
+                        performShaVerification()
+                    }
+                } else {
+                    dialog.dismiss()
+                    performShaVerification()
+                }
             }
             .setNegativeButton(getString(R.string.sha_verification_continue_risk)) { dialog, _ ->
+                isNoInternetDialogShowing = false
                 dialog.dismiss()
-                // Continue at risk - show red shield but proceed
+                // Continue at risk
                 shaStatusIcon.setImageResource(R.drawable.ic_shield_aaa)
                 shaStatusIcon.visibility = View.VISIBLE
 
-                // Ensure all SHA elements remain clickable
-                val shaVerifiedText = findViewById<TextView>(R.id.sha_verified_text)
-                val shaTimestamp = findViewById<TextView>(R.id.sha_timestamp)
-
-                listOf(shaStatusIcon, shaVerifiedText, shaTimestamp).forEach { view ->
-                    view.isClickable = true
-                    view.isFocusable = true
-                }
-
-                // Proceed with disclaimer if not yet accepted
                 val disclaimerAccepted = prefs.getBoolean("disclaimer_accepted", false)
                 if (!disclaimerAccepted) {
                     utils.showDisclaimerDialog(prefs, this)
                 } else {
-                    // If already initialized, proceed
                     if (!isAppInitialized) {
                         initializeAppLinearly()
                     }
                 }
             }
             .setNeutralButton(getString(R.string.sha_verification_exit)) { dialog, _ ->
+                isNoInternetDialogShowing = false
                 dialog.dismiss()
                 stopForegroundService()
                 finishAffinity()
                 finishAndRemoveTask()
             }
+            .setOnDismissListener {
+                isNoInternetDialogShowing = false
+            }
+            .create()
+
+        dialog.show()
+    }
+
+    private fun showPureSmsDeactivationDialog(onConfirmed: () -> Unit) {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.pure_sms_deactivation_title))
+            .setMessage(getString(R.string.pure_sms_deactivation_message))
+            .setCancelable(false)
+            .setPositiveButton(getString(R.string.pure_sms_deactivation_just_now)) { dialog, _ ->
+                // Disable Pure SMS just for this time
+                dialog.dismiss()
+
+                // Show info toast
+                showToast(getString(R.string.pure_sms_temporarily_disabled))
+
+                // Proceed with action
+                onConfirmed.invoke()
+            }
+            .setNeutralButton(getString(R.string.pure_sms_deactivation_always)) { dialog, _ ->
+                // Disable Pure SMS permanently
+                prefs.pureSmsMode = false
+                pureSmsToggle.isChecked = false
+
+                dialog.dismiss()
+
+                // Show info toast
+                showToast(getString(R.string.pure_sms_permanently_disabled))
+
+                // Proceed with action
+                onConfirmed.invoke()
+            }
+            .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+                dialog.dismiss()
+                // Return to previous dialog (cancel operation)
+            }
             .show()
     }
+
 
     /**
      * Show dialog for compromised App - FORCE EXIT
      */
     private fun showShaCompromisedDialog(result: ShaVerificationManager.SHAVerificationResult) {
-
         var message = result.message
-         if (result.apkInfo != null) {
+
+        // Add APK info
+        if (result.apkInfo != null) {
             val apkInfo = result.apkInfo
             message += "\n\n📱 APK Installation Info:" +
                     "\n• ExpHash: ${apkInfo.expectedHash}" +
@@ -2248,10 +2393,36 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                     "\n• Last Modified: ${ShaVerificationManager.getInstance(this).formatTimestamp(apkInfo.lastModified)}"
         }
 
+        val dialogView = if (prefs.pureSmsMode) {
+            // Create custom view with small hint text
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(40, 20, 40, 20)
+
+                // Main message
+                TextView(context).apply {
+                    text = "${getString(R.string.sha_verification_compromised_message, BuildConfig.VERSION_NAME)}\n\n$message"
+                    textSize = 14f
+                    setPadding(0, 0, 0, 20)
+                }.also { addView(it) }
+
+                // Small hint text for Pure SMS mode
+                TextView(context).apply {
+                    text = "⚠️ ${getString(R.string.sha_pure_sms_hint)}"
+                    textSize = 12f
+                    setTextColor(ContextCompat.getColor(context, android.R.color.darker_gray))
+                    setPadding(0, 0, 0, 0)
+                }.also { addView(it) }
+            }
+        } else {
+            null
+        }
+
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.sha_verification_title))
-            .setMessage("${getString(R.string.sha_verification_compromised_message, BuildConfig.VERSION_NAME)}\n\n$message")
-            .setCancelable(true) // set to false
+            .setMessage(if (!prefs.pureSmsMode) "${getString(R.string.sha_verification_compromised_message, BuildConfig.VERSION_NAME)}\n\n$message" else null)
+            .setView(dialogView)
+            .setCancelable(true)
             .setPositiveButton(getString(R.string.sha_verification_exit)) { _, _ ->
                 stopForegroundService()
                 finishAffinity()
@@ -2323,6 +2494,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         val cancelButton = dialogView.findViewById<Button>(R.id.cancel_button)
         val upgradeButton = dialogView.findViewById<Button>(R.id.upgrade_button)
         val versionsLabel = dialogView.findViewById<TextView>(R.id.available_versions_label)
+        val versionsScrollview = dialogView.findViewById<ScrollView>(R.id.versions_scrollview)
 
         val currentVersion = BuildConfig.VERSION_NAME
 
@@ -2331,6 +2503,28 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
         // HIDE THE UPGRADE BUTTON COMPLETELY
         upgradeButton.visibility = View.GONE
+
+        // Add Pure SMS hint if active
+        if (prefs.pureSmsMode) {
+            val titleContainer = dialogView.findViewById<LinearLayout>(R.id.title_container)
+            titleContainer?.let { container ->
+                // Check if hint already exists to avoid duplicates
+                if (container.childCount < 2 || container.getChildAt(1) !is TextView) {
+                    val hintText = TextView(this).apply {
+                        text = "⚠️ ${getString(R.string.sha_pure_sms_hint)}"
+                        textSize = 12f
+                        setTextColor(ContextCompat.getColor(this@MainActivity, android.R.color.darker_gray))
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            setMargins(44, 4, 0, 0) // 44dp to align under the title text (32dp icon + 12dp margin)
+                        }
+                    }
+                    container.addView(hintText)
+                }
+            }
+        }
 
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
@@ -2346,25 +2540,105 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
                 runOnUiThread {
                     if (versions.isEmpty()) {
-                        latestVersionText.text = getString(R.string.update_check_failed)
-                        versionsLabel.visibility = View.GONE
+                        // If Pure SMS is active, show appropriate message with options
+                        if (prefs.pureSmsMode) {
+                            latestVersionText.text = getString(R.string.update_check_pure_sms)
+                            versionsLabel.visibility = View.GONE
+                            versionsScrollview.visibility = View.GONE
+
+                            // Create layout for options
+                            val optionsLayout = LinearLayout(this@MainActivity).apply {
+                                orientation = LinearLayout.VERTICAL
+                                layoutParams = LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.MATCH_PARENT,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT
+                                ).apply {
+                                    setMargins(0, 16, 0, 0)
+                                }
+                            }
+
+                            // Add hint text
+                            val hintTextView = TextView(this@MainActivity).apply {
+                                text = getString(R.string.pure_sms_deactivation_message)
+                                textSize = 14f
+                                setPadding(0, 0, 0, 16)
+                            }
+                            optionsLayout.addView(hintTextView)
+
+                            // "Just now" button
+                            val justNowButton = Button(this@MainActivity).apply {
+                                text = getString(R.string.pure_sms_deactivation_just_now)
+                                layoutParams = LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.MATCH_PARENT,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT
+                                ).apply {
+                                    setMargins(0, 0, 0, 8)
+                                }
+                                setOnClickListener {
+                                    dialog.dismiss()
+                                    showPureSmsDeactivationDialog {
+                                        // After deactivation, reopen upgrade dialog
+                                        showUpgradeDialog()
+                                    }
+                                }
+                            }
+                            optionsLayout.addView(justNowButton)
+
+                            // "Always" button
+                            val alwaysButton = Button(this@MainActivity).apply {
+                                text = getString(R.string.pure_sms_deactivation_always)
+                                layoutParams = LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.MATCH_PARENT,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT
+                                )
+                                setOnClickListener {
+                                    // Disable Pure SMS permanently
+                                    prefs.pureSmsMode = false
+                                    pureSmsToggle.isChecked = false
+                                    showToast(getString(R.string.pure_sms_permanently_disabled))
+                                    dialog.dismiss()
+                                    // Reopen upgrade dialog
+                                    showUpgradeDialog()
+                                }
+                            }
+                            optionsLayout.addView(alwaysButton)
+
+                            // Add cancel button
+                            val cancelOptionButton = Button(this@MainActivity).apply {
+                                text = getString(R.string.cancel)
+                                layoutParams = LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.MATCH_PARENT,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT
+                                ).apply {
+                                    setMargins(0, 16, 0, 0)
+                                }
+                                setOnClickListener {
+                                    dialog.dismiss()
+                                }
+                            }
+                            optionsLayout.addView(cancelOptionButton)
+
+                            versionsContainer.addView(optionsLayout)
+                        } else {
+                            latestVersionText.text = getString(R.string.update_check_failed)
+                            versionsLabel.visibility = View.GONE
+                        }
                         return@runOnUiThread
                     }
 
                     val latestVersion = versions.last()
                     latestVersionText.text = getString(R.string.latest_version, latestVersion)
 
-                    // Filtra le versioni, nascondendo quella corrente
+                    // Filter versions, hiding current version
                     val filteredVersions = versions.filter { version ->
                         version != currentVersion
                     }
 
-                    // ✅ REVERSE THE LIST TO SHOW NEWEST FIRST
-                    // Create a comparator instance
+                    // Reverse the list to show newest first
                     val comparator = UpdateChecker.VersionComparator()
                     val sortedVersionsDescending = filteredVersions.sortedWith(comparator.reversed())
 
-                    // Se dopo il filtro non rimangono versioni, mostra messaggio
+                    // If no versions after filtering, show message
                     if (sortedVersionsDescending.isEmpty()) {
                         versionsLabel.visibility = View.GONE
                         val noVersionsText = TextView(this@MainActivity).apply {
@@ -2378,7 +2652,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                         return@runOnUiThread
                     }
 
-                    // Create version buttons for versions in descending order (newest first)
+                    // Create version buttons
                     sortedVersionsDescending.forEach { version ->
                         val versionButton = Button(this@MainActivity).apply {
                             text = version
@@ -2398,7 +2672,6 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                                     ContextCompat.getColor(this@MainActivity, R.color.gray_3)
                                 )
                             } else {
-                                // Default state - intensive green for upgrades
                                 backgroundTintList = ColorStateList.valueOf(
                                     ContextCompat.getColor(this@MainActivity, R.color.intensive_green)
                                 )
@@ -2407,7 +2680,6 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                             setTextColor(Color.WHITE)
                             isAllCaps = false
 
-                            // WHEN VERSION IS TAPPED - START INSTALLATION IMMEDIATELY
                             setOnClickListener {
                                 // Disable all buttons to prevent double-tap
                                 for (i in 0 until versionsContainer.childCount) {
@@ -2422,22 +2694,53 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                                     getString(R.string.confirm_installation_message, version)
                                 }
 
-                                AlertDialog.Builder(this@MainActivity)
-                                    .setTitle(getString(R.string.confirm_installation_title))
-                                    .setMessage(message)
-                                    .setPositiveButton(getString(R.string.download)) { _, _ ->
-                                        // Start download immediately
-                                        startVersionDownload(version, dialog, versionsContainer,
-                                            versionsLabel, cancelButton, downloadProgress, progressText)
-                                    }
-                                    .setNegativeButton(getString(R.string.cancel)) { _, _ ->
-                                        // Re-enable buttons if user cancels
-                                        for (i in 0 until versionsContainer.childCount) {
-                                            versionsContainer.getChildAt(i).isEnabled = true
+                                // If Pure SMS is active, show special confirmation
+                                if (prefs.pureSmsMode && !isDowngrade) {
+                                    AlertDialog.Builder(this@MainActivity)
+                                        .setTitle(getString(R.string.pure_sms_active_title))
+                                        .setMessage(getString(R.string.pure_sms_upgrade_message))
+                                        .setPositiveButton(getString(R.string.pure_sms_deactivation_just_now)) { _, _ ->
+                                            // Disable Pure SMS just for this download
+                                            startVersionDownload(version, dialog, versionsContainer,
+                                                versionsLabel, cancelButton, downloadProgress, progressText)
                                         }
-                                        cancelButton.isEnabled = true
-                                    }
-                                    .show()
+                                        .setNeutralButton(getString(R.string.pure_sms_deactivation_always)) { _, _ ->
+                                            // Disable Pure SMS permanently
+                                            prefs.pureSmsMode = false
+                                            pureSmsToggle.isChecked = false
+                                            showToast(getString(R.string.pure_sms_permanently_disabled))
+
+                                            // Start download
+                                            startVersionDownload(version, dialog, versionsContainer,
+                                                versionsLabel, cancelButton, downloadProgress, progressText)
+                                        }
+                                        .setNegativeButton(getString(R.string.cancel)) { dialogInterface, _ ->
+                                            dialogInterface.dismiss()
+                                            // Re-enable buttons
+                                            for (i in 0 until versionsContainer.childCount) {
+                                                versionsContainer.getChildAt(i).isEnabled = true
+                                            }
+                                            cancelButton.isEnabled = true
+                                        }
+                                        .show()
+                                } else {
+                                    AlertDialog.Builder(this@MainActivity)
+                                        .setTitle(getString(R.string.confirm_installation_title))
+                                        .setMessage(message)
+                                        .setPositiveButton(getString(R.string.download)) { _, _ ->
+                                            // Start download immediately
+                                            startVersionDownload(version, dialog, versionsContainer,
+                                                versionsLabel, cancelButton, downloadProgress, progressText)
+                                        }
+                                        .setNegativeButton(getString(R.string.cancel)) { _, _ ->
+                                            // Re-enable buttons if user cancels
+                                            for (i in 0 until versionsContainer.childCount) {
+                                                versionsContainer.getChildAt(i).isEnabled = true
+                                            }
+                                            cancelButton.isEnabled = true
+                                        }
+                                        .show()
+                                }
                             }
                         }
                         versionsContainer.addView(versionButton)
@@ -2459,6 +2762,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     /**
      * Extracted method to start the download process
      */
+    @SuppressLint("SetTextI18n")
     private fun startVersionDownload(
         selectedVersion: String,
         dialog: AlertDialog,
@@ -3255,6 +3559,12 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
     fun fetchSha256FromGitHub(uri: String): String? {
+        // If Pure SMS mode is enabled, don't contact GitHub
+        if (prefs.pureSmsMode) {
+            LogUtils.e("releaseDownload", "📡 Pure SMS mode active - skipping GitHub fetch")
+            return null
+        }
+
         var connection: HttpURLConnection? = null
         try {
             LogUtils.d("releaseDownload", "CALLING ${Constants.GITHUB_SHA256_URL}")
@@ -3287,6 +3597,12 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
 
     private fun fetchAvailableVersions(): List<String> {
+        // If Pure SMS mode is enabled, return empty list
+        if (prefs.pureSmsMode) {
+            LogUtils.d("MainActivity", "📡 Pure SMS mode active - skipping version fetch")
+            return emptyList()
+        }
+
         return try {
             LogUtils.d("releaseDownload","CALLING "+Constants.GITHUB_SHA256_URL)
             val content = fetchSha256FromGitHub(Constants.GITHUB_SHA256_URL)

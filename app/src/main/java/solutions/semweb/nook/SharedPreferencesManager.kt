@@ -42,6 +42,11 @@ class SharedPreferencesManager private constructor(private var context: Context)
         }
     }
 
+    var pureSmsMode: Boolean
+        get() = prefs.getBoolean(Constants.KEY_PURE_SMS_MODE, true)  // Default ON
+        set(value) = prefs.edit().putBoolean(Constants.KEY_PURE_SMS_MODE, value).apply()
+
+
     // ==================== SINGLETON ====================
     companion object {
         @Volatile

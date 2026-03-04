@@ -491,5 +491,20 @@
     <string name="error_opening_folder">Error opening folder</string>
     <string name="install_apk_chooser_title">Install NooK update using:\n</string>
     <string name="sms_total_scanned">📨 SMS scanned: %d</string>
-
+    <string name="pure_sms_title">Pure SMS Mode</string>
+    <string name="pure_sms_description">Does not automatically contact GitHub for upgrades or SHA verifications</string>
+    <string name="pure_sms_mode_active">Pure SMS mode active - no GitHub connections</string>
+    <string name="pure_sms_mode_inactive">Pure SMS mode inactive</string>
+    <string name="sha_pure_sms_hint">Check Pure SMS Toggle and repeat</string>
+    <string name="sha_retry_with_internet">Retry with internet</string>
+    <string name="pure_sms_deactivation_title">Pure SMS Mode Active</string>
+    <string name="pure_sms_deactivation_message">To verify with internet, Pure SMS mode needs to be deactivated. How would you like to proceed?</string>
+    <string name="pure_sms_deactivation_just_now">Just now</string>
+    <string name="pure_sms_deactivation_always">Always</string>
+    <string name="pure_sms_temporarily_disabled">Pure SMS temporarily disabled for this check</string>
+    <string name="pure_sms_permanently_disabled">Pure SMS permanently disabled</string>
+    <string name="update_check_pure_sms">Update check disabled:\nPure SMS mode active</string>
+    <string name="disable_pure_sms_for_updates">Disable Pure SMS to check for updates</string>
+    <string name="pure_sms_active_title">Pure SMS Mode Active</string>
+    <string name="pure_sms_upgrade_message">To download updates, Pure SMS mode needs to be temporarily disabled. How would you like to proceed?</string>
 </resources>

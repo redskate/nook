@@ -74,6 +74,25 @@ class UpdateChecker private constructor(private val context: Context) {
         forceCheck: Boolean = false,
         onComplete: (UpdateInfo) -> Unit
     ) {
+        // If Pure SMS mode is enabled, never check for updates
+        if (isPureSmsMode()) {
+            LogUtils.e(TAG, "📡 Pure SMS mode active - skipping update check")
+
+            val currentVersion = BuildConfig.VERSION_NAME
+            mainHandler.post {
+                onComplete(
+                    UpdateInfo(
+                        latestVersion = currentVersion,
+                        currentVersion = currentVersion,
+                        isUpdateAvailable = false,
+                        downloadUrl = null,
+                        hasNewerVersion = false
+                    )
+                )
+            }
+            return
+        }
+
         Thread {
             try {
                 val currentVersion = BuildConfig.VERSION_NAME
@@ -162,6 +181,12 @@ class UpdateChecker private constructor(private val context: Context) {
      * if there's actually a newer version available
      */
     private fun fetchLatestVersionFromGithub(currentVersion: String): Pair<String, Boolean>? {
+        // If Pure SMS mode is enabled, don't contact GitHub
+        if (isPureSmsMode()) {
+            LogUtils.e(TAG, "📡 Pure SMS mode active - skipping GitHub fetch")
+            return null
+        }
+
         return try {
             LogUtils.e(TAG, "📡 Checking for updates...")
 
@@ -251,6 +276,14 @@ class UpdateChecker private constructor(private val context: Context) {
         onProgress: (Int) -> Unit = {},
         onComplete: (Boolean, String?) -> Unit
     ) {
+
+        // If Pure SMS mode is enabled, don't download
+        if (isPureSmsMode()) {
+            LogUtils.e(TAG, "📡 Pure SMS mode active - skipping APK download")
+            onComplete(false, "Pure SMS mode active - downloads disabled")
+            return
+        }
+
         Thread {
             try {
                 val downloadUrl = generateDownloadUrl(version)
@@ -339,6 +372,12 @@ class UpdateChecker private constructor(private val context: Context) {
         }
     }
 
+    /**
+    * Check if Pure SMS mode is enabled - if so, skip GitHub operations
+    */
+    private fun isPureSmsMode(): Boolean {
+        return prefs.pureSmsMode
+    }
     /**
      * Helper to get File object from MediaStore URI
      */

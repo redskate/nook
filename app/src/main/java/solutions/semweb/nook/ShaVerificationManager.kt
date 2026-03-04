@@ -24,6 +24,13 @@ import java.util.concurrent.TimeUnit
 
 class ShaVerificationManager private constructor(private val context: Context) {
 
+    /**
+     * Check if Pure SMS mode is enabled - if so, skip GitHub operations
+     */
+    private fun isPureSmsMode(): Boolean {
+        return prefs.pureSmsMode
+    }
+
     companion object {
         private const val TAG = "ShaVerification"
         private const val PREF_LAST_SHA_CHECK = "last_sha_check_timestamp"
@@ -91,10 +98,46 @@ class ShaVerificationManager private constructor(private val context: Context) {
      * - First installation: force download & verify
      * - Normal ("daily") start: use saved hash, refresh in background if necessary
      */
+    /**
+     * - First installation: force download & verify
+     * - Normal ("daily") start: use saved hash, refresh in background if necessary
+     */
     fun verifyApkIntegrity(
         forceDownload: Boolean = false,
         onComplete: (SHAVerificationResult) -> Unit
     ) {
+        // If Pure SMS mode is enabled and we're trying to force download, skip
+        if (isPureSmsMode() && forceDownload) {
+            LogUtils.e(TAG, "📡 Pure SMS mode active - skipping forced SHA verification")
+
+            // Return a result that looks like offline mode (but without internet)
+            val currentVersion = BuildConfig.VERSION_NAME
+            val storedHash = prefs.getString(PREF_STORED_APK_HASH, "")
+            val storedVersion = prefs.getString(PREF_STORED_APK_VERSION, "")
+            val lastCheck = prefs.getLong(PREF_LAST_SHA_CHECK, 0)
+
+            // Check if stored hash matches current APK (without downloading)
+            val currentApkInfo = calculateApkSha256(storedHash)
+            val isValid = currentApkInfo?.apkHash == storedHash && storedVersion == currentVersion
+
+            mainHandler.post {
+                onComplete(
+                    SHAVerificationResult(
+                        isValid = isValid,
+                        message = if (isValid)
+                            getString(context, R.string.apk_hash_match)
+                        else
+                            "Pure SMS mode - no verification performed",
+                        timestamp = lastCheck,
+                        version = currentVersion,
+                        isOffline = true, // Treat as offline to show appropriate UI
+                        apkInfo = currentApkInfo
+                    )
+                )
+            }
+            return
+        }
+
         Thread {
             try {
                 val currentVersion = BuildConfig.VERSION_NAME
@@ -120,9 +163,9 @@ class ShaVerificationManager private constructor(private val context: Context) {
                 // Case 3: if Internet, re-download and store fresh hash
                 // try to read fresh if internet connected
                 var hadInternet = false
-                val shaFileContent = downloadShaFile()
-                if (shaFileContent!=null) {
+                val shaFileContent = if (!isPureSmsMode()) downloadShaFile() else null
 
+                if (shaFileContent != null) {
                     val actualHash = findHashForVersion(shaFileContent, currentVersion)
                     if (actualHash != null) {
                         hadInternet = true
@@ -133,10 +176,8 @@ class ShaVerificationManager private constructor(private val context: Context) {
                 }
                 val currentApkInfo = calculateApkSha256(storedHash)
 
-
                 // pass through for DEBUG
-                if (BuildConfig.DEBUG ||
-                     currentApkInfo?.apkHash == storedHash ) {
+                if (BuildConfig.DEBUG || currentApkInfo?.apkHash == storedHash) {
 
                     LogUtils.e(TAG, "✅ Rapid verification OK - Hash matches")
                     prefs.putLong(PREF_LAST_SHA_CHECK, currentTime)
@@ -145,17 +186,18 @@ class ShaVerificationManager private constructor(private val context: Context) {
                         onComplete(
                             SHAVerificationResult(
                                 isValid = true,
-                                message = getString(context,R.string.apk_hash_match),
+                                message = getString(context, R.string.apk_hash_match),
                                 timestamp = currentTime,
-                                isOffline = !hadInternet,
+                                isOffline = !hadInternet || isPureSmsMode(),
                                 version = currentVersion,
-                                apkInfo = currentApkInfo  // Added for debug
+                                apkInfo = currentApkInfo
                             )
                         )
                     }
 
                     // In case more than a day is elapsed, refresh APK HASH check
-                    if (currentTime - lastCheck > CYCLIC_CHECK_MS) {
+                    // Skip background refresh if Pure SMS mode is active
+                    if (!isPureSmsMode() && currentTime - lastCheck > CYCLIC_CHECK_MS) {
                         LogUtils.e(TAG, "🔄 Refresh giornaliero in background")
                         performBackgroundRefresh()
                     }
@@ -166,10 +208,10 @@ class ShaVerificationManager private constructor(private val context: Context) {
                         onComplete(
                             SHAVerificationResult(
                                 isValid = false,
-                                message = getString(context,R.string.apk_hash_mismatch),
+                                message = getString(context, R.string.apk_hash_mismatch),
                                 timestamp = currentTime,
                                 version = currentVersion,
-                                apkInfo = currentApkInfo  // Added for debug
+                                apkInfo = currentApkInfo
                             )
                         )
                     }
@@ -181,7 +223,7 @@ class ShaVerificationManager private constructor(private val context: Context) {
                     onComplete(
                         SHAVerificationResult(
                             isValid = false,
-                            message = getString(context,R.string.error)+": ${e.message}",
+                            message = getString(context, R.string.error) + ": ${e.message}",
                             isOffline = true,
                             apkInfo = null
                         )
@@ -405,6 +447,12 @@ class ShaVerificationManager private constructor(private val context: Context) {
 
 
     private fun downloadShaFile(): String? {
+
+        if (isPureSmsMode()) {
+            LogUtils.e(TAG, "📡 Pure SMS mode active - skipping SHA download")
+            return null
+        }
+
         return try {
             LogUtils.e(TAG, "📡 Download SHA con OkHttp...")
 

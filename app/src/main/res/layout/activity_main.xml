@@ -531,6 +531,49 @@
                             android:focusable="true"/>
                     </LinearLayout>
 
+
+                    <!-- Pure SMS Mode - NEW -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackground">
+
+                        <Switch
+                            android:id="@+id/pure_sms_toggle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="12dp"/>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/pure_sms_title"
+                                android:textSize="14sp"
+                                android:clickable="true"
+                                android:focusable="true"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/pure_sms_description"
+                                android:textSize="11sp"
+                                android:textColor="?android:attr/textColorSecondary"
+                                android:layout_marginTop="2dp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+
                     <!-- Info All contacts -->
                     <TextView
                         android:id="@+id/all_contacts_info"

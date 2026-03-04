@@ -5,29 +5,41 @@
     android:orientation="vertical"
     android:padding="20dp">
 
+    <!-- Title container with micro-text support -->
     <LinearLayout
+        android:id="@+id/title_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
+        android:orientation="vertical"
         android:layout_marginBottom="16dp">
 
-        <ImageView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/ic_update"
-            android:contentDescription="@string/content_description_update_available"
-            android:layout_marginEnd="12dp"/>
-
-        <TextView
-            android:id="@+id/dialog_title"
-            android:layout_width="0dp"
+        <!-- Main title row with icon -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/upgrade_dialog_title"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="@color/blue_version"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_update"
+                android:contentDescription="@string/content_description_update_available"
+                android:layout_marginEnd="12dp"/>
+
+            <TextView
+                android:id="@+id/dialog_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/upgrade_dialog_title"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/blue_version"/>
+
+        </LinearLayout>
+
+        <!-- ⚠️ Micro-text will be added here dynamically for Pure SMS hint ⚠️ -->
 
     </LinearLayout>
 
@@ -70,7 +82,7 @@
             android:orientation="vertical"/>
     </ScrollView>
 
-    <!-- 🔴 NEW: Download path display (hidden initially) -->
+    <!-- Download path display (hidden initially) -->
     <LinearLayout
         android:id="@+id/download_path_container"
         android:layout_width="match_parent"
@@ -99,7 +111,7 @@
             android:ellipsize="middle"/>
     </LinearLayout>
 
-    <!-- 🔴 Explanatory text (visible during download) -->
+    <!-- Explanatory text (visible during download) -->
     <TextView
         android:id="@+id/explanation_text"
         android:layout_width="match_parent"
@@ -139,17 +151,6 @@
         android:gravity="center"
         android:visibility="gone"
         android:layout_marginBottom="16dp"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:visibility="gone"
-        android:layout_marginTop="8dp"
-        android:textColor="@color/orange_yellow"
-        android:padding="8dp"/>
 
     <LinearLayout
         android:layout_width="match_parent"

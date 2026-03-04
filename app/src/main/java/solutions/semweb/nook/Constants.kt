@@ -7,8 +7,8 @@ object Constants {
     // 🔴 CENTRALIZED VERSIONING - Edit only these values
     const val VERSION_MAJOR = 1
     const val VERSION_MINOR = 3
-    const val VERSION_PATCH = 8
-    const val VERSION_CODE = 273  // derived aes keys cached for 1 day
+    const val VERSION_PATCH = 10
+    const val VERSION_CODE = 274  //next: 275
 
     // Computed version name (DO NOT EDIT DIRECTLY)
     const val VERSION_NAME = "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_CODE"
@@ -17,6 +17,8 @@ object Constants {
     const val VERSION = VERSION_NAME
     //////////////////////////////////////////////////////
 
+    // Pure SMS mode - NO automatic internet accesses are performed
+    const val KEY_PURE_SMS_MODE = "pure_sms_mode"
 
     // This is the only "brand" I have:
     const val COPYRIGHT = "©2026 semweb.solutions"

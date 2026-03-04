@@ -193,7 +193,7 @@ android {
             // Use the SAME master keystore for release builds
             signingConfig = signingConfigs.getByName("master")
 
-            // 🔐 RELEASE URLs (these will be injected at build time, not hardcoded in Constants.kt)
+            // 🔐 RELEASE URLs (these will be os-env-injected at build time, not hardcoded in Constants.kt)
             buildConfigField("String", "GITHUB_SHA256_URL", "\"https://raw.githubusercontent.com/redskate/nook/refs/heads/master/app/sha256\"")
             buildConfigField("String", "GITHUB_RELEASES_URL", "\"https://github.com/redskate/nook/raw/refs/heads/master/app/releases/\"")
 
