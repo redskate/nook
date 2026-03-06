@@ -174,8 +174,7 @@ class ChatMessagesAdapter(
                             {
                                 if (nextLoad==1)
                                     context.getString(
-                                        R.string.load_last_message,
-                                        nextLoad
+                                        R.string.load_last_message
                                     )
                                 else
                                     context.getString(
@@ -187,7 +186,8 @@ class ChatMessagesAdapter(
                                 context.getString(
                                     R.string.load_more_with_count,
                                     nextLoad,
-                                    remainingFormatted.toInt()
+                                    remainingMessages
+                                    // era: remainingFormatted.toInt()
                                 )
                         } else {
                             context.getString(R.string.load_more_messages)

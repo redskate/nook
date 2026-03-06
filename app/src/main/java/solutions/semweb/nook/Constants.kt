@@ -7,8 +7,8 @@ object Constants {
     // 🔴 CENTRALIZED VERSIONING - Edit only these values
     const val VERSION_MAJOR = 1
     const val VERSION_MINOR = 3
-    const val VERSION_PATCH = 10
-    const val VERSION_CODE = 274  //next: 275
+    const val VERSION_PATCH = 11
+    const val VERSION_CODE = 276  // sms loop check excluding erroneously repeating send actions within 30sec
 
     // Computed version name (DO NOT EDIT DIRECTLY)
     const val VERSION_NAME = "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_CODE"

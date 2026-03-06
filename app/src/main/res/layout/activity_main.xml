@@ -665,6 +665,18 @@
         </com.google.android.material.card.MaterialCardView>
 
 
+        <!-- DEBUG QUEUE BUTTON DEBUG -->
+        <ImageButton
+            android:id="@+id/debug_queue_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_menu_info_details"
+            android:background="@android:color/transparent"
+            android:visibility="gone"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp" />
+
         <!-- Footer Info -->
         <TextView
             android:id="@+id/version_footer"

@@ -479,7 +479,7 @@
     <string name="load_last_message">Mostra l\'ultimo messaggio</string>
     <string name="simply_exit_app">Chiudi NooK</string>
     <string name="sha_verification_title">Verifica Impronta Digitale APP</string>
-    <string name="sha_verification_no_internet_message">CONNESSIONE INTERNET IMPOSSIBILE</string>
+    <string name="sha_verification_no_internet_message">CONNESSIONE INTERNET NON DISPONIBILE</string>
     <string name="sha_verification_retry">Riprova con INTERNET</string>
     <string name="sha_verification_continue_risk">Continua SENZA</string>
     <string name="sha_verification_exit">CHIUDI APP</string>
@@ -544,6 +544,9 @@
     <string name="disable_pure_sms_for_updates">Disattiva SMS puri per controllare aggiornamenti</string>
     <string name="pure_sms_active_title">Modalità SMS puri Attiva</string>
     <string name="pure_sms_upgrade_message">Per scaricare gli aggiornamenti, la modalità SMS puri deve essere temporaneamente disattivata. Come vuoi procedere?</string>
-
+    <string name="sms_queued">SMS in coda per l\'invio</string>
+    <string name="sms_duplicate_suppressed">SMS duplicato soppresso (finestra %d secondi)</string>
+    <string name="sms_already_pending">Messaggio già in attesa nella coda</string>
+    <string name="sms_queue_size">Coda SMS: %d in attesa</string>
 
 </resources>

@@ -65,7 +65,7 @@ android {
 
     defaultConfig {
         applicationId = "solutions.semweb.nook"
-        minSdk = 24 // Android 7 (Nougat)
+        minSdk = 26 // Android 8 (Oreo)
         targetSdk = 34 // Compat
         versionCode = versionCodeFromConstants
         versionName = versionNameString

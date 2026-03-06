@@ -446,7 +446,7 @@
     <string name="load_last_message">Show last message</string>
     <string name="simply_exit_app">Exit NooK</string>
     <string name="sha_verification_title">APP Fingerprint Verification</string>
-    <string name="sha_verification_no_internet_message">NO INTERNET CONNECTION</string>
+    <string name="sha_verification_no_internet_message">INTERNET ACCESS NOT AVAILABLE</string>
     <string name="sha_verification_retry">Retry WITH INTERNET</string>
     <string name="sha_verification_continue_risk">Continue WITHOUT</string>
     <string name="sha_verification_exit">CLOSE APP</string>
@@ -507,4 +507,9 @@
     <string name="disable_pure_sms_for_updates">Disable Pure SMS to check for updates</string>
     <string name="pure_sms_active_title">Pure SMS Mode Active</string>
     <string name="pure_sms_upgrade_message">To download updates, Pure SMS mode needs to be temporarily disabled. How would you like to proceed?</string>
+    <string name="sms_queued">SMS queued for sending</string>
+    <string name="sms_duplicate_suppressed">Duplicate SMS suppressed (%d sec window)</string>
+    <string name="sms_already_pending">Message already pending in queue</string>
+    <string name="sms_queue_size">SMS queue: %d pending</string>
+
 </resources>

@@ -47,6 +47,7 @@ import androidx.recyclerview.widget.RecyclerView
 import solutions.semweb.nook.chat.ChatActivity
 import solutions.semweb.nook.chat.ChatImportExportManager
 import solutions.semweb.nook.chat.ChatManager
+import solutions.semweb.nook.chat.SMSQueueManager
 import solutions.semweb.nook.contacts.SearchContactAdapter
 import solutions.semweb.nook.crypto.CryptoManager
 import solutions.semweb.nook.crypto.EncryptionMapper
@@ -171,6 +172,19 @@ class MainActivityUtils(private val activity: MainActivity) {
             (displayMetrics.widthPixels * 0.9).toInt(),
             (displayMetrics.heightPixels * 0.85).toInt()
         )
+    }
+
+
+    /**
+     * Shows SMS queue status (for debugging)
+     */
+    fun showSMSQueueStatus() {
+        val queueSize = SMSQueueManager.getQueueSize()
+        if (queueSize > 0) {
+            MainActivity.showToast(activity.getString(R.string.sms_queue_size, queueSize))
+        } else {
+            MainActivity.showToast("No pending SMS messages")
+        }
     }
 
     /**

@@ -451,7 +451,7 @@
     <string name="load_last_message">Zeige die letzte Nachricht</string>
     <string name="simply_exit_app">NooK beenden</string>
     <string name="sha_verification_title">APP-Fingerabdruck-Verifizierung</string>
-    <string name="sha_verification_no_internet_message">KEINE INTERNETVERBINDUNG</string>
+    <string name="sha_verification_no_internet_message">INTERNETVERBINDUNG NICHT VERFÜGBAR</string>
     <string name="sha_verification_retry">Erneut mit INTERNET versuchen</string>
     <string name="sha_verification_continue_risk">Fortfahren OHNE</string>
     <string name="sha_verification_exit">APP SCHLIESSEN</string>
@@ -512,4 +512,8 @@
     <string name="disable_pure_sms_for_updates">Reinen SMS-Modus für Updates deaktivieren</string>
     <string name="pure_sms_active_title">Reiner SMS-Modus Aktiv</string>
     <string name="pure_sms_upgrade_message">Um Updates herunterzuladen, muss der reine SMS-Modus vorübergehend deaktiviert werden. Wie möchten Sie fortfahren?</string>
+    <string name="sms_queued">SMS in coda per l\'invio</string>
+    <string name="sms_duplicate_suppressed">SMS duplicato soppresso (finestra %d secondi)</string>
+    <string name="sms_already_pending">Messaggio già in attesa nella coda</string>
+    <string name="sms_queue_size">Coda SMS: %d in attesa</string>
 </resources>

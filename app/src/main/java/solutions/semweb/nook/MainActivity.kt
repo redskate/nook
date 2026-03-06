@@ -36,6 +36,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -329,6 +330,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun proceedWithNormalInit() {
         // Controlla disclaimer
         val disclaimerAccepted = prefs.getBoolean("disclaimer_accepted", false)
@@ -357,7 +359,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         initializeAppLinearly()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun initializeAppLinearly() {
         LogUtils.e("MAIN", "🔄 Linear initialization...")
 
@@ -688,6 +690,29 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         }
     }
 
+    private fun addDebugQueueButton() {
+        try {
+            // Only show in debug builds
+            if (!BuildConfig.DEBUG) return
+
+            // Find the existing ImageButton from XML
+            val debugButton = findViewById<ImageButton>(R.id.debug_queue_button)
+
+            if (debugButton != null) {
+                // Make it visible and set up click listener
+                debugButton.visibility = View.VISIBLE
+                debugButton.setOnClickListener {
+                    utils.showSMSQueueStatus()
+                }
+                LogUtils.e("MAIN", "✅ Debug queue button configured")
+            } else {
+                LogUtils.e("MAIN", "❌ Could not find debug queue button in layout")
+            }
+        } catch (e: Exception) {
+            LogUtils.e("MAIN", "❌ Failed to configure debug button", e)
+        }
+    }
+
 
     private fun setupCompleteUI() {
         try {
@@ -810,6 +835,9 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 LogUtils.e("MAIN", "${if (isChecked) "Pure SMS" else "Normal"} mode")
                 showToast(if (isChecked) getString(R.string.pure_sms_mode_active) else getString(R.string.pure_sms_mode_inactive))
             }
+
+            // Add a debug queue button (not in release apks)
+            addDebugQueueButton()
 
             LogUtils.e("MAIN", "✅ Spinners and toggles setup complete")
 
@@ -1462,6 +1490,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
     private fun Int.dpToPx(): Int = (this * resources.displayMetrics.density).toInt()
 
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onResume() {
         super.onResume()
         AppStateTracker.onActivityResumed(this)
@@ -3159,6 +3188,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             File(downloadsDir, fileName)
         }
     }
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun getApkFileFromMediaStore(fileName: String): File? {
         val projection = arrayOf(
             MediaStore.Files.FileColumns._ID,
@@ -3342,6 +3372,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun startForegroundNotification() {
         try {
             LogUtils.d("MainActivity", "🔔 Starting foreground notification on API ${Build.VERSION.SDK_INT}")
