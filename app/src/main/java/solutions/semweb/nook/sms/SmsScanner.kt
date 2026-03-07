@@ -243,14 +243,14 @@ class SmsScanner(private val context: Context) {
                     if (!CryptoManager.isLikelyEncrypted(sms.body)) {
                         LogUtils.d(context, "SmsScanner", "  📝 SMS PLAINTEXT")
 
-                        val isPlaintext = !sms.body.trim().startsWith("#e") &&
+                        val isPlaintext = !sms.body.trim().startsWith(EncryptionMapper.techSign+"e") && // e.g. #e
                                 !CryptoManager.hasEncryptionIndicators(sms.body)
 
                         LogUtils.d(context, "SmsScanner", "  📝 IsPlaintext: $isPlaintext")
 
                         // Save unencr/unenc message
                         chatManager.handleIncomingMessage(
-                            messageText = sms.body,
+                            messageText0 = sms.body,
                             isDecoded = false,
                             conversation = conversation,
                             timestamp = sms.date,
@@ -316,7 +316,7 @@ class SmsScanner(private val context: Context) {
 
                             // Add the real message WITH the part count in the prefix
                             chatManager.handleIncomingMessage(
-                                messageText = resultDecode.decoded,
+                                messageText0 = resultDecode.decoded,
                                 true,
                                 conversation,
                                 timestamp = sms.date,

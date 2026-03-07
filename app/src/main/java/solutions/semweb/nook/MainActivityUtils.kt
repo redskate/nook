@@ -183,7 +183,7 @@ class MainActivityUtils(private val activity: MainActivity) {
         if (queueSize > 0) {
             MainActivity.showToast(activity.getString(R.string.sms_queue_size, queueSize))
         } else {
-            MainActivity.showToast("No pending SMS messages")
+            MainActivity.showToast("No queued pending outgoing SMS messages")
         }
     }
 
@@ -905,7 +905,6 @@ class MainActivityUtils(private val activity: MainActivity) {
         ui: EncryptionDialogUIElements,
         activity: MainActivity
     ) {
-        val selectedEncoding = EncryptionMapper.encodingValues[ui.encodingSpinner.selectedItemPosition]
         val generatedPassword = CryptoManager.generateSimplePassword()
         ui.encodingPasswordInput.setText(generatedPassword)
         ui.encodingPasswordInput.setSelection(generatedPassword.length)

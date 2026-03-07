@@ -53,16 +53,13 @@ object EncryptionMapper {
         ENCRYPTION_TEXT  // 0
     )
 
-    const val SISA_ENCR_PREFIX = "#0"
+    const val techSign = "✅" // was # but better another one
+    const val SISA_ENCR_PREFIX = techSign+"0"
 
     //NB: Only encryption scheme is shown, encoding is set but not shown in message
 
     private val schemaToPrefix = mapOf(
-        ENCRYPTION_SISA to "#e${SISA_ENCR_PREFIX}",
-    )
-
-    private val prefixToSchema = mapOf(
-        "#e${SISA_ENCR_PREFIX}" to ENCRYPTION_SISA,
+        ENCRYPTION_SISA to techSign+"e${SISA_ENCR_PREFIX}", // "✅e${SISA_ENCR_PREFIX}"
     )
 
     /**

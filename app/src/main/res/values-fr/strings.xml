@@ -442,7 +442,7 @@
     <string name="load_last_message">Montre le derniere Message</string>
     <string name="simply_exit_app">Fermer NooK</string>
     <string name="sha_verification_title">Vérification de l\'empreinte de l\'APP</string>
-    <string name="sha_verification_no_internet_message">CONNEXION INTERNET PAS DISPONIBLE</string>
+    <string name="sha_verification_no_internet_message">CONNEXION INTERNET PAS DISPONIBLE MAINTENANT</string>
     <string name="sha_verification_retry">Réessayer AVEC INTERNET</string>
     <string name="sha_verification_continue_risk">Continuer SANS</string>
     <string name="sha_verification_exit">FERMER L\'APP</string>

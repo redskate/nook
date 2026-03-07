@@ -479,7 +479,7 @@
     <string name="load_last_message">Mostra l\'ultimo messaggio</string>
     <string name="simply_exit_app">Chiudi NooK</string>
     <string name="sha_verification_title">Verifica Impronta Digitale APP</string>
-    <string name="sha_verification_no_internet_message">CONNESSIONE INTERNET NON DISPONIBILE</string>
+    <string name="sha_verification_no_internet_message">CONNESSIONE INTERNET ATTUALMENTE NON DISPONIBILE</string>
     <string name="sha_verification_retry">Riprova con INTERNET</string>
     <string name="sha_verification_continue_risk">Continua SENZA</string>
     <string name="sha_verification_exit">CHIUDI APP</string>

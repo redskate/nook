@@ -451,7 +451,7 @@
     <string name="load_last_message">Zeige die letzte Nachricht</string>
     <string name="simply_exit_app">NooK beenden</string>
     <string name="sha_verification_title">APP-Fingerabdruck-Verifizierung</string>
-    <string name="sha_verification_no_internet_message">INTERNETVERBINDUNG NICHT VERFÜGBAR</string>
+    <string name="sha_verification_no_internet_message">INTERNETVERBINDUNG AKTUELL NICHT VERFÜGBAR</string>
     <string name="sha_verification_retry">Erneut mit INTERNET versuchen</string>
     <string name="sha_verification_continue_risk">Fortfahren OHNE</string>
     <string name="sha_verification_exit">APP SCHLIESSEN</string>

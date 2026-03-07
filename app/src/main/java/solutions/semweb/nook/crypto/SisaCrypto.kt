@@ -156,16 +156,35 @@ object SisaCrypto {
                 return plainText
             }
 
-            // 4. Generate IV randomly
+            // 4. Generate IV randomly (but check if key requires Keystore-generated IV)
             val iv = ByteArray(12).also { SecureRandom().nextBytes(it) }
 
-            // 5. Encrypt with AES-GCM
+// 5. Check if this is a Keystore key and handle appropriately
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            val gcmSpec = GCMParameterSpec(128, iv)
-            cipher.init(Cipher.ENCRYPT_MODE, aesKey, gcmSpec)
+            val cipherText: ByteArray
+            val finalIv: ByteArray
 
-            val cipherText = cipher.doFinal(textToEncrypt.toByteArray(Charsets.UTF_8))
-            val combined = iv + cipherText
+            if (aesKey.toString().contains("AndroidKeyStore") ||
+                aesKey::class.java.name.contains("KeyStore")) {
+
+                LogUtils.d(context, "SisaCrypto", "🔑 Using Keystore key - letting Keystore generate IV")
+
+                // For Keystore keys, let the Keystore generate the IV
+                cipher.init(Cipher.ENCRYPT_MODE, aesKey)
+                cipherText = cipher.doFinal(textToEncrypt.toByteArray(Charsets.UTF_8))
+                finalIv = cipher.iv  // Get the IV that Keystore generated
+
+                LogUtils.d(context, "SisaCrypto", "🔑 Keystore generated IV of size: ${finalIv.size}")
+            } else {
+                // For regular SecretKeySpec keys, use our own IV
+                LogUtils.d(context, "SisaCrypto", "🔑 Using regular key - using caller-provided IV")
+                val gcmSpec = GCMParameterSpec(128, iv)
+                cipher.init(Cipher.ENCRYPT_MODE, aesKey, gcmSpec)
+                cipherText = cipher.doFinal(textToEncrypt.toByteArray(Charsets.UTF_8))
+                finalIv = iv
+            }
+
+            val combined = finalIv + cipherText
 
             // 6. Encode and add prefix
             if (encoding == EncryptionMapper.ENCRYPTION_TEXT) {
@@ -475,12 +494,4 @@ object SisaCrypto {
                         message.matches("^.*#[A-Za-z0-9+/=]+$".toRegex()))
     }
 
-    /**
-     * Clean up old keys for a specific phone number
-     * Call this when password changes
-     */
-    fun cleanupPhoneKeys(context: Context, phoneNumber: String) {
-        SisaKeyCache.clearCacheForPhone(context, phoneNumber)
-        LogUtils.d(context, "SisaCrypto", "🗑️ Cleaned all keys for $phoneNumber")
-    }
 }

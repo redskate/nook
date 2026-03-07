@@ -1766,7 +1766,9 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
 
-
+    /**
+     * checks unencrypted values and redecrypt
+     */
     fun showModifySmsChatNameDialog(conversation: ChatConversation) {
 
         val dialogView = layoutInflater.inflate(R.layout.dialog_associate_y_user, null)
@@ -1774,25 +1776,41 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         //all fields
         val textPhoneTitle = dialogView.findViewById<TextView>(R.id.text_phone_title)
         val noEditTextPhone = dialogView.findViewById<TextView>(R.id.no_edit_text_phone)
-
-        //val textChatNameTitle = dialogView.findViewById<TextView>(R.id.text_chat_name_title)
         val yUserNameInput = dialogView.findViewById<TextView>(R.id.y_user_name_input)
-
-        val currentName = conversation.contactName ?: conversation.phoneNumber
 
         // Set phone number
         textPhoneTitle.setText(R.string.number_id)
         noEditTextPhone.text = conversation.phoneNumber
 
-        // Set chat name
-        yUserNameInput.text = conversation.contactName
+        // IMPORTANT: Decrypt the password before displaying it
+        val decryptedPassword = try {
+            // Check if the stored value looks like encrypted data (contains non-printable chars or is very long)
+            val storedPassword = conversation.contactName ?: ""
+
+            // If it looks like encrypted data (contains characters that suggest it's encrypted)
+            if (isLikelyEncrypted(storedPassword)) {
+                // Try to decrypt it
+                CryptoManager.decryptSimplePassword(this, storedPassword)
+            } else {
+                // If it doesn't look encrypted, it might already be plaintext
+                storedPassword
+            }
+        } catch (e: Exception) {
+            LogUtils.e("MAIN", "❌ Error decrypting password for display", e)
+            // If decryption fails, show empty string instead of garbage
+            ""
+        }
+
+        // Set the decrypted password
+        yUserNameInput.text = decryptedPassword
 
         AlertDialog.Builder(this)
             .setTitle(R.string.edit_chat_name)
             .setView(dialogView)
             .setPositiveButton(getString(R.string.save)) { dialog, _ ->
                 val newName = yUserNameInput.text.toString().trim()
-                if (newName.isNotEmpty() && newName != currentName) {
+                if (newName.isNotEmpty() && newName != conversation.contactName) {
+                    // Encrypt the new password before saving
                     renameSmsChat(conversation, newName)
                 }
                 dialog.dismiss()
@@ -1802,10 +1820,28 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             }
             .show()
 
-        yUserNameInput.requestFocus()
         val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(yUserNameInput, InputMethodManager.SHOW_IMPLICIT)
+    }
 
+    /**
+     * Helper function to detect if a string is likely encrypted
+     * This helps avoid displaying garbage when decryption fails
+     */
+    private fun isLikelyEncrypted(text: String): Boolean {
+        if (text.isEmpty()) return false
+
+        // Check if it contains only printable ASCII characters
+        // Encrypted data often contains non-printable characters or is Base64
+        val hasNonPrintable = text.any { it.code < 32 || it.code > 126 }
+
+        // Check if it looks like Base64 (common for encrypted data)
+        val isBase64Like = text.matches(Regex("^[A-Za-z0-9+/=]+$")) && text.length > 20
+
+        // Check if it's very long (passwords are usually short)
+        val isVeryLong = text.length > 50
+
+        return hasNonPrintable || isBase64Like || isVeryLong
     }
 
 

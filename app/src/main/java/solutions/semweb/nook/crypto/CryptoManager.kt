@@ -703,7 +703,7 @@ object CryptoManager {
 
     fun hasEncryptionIndicators(text: String): Boolean {
         val trimmed = text.trim()
-        return trimmed.startsWith("#e")
+        return trimmed.startsWith(EncryptionMapper.techSign+"e") // e.g. #e
     }
 
 

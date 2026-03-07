@@ -207,7 +207,7 @@ class SMSReceiver : BroadcastReceiver() {
             } else {
                 // Plaintext message - fast path
                 chatManager.handleIncomingMessage(
-                    messageText = body,
+                    messageText0 = body,
                     isDecoded = false,
                     conversation,
                     timestamp = timestamp,
@@ -265,7 +265,7 @@ class SMSReceiver : BroadcastReceiver() {
 
         if (result.success) {
             chatManager.handleIncomingMessage(
-                messageText = result.decoded,
+                messageText0 = result.decoded,
                 isDecoded = true,
                 conversation,
                 timestamp = timestamp,

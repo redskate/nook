@@ -417,14 +417,14 @@ class ChatManager(val context: Context) {
         if ( scheme==EncryptionMapper.ENCRYPTION_SISA) {
             val scheme4msg = Constants.SMS_OBF_PREFIX + EncryptionMapper.SISA_ENCR_PREFIX
             val encodedMessageWithoutCode = encryptedMessage.substring(4) // skip first 4 encoding chars
-            return "$scheme4msg$decisecondTimestamp#$encodedMessageWithoutCode"
+            return "$scheme4msg$decisecondTimestamp${EncryptionMapper.techSign}$encodedMessageWithoutCode"
         }
         else {
             // Only encoding
             val encodedMessageWithoutCode = encryptedMessage
             val scheme4msg = Constants.SMS_OBF_PREFIX
             // Construct message with right prefix: #e<timestamp>#...
-            return "$scheme4msg$decisecondTimestamp#$encodedMessageWithoutCode"
+            return "$scheme4msg$decisecondTimestamp${EncryptionMapper.techSign}$encodedMessageWithoutCode"
         }
     }
 
@@ -455,7 +455,7 @@ class ChatManager(val context: Context) {
     }
 
     fun handleIncomingMessage(
-        messageText: String,
+        messageText0: String,
         isDecoded: Boolean = true,
         conversation: ChatConversation,
         transTimestamp: Long, // timestamp coming from NooK, not SMS
@@ -479,8 +479,15 @@ class ChatManager(val context: Context) {
                 isHandlingIncoming.set(true)
 
                 LogUtils.d(context, "ChatManager", "📱 Gestione SMS in arrivo da: $senderName")
-                LogUtils.d(context, "ChatManager", "  Testo: '${messageText.take(50)}...'")
+                LogUtils.d(context, "ChatManager", "  Testo: '${messageText0.take(50)}...'")
                 LogUtils.d(context, "ChatManager", "  isDecoded: $isDecoded")
+
+                //compatibility: nowadays messages have EncryptionMapper.techSign as #
+                //in case we get a message starting with # - replace # with EncryptionMapper.techSign
+                val messageText =
+                    if (messageText0.startsWith("#"))
+                        messageText0.replace("#", EncryptionMapper.techSign)
+                    else messageText0
 
                 // DEFENSIVE CHECK: Verify this sender should have a chat
                 val prefs = SharedPreferencesManager.getInstance(context)
@@ -501,7 +508,7 @@ class ChatManager(val context: Context) {
                 val isPlaintextReceived = when {
                     usedScheme == EncryptionMapper.ENCRYPTION_TEXT && usedEncoding == EncryptionMapper.ENCRYPTION_TEXT -> true
                     !isDecoded &&
-                            !messageText.trim().startsWith("#e") &&
+                            !messageText.trim().startsWith(EncryptionMapper.techSign+"e") &&  // e.g. #e
                             !CryptoManager.hasEncryptionIndicators(messageText) -> true
                     else -> false
                 }

@@ -6,9 +6,9 @@ object Constants {
     //////////////////////////////////////////////////////
     // 🔴 CENTRALIZED VERSIONING - Edit only these values
     const val VERSION_MAJOR = 1
-    const val VERSION_MINOR = 3
-    const val VERSION_PATCH = 11
-    const val VERSION_CODE = 276  // sms loop check excluding erroneously repeating send actions within 30sec
+    const val VERSION_MINOR = 4
+    const val VERSION_PATCH = 1
+    const val VERSION_CODE = 278  // fixed # => ✅
 
     // Computed version name (DO NOT EDIT DIRECTLY)
     const val VERSION_NAME = "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_CODE"
@@ -43,7 +43,7 @@ object Constants {
 
     // SMS
     const val SMSTAG = "SMSReceiver"
-    const val SMS_OBF_PREFIX = "#e"
+    const val SMS_OBF_PREFIX = EncryptionMapper.techSign+"e" // e.g. #e
 
 
     // Notifications
@@ -123,7 +123,6 @@ object Constants {
     const val MULTIPART_DELAY = 60000L // ms
     const val SCANNER_TAG = "SmsScanner"
     const val KEY_MULTIPART_INFO = "multipart_info"
-    const val MULTIPART_DUMMY_ID_PREFIX = "multipart_"
 
     //Protected - Now using BuildConfig values from gradle
     const val GITHUB_SHA256_URL = BuildConfig.GITHUB_SHA256_URL

@@ -302,11 +302,7 @@ class ChatExportTask(
                 else -> arrow_in
             }
 
-            val typeBadge = when {
-                message.isYMessage -> " <span style='background:#8BC34A;color:white;padding:2px 6px;border-radius:3px;font-size:0.8em;'>Y</span>"
-                !message.isDecoded -> " <span style='background:#FFC107;color:white;padding:2px 6px;border-radius:3px;font-size:0.8em;'>Plain</span>"
-                else -> ""
-            }
+            val typeBadge =  " <span style='background:#FFC107;color:white;padding:2px 6px;border-radius:3px;font-size:0.8em;'>Plain</span>"
 
             sb.append("""
             <div class="$messageClass">
