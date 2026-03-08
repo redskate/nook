@@ -802,7 +802,7 @@
                     <i class="fas fa-shield-halved"></i> Open Source · AES-256 · No Internet
                 </div>
                 <h1>Encrypted SMS<br>for Android</h1>
-                <p>NooK transforms your regular SMS into secure, encrypted messages using AES-256 technology. No internet required to operate, no data collection, nor data sharing, complete privacy. <b>Available starting from Android 8 ("Oreo", 2017) on</b>.<br>Important: This page does <span style="color:#1a1">not</span> track your browser!</p>
+                <p>NooK transforms your regular SMS into secure, encrypted messages using AES-256 technology. No internet required to operate, no data collection, nor data sharing, complete privacy. <b>Available starting from Android 8 ("Oreo", 2017) on</b>. Important: This page does <span style="color:#1a1">not</span> track your browser!</p>
 
                 <div class="hero-stats">
                     <div class="stat-item">
@@ -821,8 +821,6 @@
 
                 <!-- SEZIONE DOWNLOAD CON VERSIONE LEGGATA DAI META TAG -->
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 15px">
-                    <!-- Pulsante F-DROID -->
-                    <a href="https://f-droid.org" target="blank" class="btn"><i class="fab fa-android"></i>Soon on F-DROID</a>
 
                     <!-- Pulsante Download Diretto - gli attributi verranno popolati via JavaScript -->
                     <a href="#" class="btn btn-primary download-btn" style="background: #1a1; color: #000;">
@@ -838,12 +836,12 @@
             <!-- SLIDESHOW AREA -->
             <div class="slideshow-area">
                 <div class="slideshow-container">
-                    <img src="./nook/gallery/nook-chats.png" alt="NooK Chat View" class="slideshow-img" loading="lazy">
-                    <img src="./nook/gallery/nook-app-lock.png" alt="NooK app Lock" class="slideshow-img active" loading="lazy">
-                    <img src="./nook/gallery/nook-settings.png" alt="NooK Settings" class="slideshow-img" loading="lazy">
-                    <img src="./nook/gallery/nook-encryption-settings.png" alt="NooK Encryption Settings" class="slideshow-img" loading="lazy">
-                    <img src="./nook/gallery/nook-chat.png" alt="NooK Chat" class="slideshow-img" loading="lazy">
-                    <img src="./nook/gallery/nook-version-mana.png" alt="NooK Version Management" class="slideshow-img" loading="lazy">
+                    <img src="./gallery/nook-chats.png" alt="NooK Chat View" class="slideshow-img" loading="lazy">
+                    <img src="./gallery/nook-app-lock.png" alt="NooK app Lock" class="slideshow-img active" loading="lazy">
+                    <img src="./gallery/nook-settings.png" alt="NooK Settings" class="slideshow-img" loading="lazy">
+                    <img src="./gallery/nook-encryption-settings.png" alt="NooK Encryption Settings" class="slideshow-img" loading="lazy">
+                    <img src="./gallery/nook-chat.png" alt="NooK Chat" class="slideshow-img" loading="lazy">
+                    <img src="./gallery/nook-version-mana.png" alt="NooK Version Management" class="slideshow-img" loading="lazy">
                 </div>
 
                 <div class="slideshow-dots">
@@ -1054,7 +1052,7 @@
                     • The installation "motto" is "<b>install anyway</b>"!<br>
                     • <b>Enable Installation from Unknown Sources</b>: On your Android device, go to Settings > Security.
                     In your device settings on privacy and security, enable the option "Install unknown apps" or "Allow from this source" or uncheck "app Installation Block" or similar actions (which might change in the future) for your file manager or browser (You may always enable that again after this installation).<br>
-                    • The installation process asks you to submit first NooK to Google Play Protect for analysis before you install it. Useless action. Rather, search for a tiny text between big buttons saying 'install anyway' and press / click it.<br>
+                    • The installation process asks you to submit first NooK to Google Play Protect for analysis before you install it. Useless but possible action. If no other link is clickable use this link and then install, or search for a tiny text between big buttons saying 'install anyway' and press / click it to install it.<br>
                     • Download the latest NooK APK here from this page or from <a title="Click to open github repository in another page" href="https://github.com/redskate/nook/tree/master/app/releases"target="_blank">github directly</a>: <br>
                     • NB: Starting from version <b>1.4.x.yyy</b> the encryption sign used in the underlying SMS has been changed from '#' to '✅' - this introduced a significant change in how message are understood. <b>Please update NooK to this version or newer</b> in order to guarantee the exchange. The use of '#' in an SMS caused some AI augmented Android OS to "understand" the intention of a command - and to answers back to the transmitter with a base64 coded message (!) saying something like "command not recognized - type ##help for help", thus comsuming uselessy one SMS for the answer.
                 </div>
@@ -1065,10 +1063,10 @@
                 <div class="privacy-text">
                     💡 In the Warning Android Instalation Popup, CHOOSE "more details" and then <b>CONFIRM (INSTALL) ANYWAY</b><br>
                     🚀 Launch NooK app<br>
-                    ❗ <b>READ</b> and Accept disclaimer (!!) & Grant 3 Permissions<br>
+                    ❗ <b>READ</b> and Accept disclaimer (!!) & Grant 3 Permissions - <b>Check that the whole permissions</b> have been granted! Some OS, e.g. some Android 15, will not grant NooK the whole SMS permission - and Nook will not be able to run proberly.<br>
                     • Define one or more trusted contacts from the settings or create directly a chat using the lupe (top right) symbol<br>
                     • Start Chatting Securely!<br>
-                    • Change again your security settings (see above) in case you should feel more safe.<br>
+                    • Change your (weak default) security settings (see above) in case you should feel more safe.<br>
                     <a href="/nook/videos/nook-intro.mp4" title="Click to open video in a new page" target="nook1">See a short intro video showing the first steps</a>
                     <a href="/nook/videos/Nook-trusted-contacts.mp4" title="Click to open video in a new page" target="nook2">See a short intro video showing using the more general trusted contacts</a><br>
                     That's it! Your messages are now encrypted end-to-end and travel via SMS
