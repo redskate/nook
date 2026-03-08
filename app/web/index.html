@@ -1057,8 +1057,13 @@
                     • NB: Starting from version <b>1.4.x.yyy</b> the encryption sign used in the underlying SMS has been changed from '#' to '✅' - this introduced a significant change in how message are understood. <b>Please update NooK to this version or newer</b> in order to guarantee the exchange. The use of '#' in an SMS caused some AI augmented Android OS to "understand" the intention of a command - and to answers back to the transmitter with a base64 coded message (!) saying something like "command not recognized - type ##help for help", thus comsuming uselessy one SMS for the answer.
                 </div>
                 <div class="installation-warning-text">
-                    NB: Android installer will want to "understand" that the app be potentially dangerous
-                    Well: maybe "potential-ly" (useful). But not dangerous at all -> see yourself the code on GitHub (SmsReceiver, SmsSender, SmsScanner) - NooK is safe.
+                    <p>
+                        <b>Warnings</b>: <br><br>
+                        • Android installer will want to "understand" that the app be potentially dangerous
+                        Well: maybe "potential-ly" (useful). But not dangerous at all -> see yourself the code on GitHub (SmsReceiver, SmsSender, SmsScanner) - NooK is safe.<br><br>
+                        • In case NooK be behind a local inner <b>proxy</b> app (like e.g. DuckDuckGo Tracking Protection) please exclude NooK from the list off apps considered to be analized. NooK does not track anything, and letting NooK traffic through this proxy might cause isolated communication problems (retention of encrypted messages, while thought to be dangerous...) and received encripted messages might not reach NooK and you might not see the message.
+
+                    </p>
                 </div>
                 <div class="privacy-text">
                     💡 In the Warning Android Instalation Popup, CHOOSE "more details" and then <b>CONFIRM (INSTALL) ANYWAY</b><br>
