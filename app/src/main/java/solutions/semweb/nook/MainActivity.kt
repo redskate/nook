@@ -10,7 +10,6 @@ import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -80,7 +79,7 @@ import java.util.regex.Pattern
 
 class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
-    private var apkFileToInstall: File? = null
+    private lateinit var checkAppBtn: Button
     private lateinit var updateChecker: UpdateChecker
     private lateinit var updateBadgeContainer: LinearLayout
     private lateinit var updateBadgeIcon: ImageView
@@ -116,7 +115,6 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     private lateinit var settingsContent: LinearLayout
     private lateinit var settingsExpandIcon: ImageView
     private var isSettingsExpanded = false
-    private var conversation: ChatConversation? = null
     private lateinit var settingsYHeader: LinearLayout
     private lateinit var settingsYContent: LinearLayout
     private lateinit var settingsYExpandIcon: ImageView
@@ -155,6 +153,10 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
 
     companion object {
+
+        //Use conversation as global obj:
+        var conversation: ChatConversation? = null
+
         private const val TAG = "MainActivity"
         private const val PERMISSION_REQUEST_SMS = 100
         private const val PERMISSION_REQUEST_CONTACTS = 101
@@ -243,6 +245,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
     private var initialVerificationHandled = false
 
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun handleInitialShaResult(result: ShaVerificationManager.SHAVerificationResult) {
         if (initialVerificationHandled) {
             LogUtils.e("MAIN", "⚠️ Initial SHA result already handled, ignoring duplicate")
@@ -368,7 +371,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             setupShaVerificationUI()
 
             // 1. Setup basic views FIRST
-            setupBasicViews()  // <-- QUI vengono inizializzati tutti i toggle
+            setupBasicViews()  // <-- also toggle init
 
             // 2. HIDE CHATS
             runOnUiThread {
@@ -415,11 +418,11 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             chatRecyclerView.layoutManager = LinearLayoutManager(this)
             chatRecyclerView.adapter = chatAdapter
 
-            setupSpinnersAndToggles()  // <-- QUI SI USANO I TOGGLE GIÀ INIZIALIZZATI
+            setupSpinnersAndToggles()
             setupButtons()
             setVersionFooter()
             setupSettings()
-            setupToggleLabelClickListeners()  // <-- QUESTA DEVE ESSERE DOPO setupSpinnersAndToggles
+            setupToggleLabelClickListeners()
             setupNotificationSoundPreferences()
             setupOwnerNameField()
 
@@ -454,6 +457,10 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
             // 14. SIMPLE POLLING - check every second
             startPollingForDatabaseReady()
+
+            // 15. CRITICAL: Tell SHA manager that app is fully initialized
+            // This schedules the first verification after 10 minutes
+            shaVerificationManager.onAppInitialized()
 
         } catch (e: Exception) {
             LogUtils.e("MAIN", "❌ Error in initializeAppLinearly", e)
@@ -499,6 +506,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
 
     // Keep initializeCompleteOnCreate simple
+    @RequiresApi(Build.VERSION_CODES.S)
     fun initializeCompleteOnCreate() {
         LogUtils.e("MAIN", "initializeCompleteOnCreate() called from disclaimer")
         // This is only called on first install after disclaimer is accepted
@@ -506,109 +514,6 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         initializeAppLinearly()
     }
 
-    /**
-     * Tries to load chats if database is ready, otherwise logs that it's delayed
-     */
-    private fun tryLoadChats() {
-        if (databaseActor.isReady) {
-            LogUtils.e("MAIN", "📱 Database ready, loading chats now")
-            loadChatConversations()
-        } else {
-            LogUtils.e("MAIN", "⏳ Database not ready yet, chats will load when ready")
-        }
-    }
-
-
-
-    /**
-     * Open APK directly with package installer
-     */
-    private fun openApkWithInstallerViaSAF(apkFile: File) {
-        try {
-            LogUtils.e(TAG, "📲 Opening APK with installer via SAF: ${apkFile.absolutePath}")
-
-            // For Android 7+, use FileProvider
-            val apkUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                val authority = "${packageName}.fileprovider"
-                androidx.core.content.FileProvider.getUriForFile(this, authority, apkFile)
-            } else {
-                Uri.fromFile(apkFile)
-            }
-
-            // Create intent specifically for package installer
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(apkUri, "application/vnd.android.package-archive")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-
-                // Try to target package installer directly on some devices
-                setPackage("com.android.packageinstaller")
-            }
-
-            // First try: with specific package
-            if (intent.resolveActivity(packageManager) != null) {
-                LogUtils.e(TAG, "✅ Package installer found (specific package)")
-                startActivity(intent)
-                closeAppAfterDelay(killing = true, delay = 1500)
-                return
-            }
-
-            // Second try: without specific package, but with chooser title
-            val genericIntent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(apkUri, "application/vnd.android.package-archive")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-
-            // Create chooser with explicit title
-            val chooser = Intent.createChooser(
-                genericIntent,
-                getString(R.string.install_apk_chooser_title)
-            ).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-
-            if (genericIntent.resolveActivity(packageManager) != null) {
-                LogUtils.e(TAG, "✅ Package installer found (via chooser)")
-                startActivity(chooser)
-                closeAppAfterDelay(killing = true, delay = 1500)
-                return
-            }
-
-            // Fallback: try different package installer package names
-            val packageInstallerPackages = arrayOf(
-                "com.google.android.packageinstaller",  // Google/Stock
-                "com.android.packageinstaller",          // AOSP
-                "com.samsung.android.packageinstaller",  // Samsung
-                "com.xiaomi.packageinstaller",           // Xiaomi
-                "com.huawei.packageinstaller"            // Huawei
-            )
-
-            for (pkg in packageInstallerPackages) {
-                val pkgIntent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(apkUri, "application/vnd.android.package-archive")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    setPackage(pkg)
-                }
-
-                if (pkgIntent.resolveActivity(packageManager) != null) {
-                    LogUtils.e(TAG, "✅ Package installer found: $pkg")
-                    startActivity(pkgIntent)
-                    closeAppAfterDelay(killing = true, delay = 1500)
-                    return
-                }
-            }
-
-            // Last resort: show the file location
-            LogUtils.e(TAG, "❌ No package installer found")
-            showFileLocationDialog(apkFile.absolutePath)
-
-        } catch (e: Exception) {
-            LogUtils.e(TAG, "❌ Error opening APK with installer", e)
-            showFileLocationDialog(apkFile.absolutePath)
-        }
-    }
     private fun requestAllRequiredPermissionsSimple() {
         LogUtils.e("MAIN", "🔐 Simple permission request...")
 
@@ -641,7 +546,6 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
         proceedWithOtherPermissions()
     }
-
 
     private fun proceedWithOtherPermissions() {
         val permissionsToRequest = mutableListOf<String>()
@@ -955,6 +859,10 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         newChatButton?.setOnClickListener {
             addNewSmsChat()
         }
+
+        checkAppBtn.setOnClickListener {
+            performManualShaVerification()
+        }
     }
 
 
@@ -1020,6 +928,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         notificationSoundName = findViewById(R.id.notification_sound_name)
         notificationSoundContainer = findViewById(R.id.notification_sound_container)
         testNotificationContainer = findViewById(R.id.test_notification_container)
+        checkAppBtn = findViewById(R.id.check_app_btn)
 
         // LOADING
         chatCard = findViewById(R.id.chat_card) // Make sure your chat card has this ID
@@ -1582,7 +1491,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         if (isAppInitialized) {
             try {
                 unregisterReceiver(chatUpdateReceiver)
-                shaVerificationReceiver?.let { unregisterReceiver(it) }
+                shaVerificationManager.cleanup()
                 keyboardSafetyManager.cleanup()
                 appLockManager.stopMonitoring()
                 stopForegroundService()
@@ -2166,7 +2075,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
     private fun performManualShaVerification() {
-        // Questa è SOLO per verifiche manuali (click dell'utente)
+        // only for user clicks
         shaVerificationManager.verifyApkIntegrity(
             forceDownload = false
         ) { result ->
@@ -2201,48 +2110,19 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             view.isFocusable = true
         }
 
-        // Register receiver for background failure notifications
-        registerShaVerificationReceiver()
-    }
+        // Register receiver for background failure notifications INSIDE the manager
+        shaVerificationManager.registerVerificationReceiver { result ->
+            runOnUiThread {
+                // SKULL
+                shaStatusIcon.setImageResource(R.drawable.ic_skull)
+                shaStatusIcon.visibility = View.VISIBLE
+                shaTimestamp.visibility = View.GONE
 
-
-    /**
-     * Setup SHA Failure notifications
-     */
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
-    private fun registerShaVerificationReceiver() {
-        val filter = IntentFilter("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
-
-        shaVerificationReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    intent?.getParcelableExtra("result", ShaVerificationManager.SHAVerificationResult::class.java)
-                } else {
-                    @Suppress("DEPRECATION")
-                    intent?.getParcelableExtra("result")
-                }
-
-                if (result != null) {
-                    runOnUiThread {
-                        // SKULL
-                        shaStatusIcon.setImageResource(R.drawable.ic_skull)
-                        shaStatusIcon.visibility = View.VISIBLE
-                        shaTimestamp.visibility = View.GONE
-
-                        // Show only it not yet shown
-                        if (!initialVerificationHandled) {
-                            showShaCompromisedDialog(result)
-                        }
-                    }
+                // Show only if not yet shown
+                if (!initialVerificationHandled) {
+                    showShaCompromisedDialog(result)
                 }
             }
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(shaVerificationReceiver, filter, RECEIVER_EXPORTED)
-        } else {
-            @Suppress("DEPRECATION")
-            registerReceiver(shaVerificationReceiver, filter)
         }
     }
 
@@ -2422,9 +2302,16 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 onConfirmed.invoke()
             }
             .setNeutralButton(getString(R.string.pure_sms_deactivation_always)) { dialog, _ ->
-                // Disable Pure SMS permanently
-                prefs.pureSmsMode = false
-                pureSmsToggle.isChecked = false
+                // Check if UI is initialized before accessing toggle
+                if (this::pureSmsToggle.isInitialized) {
+                    // Disable Pure SMS permanently
+                    prefs.pureSmsMode = false
+                    pureSmsToggle.isChecked = false
+                } else {
+                    // UI not initialized yet, just update prefs
+                    prefs.pureSmsMode = false
+                    LogUtils.e("MAIN", "⚠️ pureSmsToggle not initialized yet, only updating prefs")
+                }
 
                 dialog.dismiss()
 
@@ -2562,6 +2449,9 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         val versionsScrollview = dialogView.findViewById<ScrollView>(R.id.versions_scrollview)
 
         val currentVersion = BuildConfig.VERSION_NAME
+
+        //hide badge button:
+        updateBadgeContainer.visibility = View.GONE
 
         currentVersionText.text = getString(R.string.current_version, currentVersion)
         latestVersionText.text = getString(R.string.checking_for_updates)
@@ -3764,6 +3654,5 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             }
         }, delay)
     }
-
 
 }

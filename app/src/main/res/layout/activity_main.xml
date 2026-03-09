@@ -169,8 +169,6 @@
                         android:contentDescription="SHA Verification Status"
                         android:visibility="gone"/>
 
-
-
                 </LinearLayout>
 
                 <!-- RecyclerView -->
@@ -532,7 +530,7 @@
                     </LinearLayout>
 
 
-                    <!-- Pure SMS Mode - NEW -->
+                    <!-- Pure SMS Mode -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -572,6 +570,7 @@
                                 android:layout_marginTop="2dp"/>
                         </LinearLayout>
                     </LinearLayout>
+
 
 
                     <!-- Info All contacts -->
@@ -659,6 +658,17 @@
                             android:layout_marginTop="8dp"/>
 
                     </LinearLayout>
+
+                    <!--Forth row: Check SHA App Integrity Button -->
+                    <Button
+                        android:id="@+id/check_app_btn"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/check_app_integrity"
+                        android:backgroundTint="@color/intensive_green"
+                        android:textColor="@android:color/white"
+                        android:textAllCaps="false"
+                        android:layout_marginTop="8dp"/>
 
                 </LinearLayout>
             </LinearLayout>

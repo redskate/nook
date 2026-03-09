@@ -594,31 +594,24 @@ class MainActivityUtils(private val activity: MainActivity) {
         chatManager: ChatManager,
         activity: MainActivity
     ) {
-        if (conversation.isYChat) {
-            MainActivity.showToast(activity.getString(R.string.y_chats_do_not_support_sms_encryption), true)
-            return
-        }
-
-        val refreshedConversation = chatManager.reloadConversation(conversation.phoneNumber) ?: conversation
-
         LogUtils.d(activity, "ChatManager",
             "🔄 Conversation reloaded for dialog: " +
-                    "Encoding: ${refreshedConversation.encoding}, " +
-                    "Encryption: ${refreshedConversation.encryptionScheme}")
+                    "Encoding: ${conversation.encoding}, " +
+                    "Encryption: ${conversation.encryptionScheme}")
 
-        if (!checkAndRequestPhonePermissionIfNeeded(refreshedConversation, prefs, activity)) {
+        if (!checkAndRequestPhonePermissionIfNeeded(conversation, prefs, activity)) {
             return
         }
 
         val dialogView = LayoutInflater.from(activity).inflate(R.layout.dialog_encryption_encoding, null)
-        val dialog = initializeEncryptEncodingDialogUI(refreshedConversation, dialogView, activity)
+        val dialog = initializeEncryptEncodingDialogUI(conversation, dialogView, activity)
 
         val uiElements = initializeUIElements(dialogView)
 
-        setupSpinners(refreshedConversation, uiElements, activity)
-        setupPasswordFields(refreshedConversation, uiElements, activity)
+        setupSpinners(conversation, uiElements, activity)
+        setupPasswordFields(conversation, uiElements, activity)
 
-        setupListeners(uiElements, refreshedConversation, dialog, chatManager, prefs, activity)
+        setupListeners(uiElements, conversation, dialog, chatManager, prefs, activity)
 
         dialog.show()
         focusOnPasswordIfNeeded(uiElements)
@@ -980,7 +973,7 @@ class MainActivityUtils(private val activity: MainActivity) {
         positiveButton.setOnClickListener {
             onEncSaveButtonClicked(
                 ui,
-                conversation,
+                conversation, //NB this is not the global conversation
                 chatManager,
                 activity,
                 missingTelephonePermissions,
@@ -1039,9 +1032,15 @@ class MainActivityUtils(private val activity: MainActivity) {
             activity
         )
 
-        activity.loadChatConversations()
+        //activity.loadChatConversations()
         dialog.dismiss()
     }
+
+    /**
+     * Comprehensive dump of conversation using BOTH phone number and ID
+     * Call this from MainActivity or anywhere with context
+     */
+
 
     private fun saveEncryptionEncodingConfiguration(
         selectedEncryption: String,
@@ -1074,11 +1073,11 @@ class MainActivityUtils(private val activity: MainActivity) {
 
             chatManager.setEncryptionSchemeForChat(conversation.phoneNumber, selectedEncryption)
             chatManager.setEncodingSchemeAndPasswordForChat(
-                conversation.phoneNumber,
+                conversation,
                 selectedEncoding,
                 encodingPassword
             )
-
+            /* useless - conversation are already loaded
             Thread {
                 Thread.sleep(300)
                 activity.runOnUiThread {
@@ -1088,7 +1087,7 @@ class MainActivityUtils(private val activity: MainActivity) {
                                 "Encryption: $selectedEncryption, Encoding: $selectedEncoding")
                 }
             }.start()
-
+            */
         } catch (e: Exception) {
             LogUtils.e(activity, "ChatManager", "❌ Error saving configuration", e)
             MainActivity.showToast(activity.getString(R.string.errorsavingkconfig,  e.message),true)

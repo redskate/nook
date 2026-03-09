@@ -14,6 +14,9 @@ interface TrustedContactDao {
     @Query("SELECT * FROM trusted_contacts ORDER BY displayName")
     fun getAll(): List<TrustedContactEntity>
 
+    @Query("SELECT * FROM trusted_contacts WHERE contactId = :contactId LIMIT 1")
+    fun getById(contactId: String): TrustedContactEntity?
+
     @Insert
     fun insert(contact: TrustedContactEntity): Long
 

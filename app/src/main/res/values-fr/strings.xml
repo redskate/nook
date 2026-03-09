@@ -507,4 +507,9 @@
     <string name="sms_duplicate_suppressed">SMS en double supprimé (fenêtre de %d secondes)</string>
     <string name="sms_already_pending">Message déjà en attente dans la file</string>
     <string name="sms_queue_size">File d\'attente SMS : %d en attente</string>
+    <string name="check_app_integrity">Vérifier l\'Intégrité</string>
+    <string name="content_description_check_app">Vérifier l\'intégrité</string>
+    <string name="sms_not_sent_bad_phonenumber">SMS non envoyé - erreur dans le numéro de téléphone fourni</string>
+    <string name="sending_sms">Envoi SMS en cours...</string>
+    <string name="error_encrypting_password">Erreur lors du chiffrement du mot de passe en memoire</string>
 </resources>

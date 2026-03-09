@@ -6,8 +6,6 @@ import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.provider.ContactsContract
 import android.text.Editable
 import android.text.TextWatcher
@@ -21,8 +19,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import solutions.semweb.nook.BaseActivity
 import solutions.semweb.nook.ContactInfo
 import solutions.semweb.nook.LogUtils
@@ -31,6 +33,7 @@ import solutions.semweb.nook.PhoneUtils
 import solutions.semweb.nook.R
 import solutions.semweb.nook.SharedPreferencesManager
 import solutions.semweb.nook.TrustedContact
+import solutions.semweb.nook.data.database.DatabaseActor
 import java.util.Locale
 
 class TrustedContactsActivity : BaseActivity() {
@@ -210,10 +213,14 @@ class TrustedContactsActivity : BaseActivity() {
     }
 
     private fun addTrustedContact(contactId: String, displayName: String, phoneNumber: String) {
+        LogUtils.d(this, "ADD_CONTACT", "=== ADDING NEW CONTACT ===")
+        LogUtils.d(this, "ADD_CONTACT", "Original - Name: '$displayName'")
+        LogUtils.d(this, "ADD_CONTACT", "Original - Phone: '$phoneNumber'")
+
         val contact = TrustedContact(
             contactId = contactId,
             phoneNumber = phoneNumber,
-            displayName = displayName ?: getString(R.string.unknown),
+            displayName = displayName,
             isActive = true
         )
 
@@ -228,54 +235,87 @@ class TrustedContactsActivity : BaseActivity() {
                 .setPositiveButton(getString(R.string.ok), null)
                 .show()
         } else {
-            // 1. Aggiungi al database
-            prefs.addTrustedContact(contact)
+            lifecycleScope.launch {
+                try {
+                    // Save
+                    withContext(Dispatchers.IO) {
+                        DatabaseActor.getInstance(this@TrustedContactsActivity)
+                            .saveTrustedContact(contact)
+                    }
 
-            // TEMPORANEO: Debug
-            // debugTrustedContacts()
+                    // Verify immediately after save
+                    val savedContacts = withContext(Dispatchers.IO) {
+                        DatabaseActor.getInstance(this@TrustedContactsActivity)
+                            .getTrustedContacts()
+                    }
 
-            // 2. FORZA il ricaricamento della lista COMPLETA
-            // Chiamiamo un metodo che RICARICA tutto da capo
-            refreshTrustedContactsList()
+                    savedContacts.find { it.contactId == contactId }?.let { savedContact ->
+                        LogUtils.d(this@TrustedContactsActivity, "ADD_CONTACT", "=== VERIFY AFTER SAVE ===")
+                        debugContactFlow(savedContact)
+                    }
 
-            MainActivity.showToast(getString(R.string.trusted_contact_added))
+                    withContext(Dispatchers.Main) {
+                        MainActivity.showToast(getString(R.string.trusted_contact_added))
+                        refreshTrustedContactsList()
+                    }
+
+                } catch (e: Exception) {
+                    LogUtils.e(this@TrustedContactsActivity, "ADD_CONTACT",
+                        "❌ Error saving contact", e)
+                }
+            }
         }
     }
 
+
+
+    private fun debugContactFlow(contact: TrustedContact) {
+        LogUtils.d(this, "CONTACT_FLOW", "=== CONTACT FLOW DEBUG ===")
+        LogUtils.d(this, "CONTACT_FLOW", "Contact ID: ${contact.contactId}")
+        LogUtils.d(this, "CONTACT_FLOW", "Display Name: '${contact.displayName}'")
+        LogUtils.d(this, "CONTACT_FLOW", "Phone Number: '${contact.phoneNumber}'")
+
+        // Check if phone number looks encrypted (contains non-printable chars)
+        val hasNonPrintable = contact.phoneNumber.any { it.code < 32 || it.code > 126 }
+        LogUtils.d(this, "CONTACT_FLOW", "Phone has non-printable chars: $hasNonPrintable")
+
+        // Check if it's valid UTF-8
+        try {
+            val bytes = contact.phoneNumber.toByteArray(Charsets.UTF_8)
+            val reconstructed = String(bytes, Charsets.UTF_8)
+            LogUtils.d(this, "CONTACT_FLOW", "UTF-8 roundtrip: ${contact.phoneNumber == reconstructed}")
+        } catch (e: Exception) {
+            LogUtils.d(this, "CONTACT_FLOW", "UTF-8 test failed: ${e.message}")
+        }
+    }
+
+
     private fun refreshTrustedContactsList() {
-        // LOG per debug
         LogUtils.d(this, "TRUSTED_CONTACTS", "🔄 refreshTrustedContactsList() chiamato")
 
+        lifecycleScope.launch {
+            try {
+                val refreshedContacts = withContext(Dispatchers.IO) {
+                    DatabaseActor.getInstance(this@TrustedContactsActivity)
+                        .getTrustedContacts()
+                }
 
-        Handler(Looper.getMainLooper()).postDelayed({
-            val refreshedContacts = prefs.getActiveTrustedContacts()
+                // DEBUG: Call debugContactFlow for each contact
+                refreshedContacts.forEach { contact ->
+                    debugContactFlow(contact)
+                }
 
-            LogUtils.d(this, "TRUSTED_CONTACTS",
-                "✅ Contatti caricati: ${refreshedContacts.size}")
+                withContext(Dispatchers.Main) {
+                    adapter.updateContacts(refreshedContacts)
+                    contactsRecyclerView.invalidate()
+                    contactsRecyclerView.requestLayout()
+                }
 
-            // Trick: Force a layout change to activate rendering
-            contactsRecyclerView.post {
-                // Refresh adapter with the fresh list
-                adapter.updateContacts(refreshedContacts)
-
-                // Forve redraw with this UI tricks:
-                contactsRecyclerView.invalidate()
-                contactsRecyclerView.requestLayout()
-
-                // Trick 2: scroll of 1 pixel and return (invisibile)
-                contactsRecyclerView.smoothScrollBy(0, 1)
-                contactsRecyclerView.postDelayed({
-                    contactsRecyclerView.smoothScrollBy(0, -1)
-                }, 10)
-
-                LogUtils.d(this, "TRUSTED_CONTACTS", "🎯 UI forced refresh")
+            } catch (e: Exception) {
+                LogUtils.e(this@TrustedContactsActivity, "TRUSTED_CONTACTS",
+                    "❌ Error refreshing contacts", e)
             }
-
-            // 8. Controlla se la lista è vuota
-            if (refreshedContacts.isEmpty()) {
-                LogUtils.d(this, "TRUSTED_CONTACTS", "⚠️ Contact list is empty")
-            }
-        }, 50) // 50ms security delay
+        }
     }
 
 

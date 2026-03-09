@@ -802,13 +802,6 @@ class DatabaseActor private constructor(context: Context) {
         return reply.await()
     }
 
-    suspend fun updateChatEncryptionSchemeWidthPassword(phoneNumber: String, encryptionScheme: String, encryptionPassword: String): Boolean {
-        waitForInitialization()
-        val reply = CompletableDeferred<Boolean>()
-        requestChannel.send(DatabaseRequest.UpdateChatEncryptionSchemeWidthPassword(phoneNumber, encryptionScheme, encryptionPassword, reply))
-        return reply.await()
-    }
-
     suspend fun getTrustedContacts(): List<TrustedContact> {
         waitForInitialization()
         val reply = CompletableDeferred<List<TrustedContact>>()

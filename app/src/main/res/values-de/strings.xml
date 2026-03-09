@@ -516,4 +516,9 @@
     <string name="sms_duplicate_suppressed">SMS duplicato soppresso (finestra %d secondi)</string>
     <string name="sms_already_pending">Messaggio già in attesa nella coda</string>
     <string name="sms_queue_size">Coda SMS: %d in attesa</string>
+    <string name="check_app_integrity">App-Integrität prüfen</string>
+    <string name="content_description_check_app">App-Integrität prüfen</string>
+    <string name="sms_not_sent_bad_phonenumber">SMS nicht versendet - falsche Telefonnummer übergeben</string>
+    <string name="sending_sms">Versende SMS...</string>
+    <string name="error_encrypting_password">Fehler beim Verschlüsseln des Passworts</string>
 </resources>

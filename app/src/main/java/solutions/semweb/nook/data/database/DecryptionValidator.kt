@@ -56,45 +56,37 @@ object DecryptionValidator {
     ): String? {
         if (encryptedValue == null) return null
 
-        // Update stats
         val entityStats = stats.getOrPut(entityType) { ValidationStats() }
         entityStats.attempts++
 
         try {
-            // First attempt
             val decrypted = AppCryptoManager.decrypt64Value(encryptedValue)
 
-            // Verify the decryption actually worked
-            if (!looksLikeEncrypted(decrypted)) {
+            // CRITICAL: Verify decryption actually worked
+            // Check if result looks like a valid phone number or name
+            if (!looksLikeEncrypted(decrypted) &&
+                (decrypted.contains(Regex("[0-9+]")) || // Has phone-like chars
+                        decrypted.length < 100)) { // Not too long
+
                 entityStats.successes++
                 return decrypted
+            } else {
+                LogUtils.w(context, TAG,
+                    "⚠️ Decryption produced suspicious result for $fieldName: '$decrypted'")
             }
-
-            // First attempt produced something that still looks encrypted
-            LogUtils.w(context, TAG,
-                "⚠️ [$entityType] First decryption of $fieldName still looks encrypted")
-
-            // Try recovery - maybe it's double-encrypted or corrupted
-            val recovered = tryRecovery(encryptedValue, fieldName, context, entityType)
-            if (recovered != null) {
-                return recovered
-            }
-
         } catch (e: Exception) {
-            // First attempt failed completely
-            LogUtils.e(context, TAG,
-                "❌ [$entityType] Decryption failed for $fieldName", e)
+            LogUtils.e(context, TAG, "❌ Decryption failed for $fieldName", e)
             entityStats.failures++
-
-            // Try recovery
-            val recovered = tryRecovery(encryptedValue, fieldName, context, entityType)
-            if (recovered != null) {
-                return recovered
-            }
         }
 
-        // All attempts failed - return field-specific error message
-        return "<$fieldName decryption error>"
+        // Try recovery
+        val recovered = tryRecovery(encryptedValue, fieldName, context, entityType)
+        if (recovered != null) {
+            return recovered
+        }
+
+        // All failed - throw instead of returning error string
+        throw RuntimeException("Failed to decrypt $fieldName after all attempts")
     }
 
     /**
@@ -106,8 +98,14 @@ object DecryptionValidator {
         context: Context,
         entityType: String = "Unknown"
     ): String {
-        return safeDecrypt(encryptedValue, fieldName, context, entityType)
-            ?: "<$fieldName decryption error>"
+        val decrypted = safeDecrypt(encryptedValue, fieldName, context, entityType)
+
+        // If decryption failed or returned suspicious data, throw
+        if (decrypted == null || decrypted.startsWith("<") && decrypted.endsWith(">") || looksLikeEncrypted(decrypted)) {
+            throw RuntimeException("Failed to decrypt $fieldName for $entityType")
+        }
+
+        return decrypted
     }
 
     /**

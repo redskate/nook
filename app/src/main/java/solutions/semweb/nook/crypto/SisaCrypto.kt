@@ -159,7 +159,7 @@ object SisaCrypto {
             // 4. Generate IV randomly (but check if key requires Keystore-generated IV)
             val iv = ByteArray(12).also { SecureRandom().nextBytes(it) }
 
-// 5. Check if this is a Keystore key and handle appropriately
+            // 5. Check if this is a Keystore key and handle appropriately
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             val cipherText: ByteArray
             val finalIv: ByteArray
@@ -225,14 +225,14 @@ object SisaCrypto {
             }
 
             // 2. Extract payload
-            val payload = encryptedMessage.removePrefix(EncryptionMapper.SISA_ENCR_PREFIX).trim()
+            val encodedPayload = encryptedMessage.removePrefix(EncryptionMapper.SISA_ENCR_PREFIX).trim()
             val base = extractEncodingBase(encoding)
 
-            val combined = try {
+            val decodedEncryptedCombined = try {
                 if (encoding == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) {
-                    payload.toByteArray()
+                    encodedPayload.toByteArray()
                 } else {
-                    BaseXXXUtils.decodeToBytes(payload, base)
+                    BaseXXXUtils.decodeToBytes(encodedPayload, base)
                 }
             } catch (e: Exception) {
                 LogUtils.e(context, "Decryption", "❌ Error decoding Base$base", e)
@@ -247,22 +247,22 @@ object SisaCrypto {
             }
 
             val ivSize = 12
-            if (combined.size < ivSize) {
+            if (decodedEncryptedCombined.size < ivSize) {
                 return DecodeResult(
                     original = encryptedMessage,
                     decoded = encryptedMessage,
                     scheme = EncryptionMapper.ENCRYPTION_TEXT,
                     encoding = encoding,
                     success = false,
-                    notes = "Data too short (${combined.size} byte, min $ivSize)",
+                    notes = "Data too short (${decodedEncryptedCombined.size} byte, min $ivSize)",
                 )
             }
 
             // 3. Extract IV and ciphertext
-            val iv = combined.copyOfRange(0, ivSize)
-            val ciphertext = combined.copyOfRange(ivSize, combined.size)
+            val iv = decodedEncryptedCombined.copyOfRange(0, ivSize)
+            val ciphertext = decodedEncryptedCombined.copyOfRange(ivSize, decodedEncryptedCombined.size)
 
-            // 4. Get password
+            // 4. Get AES password
             val password = PasswordManager.getStoredPassword(context, phoneNumber)
             if (password.isEmpty()) {
                 return DecodeResult(

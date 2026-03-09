@@ -43,7 +43,6 @@ import solutions.semweb.nook.MainActivity
 import solutions.semweb.nook.PhoneUtils
 import solutions.semweb.nook.R
 import solutions.semweb.nook.SharedPreferencesManager
-import solutions.semweb.nook.crypto.AppCryptoManager
 import solutions.semweb.nook.crypto.ChatSafeCopyManager
 import solutions.semweb.nook.crypto.EncryptionMapper
 import solutions.semweb.nook.data.database.ChatConversationEntity
@@ -66,7 +65,7 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var keyboardSafetyManager: KeyboardSafetyManager
 
     // === STATUS VARS ===
-    private var conversation: ChatConversation? = null
+    var conversation: ChatConversation? = null
     private var isYChat = false
     private var yUserId: String? = null
     private var currentMsgSeq = Constants.MSG_SEQ
@@ -105,6 +104,7 @@ class ChatActivity : AppCompatActivity() {
         if (conversationId != null && conversationId!! > 0L) {
             LogUtils.d(this, "ChatActivity", "✅ Conversation Id received: $conversationId")
 
+            // is this the main global conversation?
             conversation = getConversationById(conversationId!!)
 
             if (conversation != null) {
@@ -161,6 +161,8 @@ class ChatActivity : AppCompatActivity() {
         setChatTitle()
         loadMessages()
 
+        MainActivity.conversation = conversation // make data global
+
         LogUtils.d(this, "ChatActivity",
             "📱 Chat aperta: ID=$conversationId, " +
                     "Phone=$phoneNumber, " +
@@ -198,44 +200,10 @@ class ChatActivity : AppCompatActivity() {
                     return@Thread
                 }
 
-                // 2. Decrypt data
-                val decryptedPhone = try {
-                    AppCryptoManager.decrypt64Value(entity.phoneNumber)
-                } catch (e: Exception) {
-                    LogUtils.e(this@ChatActivity, "ChatActivity", "❌ Error decrypting phone", e)
-                    "ERROR"
-                }
+                // 2. Use the existing toDomain() method which handles all fields correctly
+                result = entity.toDomain(this@ChatActivity)
 
-                val decryptedContactName = entity.contactName?.let { name ->
-                    try {
-                        AppCryptoManager.decrypt64Value(name)
-                    } catch (e: Exception) {
-                        LogUtils.e(this@ChatActivity, "ChatActivity", "❌ Error name decryption", e)
-                        null
-                    }
-                }
-
-                val decryptedLastMessage = try {
-                    AppCryptoManager.decrypt64Value(entity.lastMessage)
-                } catch (e: Exception) {
-                    LogUtils.e(this@ChatActivity, "ChatActivity", "❌ Error message decryption", e)
-                    "[ERROR DECRYPT]"
-                }
-
-                // 3. Crea oggetto
-                result = ChatConversation(
-                    id = entity.id,
-                    phoneNumber = decryptedPhone,
-                    contactName = decryptedContactName,
-                    lastMessage = decryptedLastMessage,
-                    lastTimestamp = entity.lastTimestamp,
-                    unreadCount = entity.unreadCount,
-                    isYChat = entity.isYChat,
-                    encryptionScheme = entity.encryptionScheme,
-                    createdAt = entity.createdAt
-                )
-
-                LogUtils.d(this@ChatActivity, "ChatActivity", "✅ Conversation created in thread")
+                LogUtils.d(this@ChatActivity, "ChatActivity", "✅ Conversation created via toDomain()")
 
             } catch (e: Exception) {
                 LogUtils.e(this@ChatActivity, "ChatActivity", "❌ Error in thread", e)
@@ -893,8 +861,7 @@ class ChatActivity : AppCompatActivity() {
         chatActAddOutgoingMessageToChat(text)
         messageInput.text.clear()
         hideKeyboard()
-        checkIfPlaintextAndSend(text)
-
+        checkIfPlaintextAndSendmessageInCurrentChat(text)
     }
 
     private fun chatActAddOutgoingMessageToChat(text: String) {
@@ -932,18 +899,15 @@ class ChatActivity : AppCompatActivity() {
         LogUtils.d(this, "ChatActivity", "⚠️ Message shown in UI, DB will save it after sending SMS")
     }
 
-    private fun checkIfPlaintextAndSend(text: String) {
-        val chatManager = ChatManager(this)
-        val encryptionScheme = chatManager.getEncryptionSchemeForChat(phoneNumber)
-
-        // val conversation = ChatManager.getConversation(phoneNumber)
-        // Carica la conversazione dal db
-        val conversation = runBlocking {
-            databaseActor.getChatConversation(phoneNumber)
-        }
-
+    private fun checkIfPlaintextAndSendmessageInCurrentChat(text: String) {
+        val conversation =
+            this.conversation?:
+                runBlocking {
+                databaseActor.getChatConversation(phoneNumber)
+            }
+        val encryptionScheme = conversation?.encryptionScheme
         val encodingScheme = conversation?.encoding
-        val schemeToUse = if (encryptionScheme.isNotEmpty()) encryptionScheme else prefs.decodingScheme
+        val schemeToUse = encryptionScheme?.isNotEmpty() ?: prefs.decodingScheme
 
         if (schemeToUse == EncryptionMapper.ENCRYPTION_SCHEME_TEXT
             && encodingScheme == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) {
@@ -1280,6 +1244,7 @@ class ChatActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         markAsRead()
+        MainActivity.conversation = null;
         super.onDestroy()
     }
 

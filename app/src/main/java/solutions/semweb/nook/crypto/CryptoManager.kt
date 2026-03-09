@@ -267,9 +267,29 @@ object CryptoManager {
                 // 1. Save scheme in the chat (using normalized phone)
                 chatManager.setEncryptionSchemeForChat(normalizedNumber, scheme)
 
-                // 2. Save password (using normalized phone)
-                prefs.prefs.edit {
-                    putString("encryption_password_$normalizedNumber", encryptionPassword)
+                // 2. ENCRYPT THE PASSWORD before storing!
+                try {
+                    // Use the same encryption method we use for app protection
+                    val encryptedPassword = CryptoManager.encryptSimplePassword(context, encryptionPassword)
+
+                    // Verify the encryption works by decrypting immediately
+                    val decryptedVerification = CryptoManager.decryptSimplePassword(context, encryptedPassword)
+
+                    if (decryptedVerification == encryptionPassword) {
+                        // Store the ENCRYPTED password
+                        prefs.prefs.edit {
+                            putString("encryption_password_$normalizedNumber", encryptedPassword)
+                        }
+                        LogUtils.d(context, "CryptoManager", "✅ Password successfully encrypted and verified")
+                    } else {
+                        LogUtils.e(context, "CryptoManager", "❌ Password encryption verification failed")
+                        MainActivity.showToast(context.getString(R.string.error_encrypting_password), true)
+                        return
+                    }
+                } catch (e: Exception) {
+                    LogUtils.e(context, "CryptoManager", "❌ Failed to encrypt password", e)
+                    MainActivity.showToast(context.getString(R.string.error_encrypting_password), true)
+                    return
                 }
 
                 // 3. Generate and save ECDH keys (using normalized phone)
@@ -459,8 +479,27 @@ object CryptoManager {
         val normalizedNumber = PhoneUtils.normalizePhoneNumber(phoneNumber)
         val key = "encryption_password_$normalizedNumber"
 
-        val password = prefs.prefs.getString(key, null)
-        return password ?: ""
+        val encryptedPassword = prefs.prefs.getString(key, null)
+
+        if (encryptedPassword.isNullOrEmpty()) {
+            return ""
+        }
+        // Decrypt the password before returning and test it
+        try {
+            val decryptedPassword = decryptSimplePassword(context, encryptedPassword)
+
+            // Verify we got something valid (not empty and not the same as encrypted string)
+            if (decryptedPassword.isNotEmpty() && decryptedPassword != encryptedPassword) {
+                LogUtils.d(context, "CryptoManager", "✅ Password successfully decrypted")
+                return decryptedPassword
+            } else {
+                LogUtils.e(context, "CryptoManager", "❌ Password decryption returned invalid result")
+                return ""
+            }
+        } catch (e: Exception) {
+            LogUtils.e(context, "CryptoManager", "❌ Failed to decrypt password", e)
+            return ""
+        }
     }
 
     fun generateAutoPassword(context: Context, phoneNumber: String): String {

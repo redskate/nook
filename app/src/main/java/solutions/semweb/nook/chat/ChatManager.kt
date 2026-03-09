@@ -500,7 +500,7 @@ class ChatManager(val context: Context) {
                     return false
                 }
 
-                val encodingPassword = conversation?.encodingPassword ?: ""
+                val encodingPassword = conversation.encodingPassword
 
                 LogUtils.d(context, "ChatManager",
                     "📊 Encoding: chat=$usedEncoding, message=$usedEncoding, usando=$usedEncoding")
@@ -777,6 +777,7 @@ class ChatManager(val context: Context) {
                     isYMessage = false
                 )
 
+                //Add message in local chat on cell phone
                 addMessageInChat(fallbackMessage, conversation)
                 messageToReturn = fallbackMessage
             }
@@ -892,18 +893,18 @@ class ChatManager(val context: Context) {
         }
     }
 
-    fun setEncodingSchemeAndPasswordForChat(phoneNumber: String, encodingScheme: String, encodingPassword: String) {
+    fun setEncodingSchemeAndPasswordForChat(conversation: ChatConversation, encodingScheme: String, encodingPassword: String) {
         runBlocking {
             try {
                 val databaseActor = DatabaseActor.getInstance(context)
-                val success = databaseActor.updateChatEncodingScheme(phoneNumber, encodingScheme, encodingPassword)
+                val success = databaseActor.updateChatEncodingScheme(conversation.phoneNumber, encodingScheme, encodingPassword)
 
                 if (success) {
                     LogUtils.d(context, "ChatManager",
                         "✅ Encoding scheme/pw saved in DB: $encodingScheme")
 
-                    val conversation = getConversation(phoneNumber)
-                    conversation?.let { conv ->
+                    //Update also memory values
+                    conversation.let { conv ->
                         val updatedConv = conv.copy(
                             encoding = encodingScheme,
                             encodingPassword = encodingPassword
@@ -1116,37 +1117,6 @@ class ChatManager(val context: Context) {
         } catch (e: Exception) {
             LogUtils.e(context, "ChatManager", "❌ Error finding message by ID", e)
             null
-        }
-    }
-
-    /**
-     * Mark a message as replaced (soft delete or hide)
-     */
-    fun markMessageAsReplaced(messageId: String) {
-        try {
-            LogUtils.d(context, "ChatManager", "🔄 Marking message as replaced: $messageId")
-
-            // Find the message first
-            val message = findMessageById(messageId)
-
-            if (message != null && message.id != null && message.id!! > 0) {
-                // Use the databaseActor to mark as replaced
-                val success = runBlocking {
-                    databaseActor.markMessageAsReplaced(message.id!!)
-                }
-
-                if (success) {
-                    LogUtils.d(context, "ChatManager", "✅ Message marked as replaced")
-
-                    // Refresh UI
-                    sendChatUpdateBroadcast()
-                }
-            } else {
-                LogUtils.w(context, "ChatManager", "⚠️ Message not found for replacement: $messageId")
-            }
-
-        } catch (e: Exception) {
-            LogUtils.e(context, "ChatManager", "❌ Error marking message as replaced", e)
         }
     }
 

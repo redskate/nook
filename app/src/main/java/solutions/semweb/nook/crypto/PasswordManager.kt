@@ -12,15 +12,28 @@ object PasswordManager {
         val normalizedNumber = PhoneUtils.normalizePhoneNumber(phoneNumber)
         val passwordKey = "encryption_password_$normalizedNumber"
 
-        val password = prefs.prefs.getString(passwordKey, null)
+        val encryptedPassword = prefs.prefs.getString(passwordKey, null)
 
-        if (!password.isNullOrEmpty()) {
-            LogUtils.d(context, "PasswordManager", "✅ Password found in preferences")
-            return password
+        if (encryptedPassword.isNullOrEmpty()) {
+            LogUtils.e(context, "PasswordManager", "❌ Password not found in preferences for: $passwordKey")
+            return ""
         }
 
-        LogUtils.e(context, "PasswordManager", "❌ Password not found in preferences for: $passwordKey")
-        return ""
+        try {
+            // Decrypt the password
+            val decryptedPassword = CryptoManager.decryptSimplePassword(context, encryptedPassword)
+
+            if (decryptedPassword.isNotEmpty() && decryptedPassword != encryptedPassword) {
+                LogUtils.d(context, "PasswordManager", "✅ Password successfully decrypted")
+                return decryptedPassword
+            } else {
+                LogUtils.e(context, "PasswordManager", "❌ Password decryption returned invalid result")
+                return ""
+            }
+        } catch (e: Exception) {
+            LogUtils.e(context, "PasswordManager", "❌ Failed to decrypt password", e)
+            return ""
+        }
     }
 
 }

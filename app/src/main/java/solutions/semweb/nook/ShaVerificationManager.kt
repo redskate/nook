@@ -1,7 +1,10 @@
 package solutions.semweb.nook
 
+import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
@@ -15,6 +18,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Management of integrity verification of the APK via SHA256
@@ -38,6 +42,11 @@ class ShaVerificationManager private constructor(private val context: Context) {
         private const val PREF_STORED_APK_VERSION = "stored_apk_version"
         private const val PREF_VERIFICATION_STATUS = "verification_status"
         private const val CYCLIC_CHECK_MS = 6 * 60 * 60 * 1000L
+
+        // NEW: Key to track first installation
+        private const val PREF_FIRST_INSTALL_COMPLETE = "first_install_complete"
+        // NEW: Delay for first verification after installation (10 minutes)
+        private const val FIRST_VERIFICATION_DELAY_MS = 5 * 60 * 1000L // 5 minutes
 
         @Volatile
         private var instance: WeakReference<ShaVerificationManager>? = null
@@ -72,6 +81,18 @@ class ShaVerificationManager private constructor(private val context: Context) {
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    // Receiver for background verification failures
+    private var shaVerificationReceiver: BroadcastReceiver? = null
+    private var onVerificationFailedListener: ((SHAVerificationResult) -> Unit)? = null
+
+    // Flag to track if receiver is registered
+    private val isReceiverRegistered = AtomicBoolean(false)
+
+    // Flag to track if this is first installation
+    private val isFirstInstallation: Boolean by lazy {
+        !prefs.getBoolean(PREF_FIRST_INSTALL_COMPLETE, false)
+    }
+
     /**
      * APK installation information
      */
@@ -95,17 +116,145 @@ class ShaVerificationManager private constructor(private val context: Context) {
     )
 
     /**
-     * - First installation: force download & verify
-     * - Normal ("daily") start: use saved hash, refresh in background if necessary
+     * Register receiver for SHA verification failures
+     * @param listener Callback when verification fails in background
      */
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    fun registerVerificationReceiver(listener: (SHAVerificationResult) -> Unit) {
+        this.onVerificationFailedListener = listener
+
+        if (isReceiverRegistered.get()) {
+            LogUtils.e(TAG, "Receiver already registered")
+            return
+        }
+
+        val filter = IntentFilter("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
+
+        shaVerificationReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent?.getParcelableExtra("result", SHAVerificationResult::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent?.getParcelableExtra("result")
+                }
+
+                if (result != null) {
+                    LogUtils.e(TAG, "📡 Received SHA verification failure broadcast")
+                    onVerificationFailedListener?.invoke(result)
+                }
+            }
+        }
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(shaVerificationReceiver, filter, Context.RECEIVER_EXPORTED)
+            } else {
+                @Suppress("DEPRECATION")
+                context.registerReceiver(shaVerificationReceiver, filter)
+            }
+            isReceiverRegistered.set(true)
+            LogUtils.e(TAG, "✅ SHA verification receiver registered")
+        } catch (e: Exception) {
+            LogUtils.e(TAG, "❌ Error registering receiver", e)
+        }
+    }
+
     /**
-     * - First installation: force download & verify
+     * Unregister the verification receiver
+     */
+    fun unregisterVerificationReceiver() {
+        if (isReceiverRegistered.get() && shaVerificationReceiver != null) {
+            try {
+                context.unregisterReceiver(shaVerificationReceiver)
+                isReceiverRegistered.set(false)
+                shaVerificationReceiver = null
+                onVerificationFailedListener = null
+                LogUtils.e(TAG, "✅ SHA verification receiver unregistered")
+            } catch (e: Exception) {
+                LogUtils.e(TAG, "❌ Error unregistering receiver", e)
+            }
+        }
+    }
+
+    /**
+     * Call this when app initialization is complete
+     * This will schedule the first verification after 10 minutes
+     */
+    fun onAppInitialized() {
+        if (isFirstInstallation) {
+            LogUtils.e(TAG, "🆕 First installation detected - scheduling verification in 10 minutes")
+
+            // Mark first installation as complete
+            prefs.putBoolean(PREF_FIRST_INSTALL_COMPLETE, true)
+
+            // Schedule verification after delay
+            scheduleFirstVerification()
+        }
+    }
+
+    /**
+     * Schedule the first verification to run after delay
+     */
+    private fun scheduleFirstVerification() {
+        mainHandler.postDelayed({
+            LogUtils.e(TAG, "⏰ Running scheduled first verification")
+            performVerificationWithDelay()
+        }, FIRST_VERIFICATION_DELAY_MS)
+
+        LogUtils.e(TAG, "⏰ First verification scheduled in ${FIRST_VERIFICATION_DELAY_MS / 1000 / 60} minutes")
+    }
+
+    /**
+     * Perform verification with delay handling
+     */
+    private fun performVerificationWithDelay() {
+        // Only verify if Pure SMS is OFF at verification time
+        // If Pure SMS is still ON, we skip
+        if (isPureSmsMode()) {
+            LogUtils.e(TAG, "📡 Pure SMS still ON at verification time - skipping")
+            return
+        }
+
+        // Perform the verification
+        verifyApkIntegrity(forceDownload = true) { result ->
+            if (!result.isValid) {
+                // Send broadcast for failure
+                sendVerificationBroadcast(result)
+            }
+        }
+    }
+
+    /**
+     * - First installation: force download & verify (but only after delay)
      * - Normal ("daily") start: use saved hash, refresh in background if necessary
      */
     fun verifyApkIntegrity(
         forceDownload: Boolean = false,
         onComplete: (SHAVerificationResult) -> Unit
     ) {
+        // CRITICAL: If this is first installation, return success immediately without verifying
+        // The real verification will happen after the 10-minute delay via onAppInitialized()
+        if (isFirstInstallation) {
+            LogUtils.e(TAG, "🆕 First installation - skipping immediate verification")
+
+            val currentVersion = BuildConfig.VERSION_NAME
+
+            mainHandler.post {
+                onComplete(
+                    SHAVerificationResult(
+                        isValid = true, // Assume valid to not block UI
+                        message = "First installation - verification scheduled",
+                        timestamp = System.currentTimeMillis(),
+                        version = currentVersion,
+                        isOffline = false,
+                        apkInfo = null
+                    )
+                )
+            }
+            return
+        }
+
         // If Pure SMS mode is enabled and we're trying to force download, skip
         if (isPureSmsMode() && forceDownload) {
             LogUtils.e(TAG, "📡 Pure SMS mode active - skipping forced SHA verification")
@@ -146,9 +295,9 @@ class ShaVerificationManager private constructor(private val context: Context) {
                 val lastCheck = prefs.getLong(PREF_LAST_SHA_CHECK, 0)
                 val currentTime = System.currentTimeMillis()
 
-                // Case 1: First installation (no Hash saved)
+                // Case 1: No hash saved (shouldn't happen after first installation, but just in case)
                 if (storedHash == "") {
-                    LogUtils.e(TAG, "🆕 First installation - SHA download mandatory")
+                    LogUtils.e(TAG, "⚠️ No hash found - performing verification")
                     performFullVerification(onComplete)
                     return@Thread
                 }
@@ -161,7 +310,6 @@ class ShaVerificationManager private constructor(private val context: Context) {
                 }
 
                 // Case 3: if Internet, re-download and store fresh hash
-                // try to read fresh if internet connected
                 var hadInternet = false
                 val shaFileContent = if (!isPureSmsMode()) downloadShaFile() else null
 
@@ -176,9 +324,7 @@ class ShaVerificationManager private constructor(private val context: Context) {
                 }
                 val currentApkInfo = calculateApkSha256(storedHash)
 
-                // pass through for DEBUG
                 if (BuildConfig.DEBUG || currentApkInfo?.apkHash == storedHash) {
-
                     LogUtils.e(TAG, "✅ Rapid verification OK - Hash matches")
                     prefs.putLong(PREF_LAST_SHA_CHECK, currentTime)
 
@@ -195,10 +341,9 @@ class ShaVerificationManager private constructor(private val context: Context) {
                         )
                     }
 
-                    // In case more than a day is elapsed, refresh APK HASH check
-                    // Skip background refresh if Pure SMS mode is active
+                    // Background refresh if needed
                     if (!isPureSmsMode() && currentTime - lastCheck > CYCLIC_CHECK_MS) {
-                        LogUtils.e(TAG, "🔄 Refresh giornaliero in background")
+                        LogUtils.e(TAG, "🔄 Background refresh")
                         performBackgroundRefresh()
                     }
                 } else {
@@ -218,7 +363,7 @@ class ShaVerificationManager private constructor(private val context: Context) {
                 }
 
             } catch (e: Exception) {
-                LogUtils.e(TAG, "❌ Error during apk hast verification", e)
+                LogUtils.e(TAG, "❌ Error during apk hash verification", e)
                 mainHandler.post {
                     onComplete(
                         SHAVerificationResult(
@@ -261,30 +406,30 @@ class ShaVerificationManager private constructor(private val context: Context) {
             val expectedHash = findHashForVersion(shaFileContent, currentVersion)
 
             if (expectedHash == null) {
-                    if (BuildConfig.DEBUG)
-                        mainHandler.post {
-                            onComplete(
-                                SHAVerificationResult(
-                                    isValid = true,
-                                    message = getString(context,R.string.apk_hash_match), // lied but DEBUG
-                                    version = currentVersion,
-                                    apkInfo = null
-                                )
+                if (BuildConfig.DEBUG)
+                    mainHandler.post {
+                        onComplete(
+                            SHAVerificationResult(
+                                isValid = true,
+                                message = getString(context,R.string.apk_hash_match), // lied but DEBUG
+                                version = currentVersion,
+                                apkInfo = null
                             )
-                        }
-                    else
-                        mainHandler.post {
-                            onComplete(
-                                SHAVerificationResult(
-                                    isValid = false,
-                                    message = getString(context,R.string.sha_version_not_found_in_file),
-                                    version = currentVersion,
-                                    apkInfo = null
-                                )
+                        )
+                    }
+                else
+                    mainHandler.post {
+                        onComplete(
+                            SHAVerificationResult(
+                                isValid = false,
+                                message = getString(context,R.string.sha_version_not_found_in_file),
+                                version = currentVersion,
+                                apkInfo = null
                             )
-                        }
-                    return
-                }
+                        )
+                    }
+                return
+            }
 
 
             // Compute current APK info
@@ -330,7 +475,7 @@ class ShaVerificationManager private constructor(private val context: Context) {
                         isValid = finalIsValid,
                         message = "! "+if (finalIsValid) getString(context,R.string.apk_hash_match)
                         else getString(context,R.string.apk_hash_mismatch),
-                        apkInfo = currentApkInfo  // Added for debug
+                        apkInfo = currentApkInfo
                     )
                 )
             }
@@ -381,9 +526,7 @@ class ShaVerificationManager private constructor(private val context: Context) {
                                 isOffline = false,
                                 apkInfo = currentApkInfo
                             )
-                            val intent = Intent("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
-                            intent.putExtra("result", result as java.io.Serializable)
-                            context.sendBroadcast(intent)
+                            sendVerificationBroadcast(result)
 
                         } else if (currentApkInfo != null) {
                             LogUtils.e(TAG, "❌❌❌ Refresh background: HASH CHANGED! App corrupted!")
@@ -396,9 +539,7 @@ class ShaVerificationManager private constructor(private val context: Context) {
                                 isOffline = false,
                                 apkInfo = currentApkInfo
                             )
-                            val intent = Intent("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
-                            intent.putExtra("result", result as java.io.Serializable)
-                            context.sendBroadcast(intent)
+                            sendVerificationBroadcast(result)
                         }
                     } else {
                         // Version not found in SHA file
@@ -409,9 +550,7 @@ class ShaVerificationManager private constructor(private val context: Context) {
                             isOffline = false,
                             apkInfo = calculateApkSha256("")
                         )
-                        val intent = Intent("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
-                        intent.putExtra("result", result as java.io.Serializable)
-                        context.sendBroadcast(intent)
+                        sendVerificationBroadcast(result)
                     }
                 } else {
                     var storedHash = prefs.getString(PREF_STORED_APK_HASH, "")
@@ -424,9 +563,7 @@ class ShaVerificationManager private constructor(private val context: Context) {
                         isOffline = true,
                         apkInfo = calculateApkSha256(storedHash)
                     )
-                    val intent = Intent("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
-                    intent.putExtra("result", result as java.io.Serializable)
-                    context.sendBroadcast(intent)
+                    sendVerificationBroadcast(result)
                 }
             } catch (e: Exception) {
                 LogUtils.e(TAG, "❌ Errore refresh background", e)
@@ -436,15 +573,24 @@ class ShaVerificationManager private constructor(private val context: Context) {
                     isOffline = true,
                     apkInfo = null
                 )
-                val intent = Intent("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
-                intent.putExtra("result", result as java.io.Serializable)
-                context.sendBroadcast(intent)
+                sendVerificationBroadcast(result)
             }
         }.start()
     }
 
-
-
+    /**
+     * Send verification broadcast
+     */
+    private fun sendVerificationBroadcast(result: SHAVerificationResult) {
+        try {
+            val intent = Intent("${Constants.mainpackage}.SHA_VERIFICATION_FAILED")
+            intent.putExtra("result", result as java.io.Serializable)
+            context.sendBroadcast(intent)
+            LogUtils.e(TAG, "📡 Verification broadcast sent")
+        } catch (e: Exception) {
+            LogUtils.e(TAG, "❌ Error sending broadcast", e)
+        }
+    }
 
     private fun downloadShaFile(): String? {
 
@@ -582,5 +728,12 @@ class ShaVerificationManager private constructor(private val context: Context) {
         if (timestamp == 0L) return "Mai"
         val date = Date(timestamp)
         return SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(date)
+    }
+
+    /**
+     * Clean up resources
+     */
+    fun cleanup() {
+        unregisterVerificationReceiver()
     }
 }
