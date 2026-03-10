@@ -716,26 +716,8 @@ class ChatManager(val context: Context) {
         }.start()
     }
 
-
-    fun reloadConversation(phoneNumber: String): ChatConversation? {
-        return try {
-            // Forza la ricarica dal database
-            val newConversation = runBlocking {
-                databaseActor.getChatConversation(phoneNumber)
-            }
-
-            LogUtils.d(context, "ChatManager", "🔄 Conversation reloaded: ${newConversation?.phoneNumber}")
-            newConversation
-        } catch (e: Exception) {
-            LogUtils.e(context, "ChatManager", "❌ Error reloading conversation", e)
-            null
-        }
-    }
-
     fun sendMessage(context: Context, conversation: ChatConversation, text: String): ChatMessage {
-
         var messageToReturn: ChatMessage? = null
-
         return try {
             val pendingMessage = conversation.messages.lastOrNull {
                 it.isOutgoing && it.text == text && !it.isSent

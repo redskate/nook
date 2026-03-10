@@ -971,6 +971,12 @@ class ChatActivity : AppCompatActivity() {
 
         popup.menu.add(getString(R.string.separator)).isEnabled = false
 
+
+        popup.menu.add(getString(R.string.menu_resend_msg)).setOnMenuItemClickListener {
+            resendMessage(message.text)
+            true
+        }
+
         popup.menu.add(getString(R.string.copy_text)).setOnMenuItemClickListener {
             copyToClipboard(message.text)
             true
@@ -1002,6 +1008,13 @@ class ChatActivity : AppCompatActivity() {
             LogUtils.e(this, "ChatActivity", "Error safe copy", e)
         }
     }
+
+
+    private fun resendMessage(text: String) {
+        if (this.conversation != null)
+        chatManager.sendMessage(this, this.conversation!!,text)
+    }
+
 
     private fun copyToClipboard(text: String) {
         val clipboard = getSystemService(ClipboardManager::class.java)

@@ -553,4 +553,5 @@
     <string name="sms_not_sent_bad_phonenumber">SMS non inviata - errore nel numero di telefono passato</string>
     <string name="sending_sms">Spedisco SMS...</string>
     <string name="error_encrypting_password">Errore durante la crittografazione in memoria della password</string>
+    <string name="menu_resend_msg">Ritrasmetti messaggio</string>
 </resources>

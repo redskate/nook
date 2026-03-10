@@ -521,4 +521,5 @@
     <string name="sms_not_sent_bad_phonenumber">SMS nicht versendet - falsche Telefonnummer übergeben</string>
     <string name="sending_sms">Versende SMS...</string>
     <string name="error_encrypting_password">Fehler beim Verschlüsseln des Passworts</string>
+    <string name="menu_resend_msg">Nachricht erneut senden</string>
 </resources>
