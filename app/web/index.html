@@ -9,6 +9,11 @@
     <meta name="nook-apk-url" content="https://github.com/redskate/nook/raw/refs/heads/master/app/releases/nook-v1.4.2.279.apk">
     <meta name="nook-pub-date" content="10.03.2026">
 
+
+    <!-- For modern browsers (ICO, PNG, SVG) -->
+    <link rel="icon" type="image/png" href="nook/images/nook-16.png">
+    <link rel="shortcut icon" href="nook/images/nook-16.png">
+
     <!-- === SEO SECTION === -->
     <title>NooK · Private & Encrypted SMS Messenger for Android</title>
     <!-- META DESCRIPTION under 160 chars -->
@@ -81,7 +86,7 @@
         /* --- RESET & VARIABLES --- */
         * {
             margin: 0;
-            padding: 0; 
+            padding: 0;
             box-sizing: border-box;
         }
 
@@ -109,7 +114,7 @@
         }
 
         .container {
-            max-width: 1200px;  
+            max-width: 1200px;
             margin: 0 auto;
             padding: 0 2rem;
         }
@@ -222,7 +227,7 @@
             display: inline-block;
             margin-left: 1rem;
         }
-        
+
         .lang-btn {
             background: var(--bg-light);
             border: 1px solid var(--border-light);
@@ -235,11 +240,11 @@
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .lang-btn i:first-child {
             color: var(--nook-green);
         }
-        
+
         .lang-dropdown {
             display: none;
             position: absolute;
@@ -253,11 +258,11 @@
             z-index: 9999;
             overflow: hidden;
         }
-        
+
         .lang-dropdown.show {
             display: block;
         }
-        
+
         .lang-dropdown a {
             display: block;
             padding: 0.7rem 1rem;
@@ -267,16 +272,16 @@
             cursor: pointer;
             border-bottom: 1px solid var(--border-light);
         }
-        
+
         .lang-dropdown a:last-child {
             border-bottom: none;
         }
-        
+
         .lang-dropdown a:hover {
             background: var(--nook-green-light);
             color: #000;
         }
-        
+
         .lang-dropdown a i {
             width: 20px;
             margin-right: 0.5rem;
@@ -287,21 +292,21 @@
         .goog-te-banner-frame {
             display: none !important;
         }
-        
+
         body {
             top: 0 !important;
         }
-        
+
         .goog-tooltip {
             display: none !important;
         }
-        
+
         .goog-text-highlight {
             background-color: transparent !important;
             border: none !important;
             box-shadow: none !important;
         }
-        
+
         #google_translate_element {
             display: none;
         }
@@ -595,7 +600,7 @@
             border: 1px solid var(--border-light);
             white-space: pre-line;
         }
-        
+
         .firstSteps {
             overflow-y: auto;
             padding-top:1rem;
@@ -609,11 +614,11 @@
             margin: 1.5rem 0;
             border: 1px solid var(--border-light);
             white-space: pre-line;
-            
+
             background-image: url('nook/images/pacifier.png');
 	    background-repeat: no-repeat;
 	    background-position: bottom 10px left 10px;
-	    background-size: 50px 50px; 
+	    background-size: 50px 50px;
         }
 
         /* --- OPEN SOURCE --- */
@@ -641,22 +646,22 @@
             justify-content: center;
             flex-wrap: wrap;
         }
-        
+
         .deepseek-credit, .page-locked, .pubdate {
             margin-top: 1rem;
             font-size: 0.8rem;
             color: var(--text-muted);
             opacity: 0.8;
         }
-        
+
         .deepseek-credit i {
             color: var(--nook-green) !important;
         }
-        
+
         .page-locked i {
             color: var(--warning-orange) !important;
         }
-        
+
         .pubdate .fa-lock {
 	    color: var(--warning-orange);
 	}
@@ -673,7 +678,7 @@
 	    color: var(--nook-green);
 	}
 
-	
+
 
         @media (max-width: 900px) {
             .hero-grid { grid-template-columns: 1fr; }
@@ -689,24 +694,24 @@
             const dots = document.querySelectorAll('.dot');
             let currentSlide = 0;
             const slideInterval = 10000;
-            
+
             if (slides.length === 0) return;
-            
+
             function showSlide(index) {
                 if (index >= slides.length) index = 0;
                 if (index < 0) index = slides.length - 1;
-                
+
                 slides.forEach(slide => slide.classList.remove('active'));
                 dots.forEach(dot => dot.classList.remove('active'));
-                
+
                 slides[index].classList.add('active');
                 if (dots[index]) dots[index].classList.add('active');
-                
+
                 currentSlide = index;
             }
-            
+
             function nextSlide() { showSlide(currentSlide + 1); }
-            
+
             dots.forEach((dot, index) => {
                 dot.addEventListener('click', function() {
                     showSlide(index);
@@ -714,10 +719,10 @@
                     slideTimer = setInterval(nextSlide, slideInterval);
                 });
             });
-            
+
             showSlide(0);
             let slideTimer = setInterval(nextSlide, slideInterval);
-            
+
             const container = document.querySelector('.slideshow-container');
             if (container) {
                 container.addEventListener('mouseenter', () => clearInterval(slideTimer));
@@ -752,7 +757,7 @@
             `;
             document.head.appendChild(style);
         }, 1000);
-        
+
         function changeLanguage(lang) {
             // Mappa codici lingua per Google Translate
             const langMap = {
@@ -767,7 +772,7 @@
                 'ar': 'ar',
                 'hi': 'hi'
             };
-            
+
             // Reindirizza a Google Translate (funziona anche da file system)
             const currentUrl = encodeURIComponent(window.location.href);
             window.location.href = `https://translate.google.com/translate?hl=${langMap[lang]}&sl=en&tl=${langMap[lang]}&u=${currentUrl}`;
