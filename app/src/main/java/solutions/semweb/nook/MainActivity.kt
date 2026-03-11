@@ -60,6 +60,7 @@ import solutions.semweb.nook.chat.ChatConversationAdapter
 import solutions.semweb.nook.chat.ChatManager
 import solutions.semweb.nook.contacts.TrustedContactsActivity
 import solutions.semweb.nook.crypto.CryptoManager
+import solutions.semweb.nook.crypto.DecryptionFailureMonitor
 import solutions.semweb.nook.crypto.EncryptionMapper
 import solutions.semweb.nook.data.database.DatabaseActor
 import solutions.semweb.nook.keyboards.KeyboardManagementActivity
@@ -259,7 +260,8 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             proceedWithNormalInit()
         } else if (result.isOffline) {
             // 🌐 No internet - show choice dialog
-            showInitialShaNoInternetDialog()
+            // showInitialShaNoInternetDialog() // skip question at beginning
+            proceedWithNormalInit()
         } else {
             // ❌ Corrupted - block asap
             showShaCompromisedDialog(result)
@@ -335,11 +337,15 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
     @RequiresApi(Build.VERSION_CODES.S)
     private fun proceedWithNormalInit() {
+        // Show initial status
+        showInitStatus(getString(R.string.init_status_starting))
+
         // Controlla disclaimer
         val disclaimerAccepted = prefs.getBoolean("disclaimer_accepted", false)
         if (!disclaimerAccepted) {
+            showInitStatus(getString(R.string.init_status_ui))
             utils.showDisclaimerDialog(prefs, this)
-            return
+            return  // onAppInitialized() will be called after disclaimer is accepted
         }
 
         // Setup app protection toggle
@@ -347,19 +353,20 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
         if (prefs.appProtectionEnabled) {
             LogUtils.e("MAIN", "🔒 APP protection active - show block panel")
+            showInitStatus(getString(R.string.init_status_ui))
             appLockManager = AppLockManager.getInstance(this)
 
             if (appLockManager.isAppCurrentlyLocked() || prefs.isAppLocked) {
-                showPasswordPromptDialog()
+                showPasswordPromptDialog()  // onAppInitialized() will be called after unlock
             } else {
                 LogUtils.e("MAIN", "🔓 APP not blocked - go for init")
-                initializeAppLinearly()
+                initializeAppLinearly()  // onAppInitialized() is called at the end of this
             }
             return
         }
 
         // Init all
-        initializeAppLinearly()
+        initializeAppLinearly()  // onAppInitialized() is called at the end of this
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -368,9 +375,11 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
         try {
             // 0. SHA Verification
+            showInitStatus(getString(R.string.init_status_sha))
             setupShaVerificationUI()
 
             // 1. Setup basic views FIRST
+            showInitStatus(getString(R.string.init_status_ui))
             setupBasicViews()  // <-- also toggle init
 
             // 2. HIDE CHATS
@@ -392,9 +401,11 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             }
 
             // 5. Keyboard manager
+            showInitStatus(getString(R.string.init_status_keyboard))
             keyboardSafetyManager = KeyboardSafetyManager(this)
 
             // 6. Database Actor - this starts background test
+            showInitStatus(getString(R.string.init_status_database))
             databaseActor = DatabaseActor.getInstance(this)
 
             // 7. Initialize ALL UI components (these are fast)
@@ -427,11 +438,13 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             setupOwnerNameField()
 
             // 8. Permissions
+            showInitStatus(getString(R.string.init_status_permissions))
             Handler(Looper.getMainLooper()).postDelayed({
                 requestAllRequiredPermissionsSimple()
             }, 300)
 
             // 9. Final setup
+            showInitStatus(getString(R.string.init_status_notifications))
             utils.createNotificationChannels(this)
             chatUpdateReceiver = utils.registerChatUpdateReceiver()
             utils.setupKeyboardSafetyForAllEditTexts(keyboardSafetyManager)
@@ -440,6 +453,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             Thread { checkRootSecurity() }.start()
 
             // 11. Start notification service
+            showInitStatus(getString(R.string.init_status_final))
             Handler(Looper.getMainLooper()).postDelayed({
                 startForegroundNotification()
             }, 1000)
@@ -458,14 +472,18 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             // 14. SIMPLE POLLING - check every second
             startPollingForDatabaseReady()
 
-            // 15. CRITICAL: Tell SHA manager that app is fully initialized
-            // This schedules the first verification after 10 minutes
-            shaVerificationManager.onAppInitialized()
+            // 15. debug decryption failures
+            if (BuildConfig.DEBUG)
+                addDebugFailuresButton()
+
+            // Tell SHA manager that app initialization is complete
+            // shaVerificationManager.onAppInitialized()
 
         } catch (e: Exception) {
             LogUtils.e("MAIN", "❌ Error in initializeAppLinearly", e)
             LogUtils.e("MAIN", "Error details: ${e.message}")
             LogUtils.e("MAIN", "Stack trace: ${e.stackTraceToString()}")
+            showInitStatus("❌ Error: ${e.message}", false)
             Toast.makeText(this, "Initialization Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
@@ -479,13 +497,19 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
                 if (databaseActor.isReady) {
                     LogUtils.e("MAIN", "✅ Database ready after $attempts seconds!")
-                    chatCard.visibility = View.VISIBLE
-                    loadChatConversations()
+                    showInitStatus(getString(R.string.init_status_complete))
+                    // Brief pause to show completion message
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        hideInitStatus()
+                        chatCard.visibility = View.VISIBLE
+                        loadChatConversations()
+                    }, 500)
                     return
                 }
 
                 if (attempts >= 30) { // 30 seconds timeout
                     LogUtils.e("MAIN", "⚠️ Database timeout")
+                    hideInitStatus()
                     chatCard.visibility = View.VISIBLE
                     loadChatConversations()
                     Toast.makeText(this@MainActivity,
@@ -493,6 +517,9 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                         Toast.LENGTH_LONG).show()
                     return
                 }
+
+                // Show progress
+                showInitStatus(getString(R.string.init_status_waiting_db, attempts, 30))
 
                 // Check again in 1 second
                 handler.postDelayed(this, 1000)
@@ -600,7 +627,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             if (!BuildConfig.DEBUG) return
 
             // Find the existing ImageButton from XML
-            val debugButton = findViewById<ImageButton>(R.id.debug_queue_button)
+            val debugButton = findViewById<ImageButton>(R.id.debug_failure_button)
 
             if (debugButton != null) {
                 // Make it visible and set up click listener
@@ -2999,6 +3026,43 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         }
     }
 
+    private fun showInitStatus(message: String, showSpinner: Boolean = true) {
+        runOnUiThread {
+            try {
+                val initStatusText = findViewById<TextView>(R.id.init_status_text)
+                val chatRecyclerView = findViewById<RecyclerView>(R.id.chat_recycler_view)
+
+                if (initStatusText != null) {
+                    initStatusText.text = message
+                    initStatusText.visibility = View.VISIBLE
+
+                    // Hide the RecyclerView while showing status
+                    chatRecyclerView.visibility = View.GONE
+
+                    LogUtils.e("MAIN", "📢 INIT STATUS: $message")
+                }
+            } catch (e: Exception) {
+                // Ignore - view might not be ready yet
+            }
+        }
+    }
+
+    private fun hideInitStatus() {
+        runOnUiThread {
+            try {
+                val initStatusText = findViewById<TextView>(R.id.init_status_text)
+                val chatRecyclerView = findViewById<RecyclerView>(R.id.chat_recycler_view)
+
+                if (initStatusText != null) {
+                    initStatusText.visibility = View.GONE
+                    chatRecyclerView.visibility = View.VISIBLE
+                }
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
+    }
+
     private fun launchExplorerIndependent() {
         try {
             // For Android 10+ - Use DocumentsContract
@@ -3565,7 +3629,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             val content = fetchSha256FromGitHub(Constants.GITHUB_SHA256_URL)
 
             val versionPattern = Pattern.compile("v(\\d+\\.\\d+\\.\\d+\\.\\d+)")
-            val matcher = versionPattern.matcher(content)
+            val matcher = versionPattern.matcher(content.toString())
 
             val versions = mutableListOf<String>()
             while (matcher.find()) {
@@ -3654,5 +3718,59 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             }
         }, delay)
     }
+
+
+    // Add this method to MainActivity.kt
+
+    private fun showDecryptionFailures() {
+        if (!BuildConfig.DEBUG) return
+
+        val failures = DecryptionFailureMonitor.getFailures()
+
+        if (failures.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("No Decryption Failures")
+                .setMessage("All decryptions successful so far.")
+                .setPositiveButton("OK", null)
+                .show()
+            return
+        }
+
+        val failureText = failures.joinToString("\n\n---\n\n") { failure ->
+            """
+        ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(failure.timestamp)}
+        Entity: ${failure.entityType}
+        Field: ${failure.fieldName}
+        Error: ${failure.exceptionMessage}
+        """.trimIndent()
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Decryption Failures (${failures.size})")
+            .setMessage(failureText)
+            .setPositiveButton("OK", null)
+            .setNeutralButton("Clear") { _, _ ->
+                DecryptionFailureMonitor.clearFailures()
+            }
+            .show()
+    }
+
+    // Add a debug button or menu item to call this
+    private fun addDebugFailuresButton() {
+        try {
+            if (!BuildConfig.DEBUG) return
+
+            val debugButton = findViewById<ImageButton>(R.id.debug_failure_button)
+            if (debugButton != null) {
+                debugButton.visibility = View.VISIBLE
+                debugButton.setOnClickListener {
+                    showDecryptionFailures()
+                }
+            }
+        } catch (e: Exception) {
+            LogUtils.e("MAIN", "Failed to add debug failures button", e)
+        }
+    }
+
 
 }

@@ -7,8 +7,8 @@ object Constants {
     // 🔴 CENTRALIZED VERSIONING - Edit only these values
     const val VERSION_MAJOR = 1
     const val VERSION_MINOR = 4
-    const val VERSION_PATCH = 2
-    const val VERSION_CODE = 279  // fixed: conversationById, UTF8 decrypting, AES pw encrypted
+    const val VERSION_PATCH = 5
+    const val VERSION_CODE = 284  // DecryptionMonitoring + names UTF8
 
     // Computed version name (DO NOT EDIT DIRECTLY)
     const val VERSION_NAME = "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_CODE"
@@ -57,8 +57,7 @@ object Constants {
     const val KEY_USE_ALL_CONTACTS = "use_all_contacts"
     const val KEY_USE_CLIPBOARD = "use_clipboard"
     const val KEY_ALLOW_SCREENSHOTS = "allow_screenshots"
-    const val KEY_MSG_SEQ = "msg_seq" // ADDED
-
+    const val KEY_MSG_SEQ = "msg_seq"
 
     //////////////////////////////////////////////////////////////////
     // Keyboard security

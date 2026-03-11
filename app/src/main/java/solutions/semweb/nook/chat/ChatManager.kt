@@ -19,6 +19,7 @@ import solutions.semweb.nook.SharedPreferencesManager
 import solutions.semweb.nook.crypto.AppCryptoManager
 import solutions.semweb.nook.crypto.BaseXXXUtils
 import solutions.semweb.nook.crypto.CryptoManager
+import solutions.semweb.nook.crypto.DecryptionFailureMonitor
 import solutions.semweb.nook.crypto.EncryptionMapper
 import solutions.semweb.nook.data.database.ChatMessageEntity
 import solutions.semweb.nook.data.database.DatabaseActor
@@ -1124,31 +1125,76 @@ class ChatManager(val context: Context) {
             LogUtils.e(context, "ChatManager", "❌ Error updating conversation last message", e)
         }
     }
+
+
+    // In ChatManager.kt, add this method
+
+    fun diagnoseMessageDecryption(messageId: Long) {
+        Thread {
+            try {
+                val databaseManager = DatabaseManager.getInstance(context)
+                val entity = databaseManager.database.chatMessageDao().findById(messageId)
+
+                if (entity == null) {
+                    LogUtils.e("DIAGNOSE", "❌ Message $messageId not found in database")
+                    return@Thread
+                }
+
+                LogUtils.d("DIAGNOSE", "=== MESSAGE DIAGNOSTICS ===")
+                LogUtils.d("DIAGNOSE", "ID: ${entity.id}")
+                LogUtils.d("DIAGNOSE", "Conversation ID: ${entity.conversationId}")
+                LogUtils.d("DIAGNOSE", "Encrypted text (first 50): ${entity.text.take(50)}")
+                LogUtils.d("DIAGNOSE", "Encrypted text length: ${entity.text.length}")
+
+                // Try to decrypt and see what happens
+                try {
+                    val decrypted = AppCryptoManager.decrypt64Value(entity.text)
+                    LogUtils.d("DIAGNOSE", "✅ Decryption successful")
+                    LogUtils.d("DIAGNOSE", "Decrypted (first 50): ${decrypted.take(50)}")
+                    LogUtils.d("DIAGNOSE", "Is valid: ${DecryptionFailureMonitor.isValidDecryption(decrypted, "text")}")
+                } catch (e: Exception) {
+                    LogUtils.e("DIAGNOSE", "❌ Decryption failed", e)
+                }
+
+            } catch (e: Exception) {
+                LogUtils.e("DIAGNOSE", "Diagnostic error", e)
+            }
+        }.start()
+    }
+
 }
 
-
-    fun encIndicatorWithText(
-        schemeAbbr: String?,
-        schemeToUse: String?,
-        shortEncoding: String,
-        hasEncodingPassword: Boolean,
-        text: String,
-        encoding: String,
-        multiPartSize: Int = 1
-    ): String {
-
-        val multipartindicator = if (multiPartSize > 1) ":$multiPartSize" else ""
-        // show password for encoding if set
-        val sEncoding = if (hasEncodingPassword) shortEncoding+'p' else shortEncoding
-        val msgDisplayText =
-            if (schemeAbbr?.isNotEmpty() == true && schemeToUse != EncryptionMapper.ENCRYPTION_TEXT)
-                "[$schemeAbbr@$sEncoding$multipartindicator] $text"
-            else { // no encryption
-                if (encoding.isEmpty() || encoding == EncryptionMapper.ENCRYPTION_SCHEME_TEXT)
-                    if (multiPartSize>1) "[$multipartindicator] $text" else text
-                else // but encoding
-                    "[@$sEncoding$multipartindicator] $text"
-            }
-        return msgDisplayText
+fun cleanupIndicator(message: String): String {
+    val prologEndIndex = message.indexOf("] ")
+    return if (prologEndIndex != -1) {
+        message.substring(prologEndIndex + 2)
+    } else {
+        message // Return original if no prolog found
     }
+}
+
+fun encIndicatorWithText(
+    schemeAbbr: String?,
+    schemeToUse: String?,
+    shortEncoding: String,
+    hasEncodingPassword: Boolean,
+    text: String,
+    encoding: String,
+    multiPartSize: Int = 1
+): String {
+
+    val multipartindicator = if (multiPartSize > 1) ":$multiPartSize" else ""
+    // show password for encoding if set
+    val sEncoding = if (hasEncodingPassword) shortEncoding+'p' else shortEncoding
+    val msgDisplayText =
+        if (schemeAbbr?.isNotEmpty() == true && schemeToUse != EncryptionMapper.ENCRYPTION_TEXT)
+            "[$schemeAbbr@$sEncoding$multipartindicator] $text"
+        else { // no encryption
+            if (encoding.isEmpty() || encoding == EncryptionMapper.ENCRYPTION_SCHEME_TEXT)
+                if (multiPartSize>1) "[$multipartindicator] $text" else text
+            else // but encoding
+                "[@$sEncoding$multipartindicator] $text"
+        }
+    return msgDisplayText
+}
 

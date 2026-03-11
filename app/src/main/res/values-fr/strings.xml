@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- strings.xml (FR) - Version complète et corrigée -->
-
+    <string name="init_status_starting">🚀 Démarrage de NooK...</string>
+    <string name="init_status_ui">🖥️ Initialisation de l\'interface utilisateur...</string>
+    <string name="init_status_sha">🔒 Vérification de l\'intégrité de l\'app...</string>
+    <string name="init_status_database">💾 Initialisation et test de la base de données...</string>
+    <string name="init_status_permissions">🔐 Vérification des autorisations...</string>
+    <string name="init_status_keyboard">⌨️ Configuration de la sécurité du clavier...</string>
+    <string name="init_status_notifications">🔔 Configuration des notifications...</string>
+    <string name="init_status_contacts">📱 Chargement des contacts...</string>
+    <string name="init_status_final">✨ Presque prêt...</string>
+    <string name="init_status_complete">✅ NooK est prêt !</string>
+    <string name="init_status_waiting_db">⏳ Attente de la base de données... (%1d/%2d)</string>
     <!-- ===== GÉNÉRAL ===== -->
     <string name="active_switch_text">Actif</string>
     <string name="activated">activé</string>
@@ -33,7 +43,7 @@
     <string name="chat_name_title">Nom du chat (optionnel) :</string>
     <string name="chat_title">Chat</string>
     <string name="chat_update_receiver_registered">Récepteur de mise à jour du chat enregistré</string>
-    <string name="chats_section_hint">Tapez sur un chat pour l\'ouvrir, appuyez longuement pour les options, ou créez-en un nouveau avec la loupe</string>
+    <string name="chats_section_hint">Tapez sur un chat pour l\'ouvrir, appuyez longuement pour les options, ou créez-en un nouveau avec la loupe. Si l\'application ne répond pas, attends 1 minute ou redémarre-la.</string>
     <string name="chats_section_title">💬 Chats</string>
     <string name="check_permissions_button">Permissions</string>
     <string name="clear_chat_message">Voulez-vous vraiment supprimer tous les messages du chat avec %s ?</string>
@@ -358,7 +368,7 @@
     <string name="loading_messages">⏳ Chargement…</string>
     <string name="no_more_messages">📭 (Tous les messages sont affichés)</string>
     <string name="db_critical_error">❌ ERREUR CRITIQUE BASE DE DONNÉES</string>
-    <string name="db_critical_error_expl">❌ Impossible de démarrer l\'application</string>
+    <string name="db_critical_error_expl">❌ Impossible de démarrer l\'application. Esseyez de la redémarrer une fois. Contactez le developpeur si l\'erreur continue.</string>
     <string name="exit">👋 Quitter</string>
     <string name="data_security">🔐 Sécurité des données</string>
     <string name="i_understand">✅ J\'ai compris</string>
@@ -379,8 +389,8 @@
     <string name="insert_a_valid_number">Insérez un nombre valide</string>
     <string name="error_chat_invalid">Erreur : chat invalide</string>
     <string name="scanning">⏳ Analyse en cours</string>
-    <string name="scanning_sms_from_of_last_hours">Analyse des SMS de\n\n%s\n\ndans les dernières %d heures…</string>
-    <string name="errorscaningfor">Erreur lors de l\'analyse pour %s: %s</string>
+    <string name="scanning_sms_from_of_last_hours">Analyse des SMS de\n\n%1s\n\ndans les dernières %2d heures…</string>
+    <string name="errorscaningfor">Erreur lors de l\'analyse pour %1s: %2s</string>
     <string name="scanning_completed">✅ Analyse SMS terminée</string>
     <string name="scanning_results_for">📊 Résultats pour %s :</string>
     <string name="sms_processed">✅ SMS traitée : %d</string>
@@ -389,9 +399,9 @@
     <string name="scanning_sms_present">📋 Déjà présents : %d</string>
     <string name="scanning_sms_errors">⚠️ Erreurs : %d</string>
     <string name="scanning_sms_no_sms_found">ℹ️ Aucun SMS trouvé</string>
-    <string name="scanning_sms_no_missing_sms">Aucun SMS manquant pour %s\n\ndans les dernières %d heures</string>
     <string name="scanning_error">❌ Erreur d\'analyse</string>
-    <string name="scanning_error_for">Erreur d\'analyse pour %s:\n%s</string>
+    <string name="scanning_error_for">Erreur d\'analyse pour %1s:\n%2s</string>
+    <string name="scanning_sms_no_missing_sms">Aucun SMS manquant de\n%s\n\ndans les %d dernières heures</string>
     <string name="export_security_warning"><![CDATA[<Strong>Avis de sécurité :</strong> Ce fichier contient des messages personnels. Conservez-le en lieu sûr.]]></string>
     <string name="interlocutor">Interlocuteur</string>
     <string name="date_of_esport">Date d\'exportation</string>
@@ -432,7 +442,7 @@
     <string name="notif_sound_modified">Son de notification modifié</string>
     <string name="error_imposs_reprod_sound">Erreur : Impossible de lire le son</string>
     <string name="error_silent_notifications">Notifications silencieuses</string>
-    <string name="test_sound_and_vibration">Son : %s, Vibration : %s</string>
+    <string name="test_sound_and_vibration">Son : %1s, Vibration : %2s</string>
     <string name="test_nook_notification">🔔 Test Notification NooK</string>
     <string name="test_notification_sent">Notification de test envoyée</string>
     <string name="test_notification_error">Erreur de test de notification</string>
@@ -513,4 +523,6 @@
     <string name="sending_sms">Envoi SMS en cours...</string>
     <string name="error_encrypting_password">Erreur lors du chiffrement du mot de passe en memoire</string>
     <string name="menu_resend_msg">Transmettre à nouveau</string>
+    <string name="debug_failures_hint">Erreurs et plantages récents pour débogage. Appuyez pour détails.</string>
+
 </resources>

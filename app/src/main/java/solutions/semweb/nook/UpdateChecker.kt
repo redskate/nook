@@ -206,7 +206,7 @@ class UpdateChecker private constructor(private val context: Context) {
 
                     val versions = mutableListOf<String>()
                     while (matcher.find()) {
-                        versions.add(matcher.group(1))
+                        versions.add(matcher.group(1).toString())
                     }
 
                     if (versions.isEmpty()) {

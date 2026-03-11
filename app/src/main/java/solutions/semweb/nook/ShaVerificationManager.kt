@@ -45,8 +45,12 @@ class ShaVerificationManager private constructor(private val context: Context) {
 
         // NEW: Key to track first installation
         private const val PREF_FIRST_INSTALL_COMPLETE = "first_install_complete"
-        // NEW: Delay for first verification after installation (10 minutes)
-        private const val FIRST_VERIFICATION_DELAY_MS = 5 * 60 * 1000L // 5 minutes
+        // Delay for first verification after installation
+        const val NORMAL_STARTUP_DELAY_MS = 5 * 60 * 1000L // 5 minutes
+        const val FIRST_VERIFICATION_DELAY_MS = 5 * 60 * 1000L // 5 minutes
+
+        // Flag to track if this is a normal startup verification
+        private var isNormalStartupScheduled = AtomicBoolean(false)
 
         @Volatile
         private var instance: WeakReference<ShaVerificationManager>? = null
@@ -179,17 +183,19 @@ class ShaVerificationManager private constructor(private val context: Context) {
 
     /**
      * Call this when app initialization is complete
-     * This will schedule the first verification after 10 minutes
+     * This will schedule verification after delay (first install or normal startup)
      */
     fun onAppInitialized() {
         if (isFirstInstallation) {
             LogUtils.e(TAG, "🆕 First installation detected - scheduling verification in 10 minutes")
-
             // Mark first installation as complete
             prefs.putBoolean(PREF_FIRST_INSTALL_COMPLETE, true)
-
-            // Schedule verification after delay
+            // Schedule first installation verification after delay
             scheduleFirstVerification()
+        } else {
+            // Normal startup - also schedule verification after delay
+            LogUtils.e(TAG, "🔄 Normal startup detected - scheduling verification in 5 minutes")
+            scheduleNormalStartupVerification()
         }
     }
 
@@ -499,6 +505,38 @@ class ShaVerificationManager private constructor(private val context: Context) {
         if (timestamp == 0L) return ""
         val date = Date(timestamp)
         return SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault()).format(date)
+    }
+
+    /**
+     * Schedule verification on normal app startup (not first installation)
+     */
+    fun scheduleNormalStartupVerification() {
+        if (isNormalStartupScheduled.get()) {
+            LogUtils.e(TAG, "⏰ Normal startup verification already scheduled")
+            return
+        }
+
+        isNormalStartupScheduled.set(true)
+
+        mainHandler.postDelayed({
+            LogUtils.e(TAG, "⏰ Running scheduled normal startup verification")
+            isNormalStartupScheduled.set(false)
+
+            // Only verify if Pure SMS is OFF at verification time
+            if (isPureSmsMode()) {
+                LogUtils.e(TAG, "📡 Pure SMS ON at verification time - skipping")
+                return@postDelayed
+            }
+
+            // Perform the verification
+            verifyApkIntegrity(forceDownload = true) { result ->
+                if (!result.isValid) {
+                    sendVerificationBroadcast(result)
+                }
+            }
+        }, NORMAL_STARTUP_DELAY_MS)
+
+        LogUtils.e(TAG, "⏰ Normal startup verification scheduled in ${NORMAL_STARTUP_DELAY_MS / 1000 / 60} minutes")
     }
 
     private fun performBackgroundRefresh() {

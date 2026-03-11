@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- strings.xml (EN) -->
+    <string name="init_status_starting">🚀 Starting NooK...</string>
+    <string name="init_status_ui">🖥️ Initializing user interface...</string>
+    <string name="init_status_sha">🔒 Verifying app integrity...</string>
+    <string name="init_status_database">💾 Initializing and testing database...</string>
+    <string name="init_status_permissions">🔐 Checking app permissions...</string>
+    <string name="init_status_keyboard">⌨️ Setting up keyboard safety...</string>
+    <string name="init_status_notifications">🔔 Configuring notifications...</string>
+    <string name="init_status_contacts">📱 Loading contacts...</string>
+    <string name="init_status_final">✨ Almost ready...</string>
+    <string name="init_status_complete">✅ NooK is ready!</string>
+    <string name="init_status_waiting_db">⏳ Waiting for database... (%1d/%2d)</string>
+
     <string name="active_switch_text">Active</string>
     <string name="activated">activated</string>
     <string name="add_trusted_contact_title">Add Trusted Contact</string>
@@ -30,7 +42,7 @@
     <string name="chat_name_title">Chat Name (optional):</string>
     <string name="chat_title">Chat</string>
     <string name="chat_update_receiver_registered">Chat update receiver registered</string>
-    <string name="chats_section_hint">Tap a chat to open it, long press for options, or create a new one using the lupe</string>
+    <string name="chats_section_hint">Tap a chat to open it, long press for options, or create a new one using the lupe; if app not responstive wait 1 minute or restart it</string>
     <string name="chats_section_title">💬 Chats</string>
     <string name="check_permissions_button">Permissions</string>
     <string name="clear_chat_message">Do you really want to delete all messages from the chat with %s?</string>
@@ -268,7 +280,7 @@
     <!-- English version (en) -->
     <string name="root_detected_title">Security Warning:\nRoot Access Detected</string>
     <string name="db_critical_error">CRITICAL DATABASE ERROR</string>
-    <string name="db_critical_error_expl">APP start impossible</string>
+    <string name="db_critical_error_expl">APP start impossible. Restart APP. Concact the developer if the error persists</string>
     <string name="exit">Bye</string>
     <string name="data_security">Data security</string>
     <string name="i_understand">Understood</string>
@@ -325,8 +337,8 @@
     <string name="alert_scan_result_title">ℹ️ Results</string>
     <string name="alert_scan_result_error">Error: %s</string>
     <string name="alert_scan_result_success">✅ %1$d new SMS for %2$s\n🔐 Decrypted: %3$d\n📝 Plain text: %4$d\n⚠️ Errors: %5$d\n📋 Already exist: %6$d</string>
-    <string name="alert_scan_result_no_sms">No SMS found for %s in the last %d hours</string>
-    <string name="load_more_with_count">Show older %d messages (out of %d remaining ones)</string>
+    <string name="alert_scan_result_no_sms">No SMS found for %1s in the last %2d hours</string>
+    <string name="load_more_with_count">Show older %1d messages (out of %2d remaining ones)</string>
     <string name="no_more_messages_to_load">All messages are already visualized</string>
     <string name="error_renaming_chat">Error renaming chat</string>
     <string name="import_explanation">Important: To correctly reread/re-encode missing encrypted or encoded SMS in the chat, it is necessary that NooK\'s encryption and encoding parameters have not been changed.</string>
@@ -385,8 +397,8 @@
     <string name="insert_a_valid_number">Enter a valid number</string>
     <string name="error_chat_invalid">Error: invalid chat</string>
     <string name="scanning">⏳ Scanning in progress</string>
-    <string name="scanning_sms_from_of_last_hours">Scanning SMS from\n\n%s\n\nin the last %d hours…</string>
-    <string name="errorscaningfor">Error during scan for %s: %s</string>
+    <string name="scanning_sms_from_of_last_hours">Scanning SMS from\n\n%1s\n\nin the last %2d hours…</string>
+    <string name="errorscaningfor">Error during scan for %1s: %2s</string>
     <string name="scanning_completed">✅ SMS Scan completed</string>
     <string name="scanning_results_for">📊 Results for %s:</string>
     <string name="sms_processed">✅ SMS processed: %d</string>
@@ -395,9 +407,9 @@
     <string name="scanning_sms_present">📋 Already present: %d</string>
     <string name="scanning_sms_errors">⚠️ Errors: %d</string>
     <string name="scanning_sms_no_sms_found">ℹ️ No SMS found</string>
-    <string name="scanning_sms_no_missing_sms">No missing SMS from %s\nin the last %d hours</string>
     <string name="scanning_error">❌ Scan error</string>
-    <string name="scanning_error_for">Scan error for %s:\n%s</string>
+    <string name="scanning_error_for">Scan error for %1s:\n%2s</string>
+    <string name="scanning_sms_no_missing_sms">No missing SMS from\n%s1\n\nin the last %2d hours</string>
     <string name="export_security_warning"><![CDATA[<Strong>Security warning:</strong> This file contains personal messages. Keep it safe.]]></string>
     <string name="interlocutor">Interlocutor</string>
     <string name="date_of_esport">Export date</string>
@@ -517,4 +529,6 @@
     <string name="sending_sms">Sending SMS...</string>
     <string name="error_encrypting_password">Error encrypting password in memory</string>
     <string name="menu_resend_msg">Re-send message</string>
+    <string name="debug_failures_hint">Recent errors and crashes for debugging. Tap for details.</string>
+
 </resources>

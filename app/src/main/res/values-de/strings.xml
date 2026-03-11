@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- strings.xml (DE) -->
+    <string name="init_status_starting">🚀 NooK wird gestartet...</string>
+    <string name="init_status_ui">🖥️ Benutzeroberfläche wird initialisiert...</string>
+    <string name="init_status_sha">🔒 App-Integrität wird überprüft...</string>
+    <string name="init_status_database">💾 Datenbank wird initialisiert und getestet...</string>
+    <string name="init_status_permissions">🔐 App-Berechtigungen werden geprüft...</string>
+    <string name="init_status_keyboard">⌨️ Tastatursicherheit wird eingerichtet...</string>
+    <string name="init_status_notifications">🔔 Benachrichtigungen werden konfiguriert...</string>
+    <string name="init_status_contacts">📱 Kontakte werden geladen...</string>
+    <string name="init_status_final">✨ Fast fertig...</string>
+    <string name="init_status_complete">✅ NooK ist bereit!</string>
+    <string name="init_status_waiting_db">⏳ Warte auf Datenbank... (%d/%d)</string>
     <string name="active_switch_text">Aktiv</string>
     <string name="activated">aktiviert</string>
     <string name="add_trusted_contact_title">Vertrauten Kontakt hinzufügen</string>
@@ -30,7 +40,7 @@
     <string name="chat_name_title">Chat-Name (optional):</string>
     <string name="chat_title">Chat</string>
     <string name="chat_update_receiver_registered">Chat-Update-Empfänger registriert</string>
-    <string name="chats_section_hint">Chat antippen zum Öffnen, lang drücken für Optionen oder mit der Lupe einen neuen anlegen</string>
+    <string name="chats_section_hint">Chat antippen zum Öffnen, lang drücken für Optionen oder mit der Lupe einen neuen anlegen; falls App nicht reagiert, warte 1 Minute oder starte sie neu.</string>
     <string name="chats_section_title">💬 Chats</string>
     <string name="check_permissions_button">Berechtigungen</string>
     <string name="clear_chat_message">Möchtest du wirklich alle Nachrichten aus dem Chat mit %s löschen?</string>
@@ -270,7 +280,7 @@
 
     <string name="root_detected_title">Sicherheitswarnung:\nRoot-Zugriff erkannt</string>
     <string name="db_critical_error">SCHWERER DB-FEHLER</string>
-    <string name="db_critical_error_expl">APP-Start nicht möglich</string>
+    <string name="db_critical_error_expl">APP-Start nicht möglich. Bitte neustart. Kontaktieren Sie den Entwickler wenn das Problem bleibt.</string>
     <string name="exit">Beenden</string>
     <string name="data_security">Datensicherheit</string>
     <string name="i_understand">Verstanden</string>
@@ -330,7 +340,7 @@
     <string name="alert_scan_result_title">ℹ️ Ergebnisse</string>
     <string name="alert_scan_result_error">Fehler: %s</string>
     <string name="alert_scan_result_success">✅ %1$d neue SMS für %2$s\n🔐 Entschlüsselt: %3$d\n📝 Klartext: %4$d\n⚠️ Fehler: %5$d\n📋 Bereits vorhanden: %6$d</string>
-    <string name="alert_scan_result_no_sms">Keine SMS für %s in den letzten %d Stunden gefunden</string>
+    <string name="alert_scan_result_no_sms">Keine SMS für %1s in den letzten %2d Stunden gefunden</string>
     <string name="load_more_with_count">Zeige %d weitere Nachrichten (von verbleibenden %d)</string>
     <string name="no_more_messages_to_load">Alle Nachrichten bereits angezeigt</string>
     <string name="error_renaming_chat">Fehler beim Umbenennen des Chats</string>
@@ -390,8 +400,8 @@
     <string name="insert_a_valid_number">Geben Sie eine gültige Zahl ein</string>
     <string name="error_chat_invalid">Fehler: Ungültiger Chat</string>
     <string name="scanning">⏳ Suche läuft</string>
-    <string name="scanning_sms_from_of_last_hours">Durchsuche die SMS von\n\n%s\n\nin den letzten %d Stunden…</string>
-    <string name="errorscaningfor">Fehler bei der Suche für %s: %s</string>
+    <string name="scanning_sms_from_of_last_hours">Durchsuche die SMS von\n\n%1s\n\nin den letzten %2d Stunden…</string>
+    <string name="errorscaningfor">Fehler bei der Suche für %1s: %2s</string>
     <string name="scanning_completed">✅ SMS Suche abgeschlossen</string>
     <string name="scanning_results_for">📊 Ergebnisse für %s:</string>
     <string name="sms_processed">✅ SMS bearbeitet: %d</string>
@@ -522,4 +532,6 @@
     <string name="sending_sms">Versende SMS...</string>
     <string name="error_encrypting_password">Fehler beim Verschlüsseln des Passworts</string>
     <string name="menu_resend_msg">Nachricht erneut senden</string>
+    <string name="debug_failures_hint">Kürzliche Fehler und Abstürze zum Debuggen. Tippen für Details.</string>
+
 </resources>

@@ -1011,8 +1011,11 @@ class ChatActivity : AppCompatActivity() {
 
 
     private fun resendMessage(text: String) {
-        if (this.conversation != null)
-        chatManager.sendMessage(this, this.conversation!!,text)
+        if (this.conversation != null) {
+            //text containst prolog - cleanup text / avoid duplicating prolog
+            val cleantext = cleanupIndicator( text )
+            chatManager.sendMessage(this, this.conversation!!,cleantext)
+        }
     }
 
 

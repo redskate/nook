@@ -109,11 +109,22 @@ data class DecodedMessageEntity(
         val decryptedSender = DecryptionValidator.safeDecryptNonNull(
             sender, "sender", context, "DecodedMessage"
         )
-        val decryptedSenderName = DecryptionValidator.safeDecryptOptional(
-            senderName, "senderName", context, "DecodedMessage"
-        )
+
+        // FIX: Handle empty senderName specially
+        val decryptedSenderName = if (senderName.isNullOrEmpty()) {
+            senderName // Return as-is (null or empty)
+        } else {
+            DecryptionValidator.safeDecryptOptional(
+                senderName, "senderName", context, "DecodedMessage"
+            )
+        }
+
         val decryptedAdditionalInfo = additionalInfo?.let {
-            DecryptionValidator.safeDecryptOptional(it, "additionalInfo", context, "DecodedMessage")
+            if (it.isEmpty()) {
+                null
+            } else {
+                DecryptionValidator.safeDecryptOptional(it, "additionalInfo", context, "DecodedMessage")
+            }
         }?.let { json ->
             try {
                 com.google.gson.Gson().fromJson(json, Map::class.java) as Map<String, Any>

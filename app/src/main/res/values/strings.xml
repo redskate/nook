@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- strings.xml (IT) -->
+    <!-- Initialization status messages -->
+    <string name="init_status_starting">🚀 Avvio NooK in corso...</string>
+    <string name="init_status_ui">🖥️ Inizializzazione interfaccia utente...</string>
+    <string name="init_status_sha">🔒 Verifica integrità app...</string>
+    <string name="init_status_database">💾 Inizializzazione e test database...</string>
+    <string name="init_status_permissions">🔐 Controllo permessi app...</string>
+    <string name="init_status_keyboard">⌨️ Configurazione sicurezza tastiera...</string>
+    <string name="init_status_notifications">🔔 Configurazione notifiche...</string>
+    <string name="init_status_contacts">📱 Caricamento contatti...</string>
+    <string name="init_status_final">✨ Quasi pronto...</string>
+    <string name="init_status_complete">✅ NooK è pronto!</string>
+    <string name="init_status_waiting_db">⏳ Attesa database... (%1$d/%2$d)</string>
+
     <string name="active_switch_text">Attivo</string>
     <string name="activated">attivato</string>
     <string name="add_trusted_contact_title">Aggiungi Contatto Fidato</string>
@@ -32,7 +44,7 @@
     <string name="chat_name_title">Nome Chat (opzionale):</string>
     <string name="chat_title">Chat</string>
     <string name="chat_update_receiver_registered">Receiver chat update registrato</string>
-    <string name="chats_section_hint">Tocca una chat per aprirla, premila a lungo per opzioni, oppure creane una nuova con la lente</string>
+    <string name="chats_section_hint">Tocca una chat per aprirla, premila a lungo per opzioni, oppure creane una nuova con la lente. Se la app non risponde, attendi 1 minuto o riavviala.</string>
     <string name="chats_section_title">💬 Chat</string>
     <string name="check_permissions_button">Permessi</string>
     <string name="clear_chat_message">Vuoi davvero eliminare tutti i messaggi della chat con %s?</string>
@@ -296,7 +308,7 @@
     <string name="root_detected_title">Avviso sicurezza:\naccesso root rilevato</string>
 
     <string name="db_critical_error">ERRORE CRITICO DATABASE</string>
-    <string name="db_critical_error_expl">Impossibile avviare l\'applicazione\n\nContatta lo sviluppatore se l\'errore persiste</string>
+    <string name="db_critical_error_expl">Impossibile avviare l\'applicazione\n\nProva un riavvio.\n\nContatta lo sviluppatore se l\'errore persiste</string>
     <string name="exit">Esci</string>
     <string name="data_security">Sicurezza dei tuoi dati</string>
     <string name="i_understand">Ho capito</string>
@@ -358,8 +370,8 @@
     <string name="alert_scan_result_title">ℹ️ Risultati</string>
     <string name="alert_scan_result_error">Errore: %s</string>
     <string name="alert_scan_result_success">✅ %1$d nuovi SMS per %2$s\n🔐 Decifrati: %3$d\n📝 In chiaro: %4$d\n⚠️ Errori: %5$d\n📋 Già presenti: %6$d</string>
-    <string name="alert_scan_result_no_sms">Nessun SMS trovato per %s nelle ultime %d ore</string>
-    <string name="load_more_with_count">Visualizza altri %d messaggi (di %d rimanenti)</string>
+    <string name="alert_scan_result_no_sms">Nessun SMS trovato per %1$s nelle ultime %2$d ore</string>
+    <string name="load_more_with_count">Visualizza altri %1$d messaggi (di %2$d rimanenti)</string>
     <string name="load_last_with_count">Visualizza ultimi %d messaggi</string>
     <string name="no_more_messages_to_load">Tutti i messaggi visualizzati</string>
     <string name="error_renaming_chat">Errore durante la rinomina della Chat</string>
@@ -418,8 +430,7 @@
     <string name="insert_a_valid_number">Inserisci un numero valido</string>
     <string name="error_chat_invalid">Errore: chat non valida</string>
     <string name="scanning">⏳ Scansione in corso</string>
-    <string name="scanning_sms_from_of_last_hours">Sto scansionando gli SMS da\n\n%s\n\nnelle ultime %d ore…</string>
-    <string name="errorscaningfor">Errore durante la scansione per %s: %s</string>
+    <string name="errorscaningfor">Errore durante la scansione per %1$s: %2$s</string>
     <string name="scanning_completed">✅ Scansione SMS completata</string>
     <string name="scanning_results_for">📊 Risultati per %s:</string>
     <string name="sms_processed">✅ SMS processati: %d</string>
@@ -428,9 +439,10 @@
     <string name="scanning_sms_present">📋 Già presenti: %d</string>
     <string name="scanning_sms_errors">⚠️ Errori: %d</string>
     <string name="scanning_sms_no_sms_found">ℹ️ Nessun SMS trovato</string>
-    <string name="scanning_sms_no_missing_sms">Nessun SMS mancante da %s\n\nnelle ultime %d ore</string>
+    <string name="scanning_sms_from_of_last_hours">Sto scansionando gli SMS da\n\n%1$s\n\nnelle ultime %2$d ore…</string>
+    <string name="scanning_sms_no_missing_sms">Nessun SMS mancante da\n%s\n\nnelle ultime %d ore</string>
     <string name="scanning_error">❌ Errore scansione</string>
-    <string name="scanning_error_for">Errore scansione per %s:\n%s</string>
+    <string name="scanning_error_for">Errore scansione per %1$s:\n%2$s</string>
     <string name="export_security_warning"><![CDATA[<Strong>Avviso di sicurezza:</strong> Questo file contiene messaggi personali. Conservalo in modo sicuro.]]></string>
     <string name="interlocutor">Interlocutore</string>
     <string name="date_of_esport">Data esportazione</string>
@@ -469,7 +481,7 @@
     <string name="notif_sound_modified">Suono notifica modificato</string>
     <string name="error_imposs_reprod_sound">Errore: Impossibile riprodurre il suono</string>
     <string name="error_silent_notifications">Notifiche silenziose</string>
-    <string name="test_sound_and_vibration">Suono: %s, Vibrazione: %s</string>
+    <string name="test_sound_and_vibration">Suono: %1$s, Vibrazione: %2$s</string>
     <string name="test_nook_notification">🔔 Test Notifika NooK</string>
     <string name="test_notification_sent">Notifica di test inviata</string>
     <string name="test_notification_error">Errore test notifica</string>
@@ -554,4 +566,7 @@
     <string name="sending_sms">Spedisco SMS...</string>
     <string name="error_encrypting_password">Errore durante la crittografazione in memoria della password</string>
     <string name="menu_resend_msg">Ritrasmetti messaggio</string>
+    <string name="debug_failures_hint">Errori e crash recenti per debug. Tocca per dettagli.</string>
+
+
 </resources>

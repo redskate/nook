@@ -135,13 +135,19 @@ data class ChatMessageEntity(
         return ChatMessage(
             id = this.id,
             text = DecryptionValidator.safeDecryptNonNull(
-                text, "text", context, "ChatMessage"
+                text, "text", context, "ChatMessage",
+                conversationId = this.conversationId,
+                messageId = this.id
             ),
             sender = DecryptionValidator.safeDecryptNonNull(
-                sender, "sender", context, "ChatMessage"
+                sender, "sender", context, "ChatMessage",
+                conversationId = this.conversationId,
+                messageId = this.id
             ),
             senderName = DecryptionValidator.safeDecryptOptional(
-                senderName, "senderName", context, "ChatMessage"
+                senderName, "senderName", context, "ChatMessage",
+                conversationId = this.conversationId,
+                messageId = this.id
             ),
             timestamp = timestamp,
             trans_timestamp = trans_timestamp,
@@ -152,7 +158,9 @@ data class ChatMessageEntity(
             isSystemMessage = isSystemMessage,
             isReplaced = isReplaced,
             metadata = DecryptionValidator.safeDecryptMap(
-                metadataJson, context, "ChatMessage"
+                metadataJson, context, "ChatMessage",
+                conversationId = this.conversationId,
+                messageId = this.id
             )
         )
     }

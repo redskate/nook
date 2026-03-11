@@ -212,16 +212,20 @@ class DatabaseManager private constructor(context: Context) {
             if (existingConversation != null) {
                 LogUtils.d(null,"DatabaseManager", "📝 Conversation already exists, just update...")
 
-                // Create an updated version
+                // Create an updated version - PRESERVE encodingPassword if not provided
                 val updatedConversation = existingConversation.copy(
                     lastMessage = conversation.lastMessage,
                     lastTimestamp = conversation.lastTimestamp,
                     unreadCount = conversation.unreadCount,
                     contactName = conversation.contactName ?: existingConversation.contactName,
-                    encryptionScheme = conversation.encryptionScheme
+                    encryptionScheme = conversation.encryptionScheme,
+                    encoding = if (conversation.encoding.isNotEmpty()) conversation.encoding else existingConversation.encoding,
+                    encodingPassword = if (conversation.encodingPassword.isNotEmpty())
+                        conversation.encodingPassword
+                    else
+                        existingConversation.encodingPassword
                 )
 
-                // Use updateChatConversation (like in database test!)
                 updateChatConversation(updatedConversation, context)
             } else {
                 LogUtils.d(null,"DatabaseManager", "➕ New Conversation, insert...")
@@ -316,10 +320,14 @@ class DatabaseManager private constructor(context: Context) {
                 "🔍 Exists per hash? ${existingByHash != null}")
 
             if (existingByHash != null) {
-                // Uupdate using encrypted values
-                val encodingPasswordCrypted = AppCryptoManager.encrypt64Value( encodingPassword )
+                // IMPORTANT FIX: Don't encrypt here - the entity will encrypt it in fromDomain
+                // Just pass the plaintext password, the entity encryption will handle it
+                existingByHash.encoding = encoding
+                existingByHash.encodingPassword = encodingPassword // Store plaintext temporarily
+                existingByHash.updatedAt = updatedAt
 
-                dao.updateEncodingAndPassword(phoneHash, encoding, encodingPasswordCrypted, updatedAt)
+                // Update the entity (this will trigger encryption via fromDomain in update method)
+                dao.update(existingByHash)
 
                 // Verify update
                 val afterUpdate = dao.findByPhoneHash(phoneHash)
@@ -337,7 +345,7 @@ class DatabaseManager private constructor(context: Context) {
             if (existingByPhone != null) {
                 // Update "manually" entity:
                 existingByPhone.encoding = encoding
-                existingByPhone.encodingPassword = encodingPassword
+                existingByPhone.encodingPassword = encodingPassword // Store plaintext temporarily
                 existingByPhone.updatedAt = updatedAt
 
                 // phone_hash missing?, add it
@@ -356,13 +364,12 @@ class DatabaseManager private constructor(context: Context) {
                 "➕ No conversation found. Create a new one")
 
             val contactName = "" // get from system if possible
-            val encryptedContactName = if (contactName.isNotEmpty())
-                AppCryptoManager.encrypt64Value(contactName) else null
+            // Note: We don't encrypt here - the entity constructor will handle it
 
-            val newEntity = ChatConversationEntity(
-                phoneNumber = encryptedPhone,
-                phoneHash = phoneHash,
-                contactName = encryptedContactName,
+            val newConversation = ChatConversation(
+                id = 0,
+                phoneNumber = phoneNumber,
+                contactName = contactName,
                 lastMessage = "",
                 lastTimestamp = System.currentTimeMillis(),
                 unreadCount = 0,
@@ -370,13 +377,14 @@ class DatabaseManager private constructor(context: Context) {
                 encryptionScheme = "",
                 encoding = encoding,
                 encodingPassword = encodingPassword,
-                createdAt = System.currentTimeMillis(),
-                updatedAt = updatedAt
+                createdAt = System.currentTimeMillis()
             )
 
-            val newId = dao.insert(newEntity)
+            // Use saveChatConversation which handles encryption properly
+            saveChatConversation(newConversation, context)
+
             LogUtils.d(context, "DatabaseManager",
-                "✅ New conversation created with ID: $newId")
+                "✅ New conversation created")
             return true
 
         } catch (e: Exception) {
@@ -631,13 +639,15 @@ class DatabaseManager private constructor(context: Context) {
                 contactName = "Test Conversation",
                 lastMessage = "Test last message",
                 lastTimestamp = System.currentTimeMillis(),
+                encoding = "",
+                encodingPassword = "",
                 unreadCount = 1,
                 isYChat = false,
                 encryptionScheme = "test_initial"
             )
 
             saveChatConversation(conversation, context)
-
+            Thread.sleep(500)
             val foundConversation = getChatConversation(testPhone, context)
             val conversationTestPassed = foundConversation != null && foundConversation.phoneNumber == testPhone
             LogUtils.d(null,"DatabaseManager", if (conversationTestPassed) "✅ ChatConversations OK" else "❌ ChatConversations FAILED")

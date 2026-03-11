@@ -32,11 +32,10 @@ class TrustedContactsAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val trustedContact = contacts[position]
 
-        // Formatta e mostra il numero
+        // Format 6 show the number
         holder.nameText.text = trustedContact.displayName
         holder.phoneText.text = formatPhoneNumber(trustedContact.phoneNumber)
 
-        // Imposta colore del testo in base allo stato
         if (trustedContact.isActive) {
             holder.nameText.setTextColor(holder.itemView.context.getColor(R.color.middle_green))
             holder.phoneText.setTextColor(holder.itemView.context.getColor(R.color.middle_green))
@@ -45,19 +44,13 @@ class TrustedContactsAdapter(
             holder.phoneText.setTextColor(holder.itemView.context.getColor(R.color.light_orange))
         }
 
-        // IMPORTANTE: Rimuovi listener precedenti per evitare loop infiniti
+        // remove previous listeners
         holder.activeSwitch.setOnCheckedChangeListener(null)
-
-        // Imposta lo stato dello switch
         holder.activeSwitch.isChecked = trustedContact.isActive
-
-        // Aggiungi listener per il cambio stato
         holder.activeSwitch.setOnCheckedChangeListener { _, isChecked ->
-            // Evita chiamate multiple
+            // avoid multiple calls
             if (isChecked != trustedContact.isActive) {
                 onActiveChange(trustedContact.contactId, isChecked)
-
-                // Aggiorna immediatamente il colore del testo
                 if (isChecked) {
                     holder.nameText.setTextColor(holder.itemView.context.getColor(R.color.middle_green))
                     holder.phoneText.setTextColor(holder.itemView.context.getColor(R.color.middle_green))
@@ -68,12 +61,12 @@ class TrustedContactsAdapter(
             }
         }
 
-        // Listener per il pulsante rimuovi
+        // Listener for remove button
         holder.removeBtn.setOnClickListener {
             onRemoveClick(trustedContact.contactId)
         }
 
-        // Per evitare problemi di riciclo, imposta un tag
+        // to avoid recycle problem, setup a tag
         holder.activeSwitch.tag = trustedContact.contactId
     }
 
