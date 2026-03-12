@@ -8,6 +8,7 @@ import android.content.ContextWrapper
 import android.view.WindowManager
 import solutions.semweb.nook.BuildConfig
 import solutions.semweb.nook.LogUtils
+import solutions.semweb.nook.data.database.DecryptionValidator
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -94,40 +95,15 @@ object DecryptionFailureMonitor {
         }
 
         return when (fieldType) {
-            "phone" -> isValidPhoneNumber(decrypted)
-            "name" -> isValidContactName(decrypted)
-            "text" -> isValidMessageText(decrypted)
+            "phone" -> DecryptionValidator.isValidPhoneNumber(decrypted)
+            "name" -> DecryptionValidator.isValidContactName(decrypted)
+            "text" -> DecryptionValidator.isValidMessageText(decrypted)
             else -> decrypted.isNotBlank()
         }
     }
 
-    private fun isValidPhoneNumber(text: String): Boolean {
-        if (text.isBlank()) return false
-        val validChars = text.all {
-            it.isDigit() || it == '+' || it == ' ' || it == '-' || it == '(' || it == ')'
-        }
-        return validChars && text.any { it.isDigit() }
-    }
 
-    private fun isValidContactName(text: String): Boolean {
-        if (text.isBlank()) return true // Empty name is allowed
-        return text.all {
-            it.isLetter() || it.isWhitespace() || it == '-' || it == '\'' || it == '.'
-        }
-    }
 
-    private fun isValidMessageText(text: String): Boolean {
-        // Message text can contain almost anything, but shouldn't contain
-        // common encryption artifacts or be completely unreadable
-        if (text.isEmpty()) return true
-
-        // Check for common encryption artifacts
-        val hasEncryptionArtifacts = text.contains("[DECRYPTION_FAILED]") ||
-                text.matches(Regex("^[A-Za-z0-9+/=]+$")) && text.length > 50 || // Base64-like
-                text.all { it.code < 32 || it.code > 126 } // Mostly non-printable
-
-        return !hasEncryptionArtifacts
-    }
 
     private fun showFailureAlert(context: Context, failure: DecryptionFailure) {
         // Rate limit alerts

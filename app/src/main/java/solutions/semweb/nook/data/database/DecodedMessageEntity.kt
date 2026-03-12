@@ -4,7 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import solutions.semweb.nook.crypto.AppCryptoManager
+import solutions.semweb.nook.crypto.EncryptionVerifier
 import java.util.UUID
 
 @Entity(
@@ -58,14 +58,25 @@ data class DecodedMessageEntity(
             additionalInfo: Map<String, Any>? = null,
             context: android.content.Context
         ): DecodedMessageEntity {
-            // Encrypted all sensible data
-            val encryptedOriginal = AppCryptoManager.encrypt64Value(originalMessage)
-            val encryptedDecoded = AppCryptoManager.encrypt64Value(decodedMessage)
-            val encryptedSender = AppCryptoManager.encrypt64Value(sender)
-            val encryptedSenderName = senderName?.let { AppCryptoManager.encrypt64Value(it) }
+            val encryptedOriginal = EncryptionVerifier.encryptAndVerify(
+                originalMessage, "originalMessage", "DecodedMessage", context
+            )
+            val encryptedDecoded = EncryptionVerifier.encryptAndVerify(
+                decodedMessage, "decodedMessage", "DecodedMessage", context
+            )
+            val encryptedSender = EncryptionVerifier.encryptAndVerify(
+                sender, "sender", "DecodedMessage", context
+            )
+            val encryptedSenderName = senderName?.let {
+                EncryptionVerifier.encryptAndVerify(
+                    it, "senderName", "DecodedMessage", context
+                )
+            }
             val encryptedAdditionalInfo = additionalInfo?.let {
                 com.google.gson.Gson().toJson(it).let { json ->
-                    AppCryptoManager.encrypt64Value(json)
+                    EncryptionVerifier.encryptAndVerify(
+                        json, "additionalInfo", "DecodedMessage", context
+                    )
                 }
             }
 

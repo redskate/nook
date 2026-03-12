@@ -85,7 +85,7 @@ object DecryptionValidator {
         }
     }
 
-    private fun isValidPhoneNumber(text: String): Boolean {
+    fun isValidPhoneNumber(text: String): Boolean {
         if (text.isBlank()) return false
         // Phone should have digits and optional +, spaces, hyphens
         val validChars = text.all {
@@ -94,7 +94,7 @@ object DecryptionValidator {
         return validChars && text.any { it.isDigit() }
     }
 
-    private fun isValidContactName(text: String): Boolean {
+    fun isValidContactName(text: String): Boolean {
         if (text.isBlank()) return true // Empty name is allowed
 
         // SUPER PERMISSIVE - just check that it's not obviously still encrypted
@@ -121,7 +121,7 @@ object DecryptionValidator {
     }
 
 
-    private fun isValidMessageText(text: String): Boolean {
+    fun isValidMessageText(text: String): Boolean {
         if (text.isEmpty()) return true
 
         // Check if it's likely still encrypted
@@ -166,6 +166,12 @@ object DecryptionValidator {
 
         try {
             val decrypted = AppCryptoManager.decrypt64Value(encryptedValue)
+
+            // on problem we stop here...
+            if (decrypted == encryptedValue)
+            {
+                LogUtils.d("badDecryption"," condersation id: "+conversationId+" wrong decryption: "+fieldName+": "+decrypted)
+            }
 
             // Validate the decryption result
             if (isValidForField(decrypted, fieldName)) {

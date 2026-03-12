@@ -8,7 +8,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.Gson
 import solutions.semweb.nook.ChatMessage
-import solutions.semweb.nook.crypto.AppCryptoManager
+import solutions.semweb.nook.crypto.EncryptionVerifier
 
 @Entity(
     tableName = "chat_messages",
@@ -93,9 +93,20 @@ data class ChatMessageEntity(
             val now = System.currentTimeMillis()
             return ChatMessageEntity(
                 conversationId = conversationId,
-                text = AppCryptoManager.encrypt64Value(message.text),
-                sender = AppCryptoManager.encrypt64Value(message.sender),
-                senderName = message.senderName?.let { AppCryptoManager.encrypt64Value(it) },
+                text = EncryptionVerifier.encryptAndVerify(
+                    message.text, "text", "ChatMessage", context,
+                    conversationId = conversationId
+                ),
+                sender = EncryptionVerifier.encryptAndVerify(
+                    message.sender, "sender", "ChatMessage", context,
+                    conversationId = conversationId
+                ),
+                senderName = message.senderName?.let {
+                    EncryptionVerifier.encryptAndVerify(
+                        it, "senderName", "ChatMessage", context,
+                        conversationId = conversationId
+                    )
+                },
                 timestamp = message.timestamp,
                 trans_timestamp = message.trans_timestamp,
                 isDecoded = message.isDecoded,
@@ -104,29 +115,17 @@ data class ChatMessageEntity(
                 isYMessage = message.isYMessage,
                 isRead = !message.isOutgoing && message.isDecoded,
                 createdAt = now,
-                updatedAt = now,  // SET INITIAL VALUE
+                updatedAt = now,
                 isSystemMessage = message.isSystemMessage,
                 metadataType = message.metadata?.get("type"),
                 metadataJson = message.metadata?.let { metadata ->
-                    val metadataJson = gson.toJson(metadata)
-                    AppCryptoManager.encrypt64Value(metadataJson)
+                    val metadataJson = com.google.gson.Gson().toJson(metadata)
+                    EncryptionVerifier.encryptAndVerify(
+                        metadataJson, "metadataJson", "ChatMessage", context,
+                        conversationId = conversationId
+                    )
                 },
                 isReplaced = message.isReplaced
-            )
-        }
-
-        // Optional: Add a method for creating updated copies
-        fun copyWithUpdate(
-            entity: ChatMessageEntity,
-            metadataJson: String? = null,
-            metadataType: String? = null,
-            isReplaced: Boolean? = null
-        ): ChatMessageEntity {
-            return entity.copy(
-                metadataJson = metadataJson ?: entity.metadataJson,
-                metadataType = metadataType ?: entity.metadataType,
-                isReplaced = isReplaced ?: entity.isReplaced,
-                updatedAt = System.currentTimeMillis()  // UPDATE TIMESTAMP
             )
         }
     }

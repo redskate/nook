@@ -8,7 +8,7 @@ object Constants {
     const val VERSION_MAJOR = 1
     const val VERSION_MINOR = 4
     const val VERSION_PATCH = 5
-    const val VERSION_CODE = 284  // DecryptionMonitoring + names UTF8
+    const val VERSION_CODE = 285  // fixed synhronized encryptor/decryptor
 
     // Computed version name (DO NOT EDIT DIRECTLY)
     const val VERSION_NAME = "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_CODE"

@@ -10,6 +10,7 @@ import solutions.semweb.nook.Constants
 import solutions.semweb.nook.LogUtils
 import solutions.semweb.nook.PhoneUtils
 import solutions.semweb.nook.crypto.AppCryptoManager
+import solutions.semweb.nook.crypto.EncryptionVerifier
 import java.nio.charset.StandardCharsets
 
 @Entity(
@@ -62,20 +63,37 @@ data class ChatConversationEntity(
     companion object {
         // Write: Domain → Entity
         fun fromDomain(conversation: ChatConversation, context: Context): ChatConversationEntity {
-            // Normalize phone number first
             val normalizedPhone = PhoneUtils.normalizePhoneNumber(conversation.phoneNumber)
-
-            // Log what we're encrypting
             LogUtils.d(null, "CHAT_ENCRYPT", "📝 Encrypting conversation for: $normalizedPhone")
 
-            // Encrypt all fields with UTF-8 guarantee
-            val encryptedPhone = encryptSafely(normalizedPhone)
+            val encryptedPhone = encryptSafely(
+                normalizedPhone,
+                fieldName = "phone",
+                context = context,
+                conversationId = conversation.id
+            )
             val phoneHash = AppCryptoManager.encrypt64Key(normalizedPhone)
-            val encryptedContactName = conversation.contactName?.let { encryptSafely(it) }
-            val encryptedLastMessage = encryptSafely(conversation.lastMessage)
-            // This is correct - encrypting the password once
+            val encryptedContactName = conversation.contactName?.let {
+                encryptSafely(
+                    conversation.contactName,
+                    fieldName = "contactName",
+                    context = context,
+                    conversationId = conversation.id
+                )
+            }
+            val encryptedLastMessage = encryptSafely(
+                conversation.lastMessage,
+                fieldName = "lastMessage",
+                context = context,
+                conversationId = conversation.id
+            )
             val encryptedEncodingPassword = if (conversation.encodingPassword.isNotEmpty())
-                encryptSafely(conversation.encodingPassword)
+                encryptSafely(
+                    conversation.encodingPassword,
+                    fieldName = "encodingPassword",
+                    context = context,
+                    conversationId = conversation.id
+                )
             else
                 ""
 
@@ -95,16 +113,31 @@ data class ChatConversationEntity(
             )
         }
 
+
         // Safe encryption with UTF-8 guarantee
-        private fun encryptSafely(plainText: String): String {
+        private fun encryptSafely(plainText: String, fieldName: String, context: Context, conversationId: Long? = null): String {
             return try {
-                // Force UTF-8 encoding before encryption
-                val utf8Bytes = plainText.toByteArray(StandardCharsets.UTF_8)
-                // Encrypt the bytes directly (if AppCryptoManager supports byte arrays)
-                // Otherwise, convert back to string with UTF-8 guarantee
-                AppCryptoManager.encrypt64Value(plainText)
+                // Log what we're about to encrypt
+                LogUtils.d("ENCRYPT_WATCH", "🔐 About to encrypt $fieldName: '${plainText.take(50)}...'")
+
+                val result = EncryptionVerifier.encryptAndVerify(
+                    plainText = plainText,
+                    fieldName = fieldName,
+                    entityType = "ChatConversation",
+                    context = context,
+                    conversationId = conversationId ?: 0L
+                )
+
+                if (AppCryptoManager.looksLikeEncoded(result) && !AppCryptoManager.looksLikeEncoded(plainText)) {
+                    LogUtils.e("ENCRYPT_WATCH", "❌❌❌ PRODUCED BASE64 OUTPUT for $fieldName!")
+                    LogUtils.e("ENCRYPT_WATCH", "  Original (plain): '$plainText'")
+                    LogUtils.e("ENCRYPT_WATCH", "  Result (looks like Base64): '$result'")
+                    LogUtils.e("ENCRYPT_WATCH", "  This suggests we're encrypting already encrypted data!")
+                }
+
+                result
             } catch (e: Exception) {
-                LogUtils.e("CHAT_ENCRYPT", "❌ Encryption failed", e)
+                LogUtils.e("ENCRYPT_WATCH", "❌ Encryption failed for $fieldName", e)
                 throw e
             }
         }
@@ -182,5 +215,24 @@ data class ChatConversationEntity(
             createdAt = createdAt
         )
     }
+
+    private fun encryptSafely(plainText: String, fieldName: String, context: Context, conversationId: Long? = null): String {
+        return try {
+            // Force UTF-8 encoding before encryption
+            val utf8Bytes = plainText.toByteArray(StandardCharsets.UTF_8)
+            // Use the new encryptAndVerify method
+            EncryptionVerifier.encryptAndVerify(
+                plainText = plainText,
+                fieldName = fieldName,
+                entityType = "ChatConversation",
+                context = context,
+                conversationId = conversationId ?: 0L
+            )
+        } catch (e: Exception) {
+            LogUtils.e("CHAT_ENCRYPT", "❌ Encryption failed for $fieldName", e)
+            throw e
+        }
+    }
+
 
 }
