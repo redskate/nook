@@ -160,6 +160,15 @@
             font-size: clamp(0.75rem, 2vw, 0.9rem);
         }
 
+
+	p.micro {
+	    margin: 0 !important;
+	    margin-bottom: 20px !important;
+	}
+
+	p label.micro {
+	}
+
         /* --- LINKS & BUTTONS --- */
         a {
             color: var(--nook-green);
@@ -844,8 +853,11 @@
 
                     <!-- Pulsante Download Diretto - gli attributi verranno popolati via JavaScript -->
                     <a href="#" class="btn btn-primary download-btn" style="background: #1a1; color: #000;">
-                        <i class="fas fa-download"></i> Download APK <span class="version-display">v1.2.1.262</span>
+                        <i class="fas fa-download"></i> Tap here to download and install NooK <span class="version-display">v1.2.1.262</span>
                     </a>
+                    <p class="micro">
+                        <label class="micro">After tapping, look at the bottom of your screen. Tap the downloaded file to install.</label>
+                    </p>
                 </div>
 
                 <!-- Container per SHA256 (si auto-popola) -->
@@ -856,12 +868,12 @@
             <!-- SLIDESHOW AREA -->
             <div class="slideshow-area">
                 <div class="slideshow-container">
-                    <img src="nook/gallery/nook-chats.png" alt="NooK Chat View" class="slideshow-img" loading="lazy">
-                    <img src="nook/gallery/nook-app-lock.png" alt="NooK app Lock" class="slideshow-img active" loading="lazy">
-                    <img src="nook/gallery/nook-settings.png" alt="NooK Settings" class="slideshow-img" loading="lazy">
-                    <img src="nook/gallery/nook-encryption-settings.png" alt="NooK Encryption Settings" class="slideshow-img" loading="lazy">
-                    <img src="nook/gallery/nook-chat.png" alt="NooK Chat" class="slideshow-img" loading="lazy">
-                    <img src="nook/gallery/nook-version-mana.png" alt="NooK Version Management" class="slideshow-img" loading="lazy">
+                    <img src="gallery/nook-chats.png" alt="NooK Chat View" class="slideshow-img" loading="lazy">
+                    <img src="gallery/nook-app-lock.png" alt="NooK app Lock" class="slideshow-img active" loading="lazy">
+                    <img src="gallery/nook-settings.png" alt="NooK Settings" class="slideshow-img" loading="lazy">
+                    <img src="gallery/nook-encryption-settings.png" alt="NooK Encryption Settings" class="slideshow-img" loading="lazy">
+                    <img src="gallery/nook-chat.png" alt="NooK Chat" class="slideshow-img" loading="lazy">
+                    <img src="gallery/nook-version-mana.png" alt="NooK Version Management" class="slideshow-img" loading="lazy">
                 </div>
 
                 <div class="slideshow-dots">
