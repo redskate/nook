@@ -17,14 +17,23 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * Gestione della crittografia SiSa con caching delle chiavi in KeyStore
+ * SiSa cryptography management with key caching in KeyStore
  */
 object SisaCrypto {
 
-    const val workaround_1_char_adding_constant = "ῲῳῴῶ" // special rare symbol constant
+    const val WORKAROUND_SINGLE_CHAR_ADDITION = "ῲῳῴῶ" // special rare symbol constant for single char messages
 
     // =============================================
-    // 1. KEY DERIVATION AND CACHING
+    // 1. CONSTANTS
+    // =============================================
+    private const val PBKDF2_ITERATIONS = 100000
+    private const val AES_KEY_SIZE_BITS = 256
+    private const val GCM_TAG_LENGTH = 128
+    private const val IV_SIZE = 12
+    private const val DATE_FORMAT = "yyyyMMdd"
+
+    // =============================================
+    // 2. KEY DERIVATION AND CACHING
     // =============================================
 
     /**
@@ -39,25 +48,30 @@ object SisaCrypto {
         timestamp: Long
     ): SecretKey? {
         // 1. Try to get from cache first (KeyStore only, no memory)
-        var key = SisaKeyCache.getCachedKey(context, phoneNumber, dateStr)
+        var cachedKey = SisaKeyCache.getCachedKey(context, phoneNumber, dateStr)
 
-        if (key != null) {
+        if (cachedKey != null) {
             LogUtils.d(context, "SisaCrypto", "✅ Using cached KeyStore key for $phoneNumber on $dateStr")
-            return key
+            return cachedKey
         }
 
         // 2. If not in cache, derive new key
         LogUtils.d(context, "SisaCrypto", "🔑 Deriving new key for $phoneNumber on $dateStr")
-        key = deriveAesKeyFromPassword(context, password, timestamp)
+        val key = deriveAesKeyFromPassword(password, dateStr)
 
         if (key != null) {
             // 3. Store in cache for future use
-            SisaKeyCache.cacheKey(context, phoneNumber, dateStr, key)
+            val stored = SisaKeyCache.cacheKey(context, phoneNumber, dateStr, key)
 
-            // 4. Clean up previous day's key (to prevent KeyStore bombing)
-            cleanupPreviousDayKey(context, phoneNumber, dateStr)
+            if (stored) {
+                // 4. Clean up previous day's key (to prevent KeyStore bombing)
+                cleanupPreviousDayKey(context, phoneNumber, dateStr)
 
-            LogUtils.d(context, "SisaCrypto", "✅ New key derived and cached for $phoneNumber on $dateStr")
+                LogUtils.d(context, "SisaCrypto", "✅ New key derived and cached for $phoneNumber on $dateStr")
+            } else {
+                LogUtils.e(context, "SisaCrypto", "❌ Failed to cache key for $phoneNumber on $dateStr")
+                // Return the key anyway for this session
+            }
         }
 
         return key
@@ -69,7 +83,7 @@ object SisaCrypto {
     private fun cleanupPreviousDayKey(context: Context, phoneNumber: String, currentDateStr: String) {
         try {
             // Parse current date
-            val dateFormat = SimpleDateFormat("yyyyMMdd", Locale.US).apply {
+            val dateFormat = SimpleDateFormat(DATE_FORMAT, Locale.US).apply {
                 timeZone = TimeZone.getTimeZone("UTC")
             }
             val currentDate = dateFormat.parse(currentDateStr) ?: return
@@ -92,18 +106,13 @@ object SisaCrypto {
                     LogUtils.d(context, "SisaCrypto", "🗑️ Cleaned up previous day key: $previousDateStr")
                 }
             }
-
-            // Also clear from SisaKeyCache's internal structures
-            // Note: SisaKeyCache only uses memory cache temporarily, but we should also clear its references
-            // Since SisaKeyCache is an object, we can access its internal map via reflection or add a method
-            // For now, we rely on KeyStore deletion and SisaKeyCache's expiration mechanism
         } catch (e: Exception) {
             LogUtils.e(context, "SisaCrypto", "⚠️ Error cleaning up previous day key", e)
         }
     }
 
     /**
-     * Generate a stable Keystore alias (mirroring SisaKeyCache's logic)
+     * Generate a stable Keystore alias
      */
     private fun generateKeystoreAlias(phoneNumber: String, dateStr: String): String {
         val phoneHash = hashString(phoneNumber)
@@ -111,7 +120,7 @@ object SisaCrypto {
     }
 
     /**
-     * Generate a stable hash string (mirroring SisaKeyCache's logic)
+     * Generate a stable hash string
      */
     private fun hashString(input: String): String {
         return try {
@@ -124,16 +133,58 @@ object SisaCrypto {
     }
 
     // =============================================
-    // 2. SISA ENCRYPTION WITH CACHING
+    // 3. KEY DERIVATION - DETERMINISTIC
+    // =============================================
+
+    /**
+     * Derive AES key deterministically from password and date string
+     * Uses PBKDF2 with date as salt
+     */
+    private fun deriveAesKeyFromPassword(
+        password: String,
+        dateStr: String
+    ): SecretKey? {
+        return try {
+            val salt = dateStr.toByteArray(Charsets.UTF_8)
+
+            val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+            val spec = PBEKeySpec(password.toCharArray(), salt, PBKDF2_ITERATIONS, AES_KEY_SIZE_BITS)
+            val key = factory.generateSecret(spec)
+
+            // Take exactly 32 bytes for AES-256
+            val aesKeyBytes = key.encoded.copyOfRange(0, 32)
+
+            SecretKeySpec(aesKeyBytes, "AES")
+        } catch (e: Exception) {
+            LogUtils.e(null, "SisaCrypto", "❌ Key derivation failed", e)
+            null
+        }
+    }
+
+    /**
+     * Derive IV deterministically from date string
+     * IV must be 12 bytes for GCM
+     */
+    private fun deriveIvFromDate(dateStr: String): ByteArray {
+        // Use SHA-256 to get a deterministic hash of the date string
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val hash = digest.digest(dateStr.toByteArray(Charsets.UTF_8))
+
+        // Take first 12 bytes for IV
+        return hash.copyOfRange(0, IV_SIZE)
+    }
+
+    // =============================================
+    // 4. SISA ENCRYPTION
     // =============================================
 
     fun encryptEncMessage(context: Context, phoneNumber: String, plainText: String, encoding: String): String {
         return try {
-            LogUtils.d(context, "SisaCrypto", "🔐 Sisa Encryption with $encoding Encoding for: $phoneNumber")
+            LogUtils.d(context, "SisaCrypto", "🔐 SiSa Encryption with $encoding encoding for: $phoneNumber")
 
             val textToEncrypt = if (plainText.length == 1) {
-                // Add char (invisible)
-                plainText + workaround_1_char_adding_constant
+                // Add special char for single character messages
+                plainText + WORKAROUND_SINGLE_CHAR_ADDITION
             } else {
                 plainText
             }
@@ -156,39 +207,21 @@ object SisaCrypto {
                 return plainText
             }
 
-            // 4. Generate IV randomly (but check if key requires Keystore-generated IV)
-            val iv = ByteArray(12).also { SecureRandom().nextBytes(it) }
+            // 4. Derive IV deterministically from the date
+            val iv = deriveIvFromDate(dateStr)
 
-            // 5. Check if this is a Keystore key and handle appropriately
+            // 5. Encrypt with GCM
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            val cipherText: ByteArray
-            val finalIv: ByteArray
+            val gcmSpec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
 
-            if (aesKey.toString().contains("AndroidKeyStore") ||
-                aesKey::class.java.name.contains("KeyStore")) {
+            cipher.init(Cipher.ENCRYPT_MODE, aesKey, gcmSpec)
+            val cipherText = cipher.doFinal(textToEncrypt.toByteArray(Charsets.UTF_8))
 
-                LogUtils.d(context, "SisaCrypto", "🔑 Using Keystore key - letting Keystore generate IV")
+            // 6. Combine IV + ciphertext (IV is deterministic, but included for compatibility)
+            val combined = iv + cipherText
 
-                // For Keystore keys, let the Keystore generate the IV
-                cipher.init(Cipher.ENCRYPT_MODE, aesKey)
-                cipherText = cipher.doFinal(textToEncrypt.toByteArray(Charsets.UTF_8))
-                finalIv = cipher.iv  // Get the IV that Keystore generated
-
-                LogUtils.d(context, "SisaCrypto", "🔑 Keystore generated IV of size: ${finalIv.size}")
-            } else {
-                // For regular SecretKeySpec keys, use our own IV
-                LogUtils.d(context, "SisaCrypto", "🔑 Using regular key - using caller-provided IV")
-                val gcmSpec = GCMParameterSpec(128, iv)
-                cipher.init(Cipher.ENCRYPT_MODE, aesKey, gcmSpec)
-                cipherText = cipher.doFinal(textToEncrypt.toByteArray(Charsets.UTF_8))
-                finalIv = iv
-            }
-
-            val combined = finalIv + cipherText
-
-            // 6. Encode and add prefix
+            // 7. Encode and add prefix
             if (encoding == EncryptionMapper.ENCRYPTION_TEXT) {
-                // no encoding specified (dangerous...)
                 "${EncryptionMapper.SISA_ENCR_PREFIX}$combined"
             } else {
                 val base = extractEncodingBase(encoding)
@@ -238,7 +271,7 @@ object SisaCrypto {
                 LogUtils.e(context, "Decryption", "❌ Error decoding Base$base", e)
                 return DecodeResult(
                     original = encryptedMessage,
-                    decoded = "[ERRORE: Decoding Base$base failed: ${e.message}]",
+                    decoded = "[ERROR: Decoding Base$base failed: ${e.message}]",
                     scheme = EncryptionMapper.ENCRYPTION_TEXT,
                     encoding = encoding,
                     success = false,
@@ -246,23 +279,22 @@ object SisaCrypto {
                 )
             }
 
-            val ivSize = 12
-            if (decodedEncryptedCombined.size < ivSize) {
+            if (decodedEncryptedCombined.size < IV_SIZE) {
                 return DecodeResult(
                     original = encryptedMessage,
                     decoded = encryptedMessage,
                     scheme = EncryptionMapper.ENCRYPTION_TEXT,
                     encoding = encoding,
                     success = false,
-                    notes = "Data too short (${decodedEncryptedCombined.size} byte, min $ivSize)",
+                    notes = "Data too short (${decodedEncryptedCombined.size} byte, min $IV_SIZE)",
                 )
             }
 
             // 3. Extract IV and ciphertext
-            val iv = decodedEncryptedCombined.copyOfRange(0, ivSize)
-            val ciphertext = decodedEncryptedCombined.copyOfRange(ivSize, decodedEncryptedCombined.size)
+            val iv = decodedEncryptedCombined.copyOfRange(0, IV_SIZE)
+            val ciphertext = decodedEncryptedCombined.copyOfRange(IV_SIZE, decodedEncryptedCombined.size)
 
-            // 4. Get AES password
+            // 4. Get password
             val password = PasswordManager.getStoredPassword(context, phoneNumber)
             if (password.isEmpty()) {
                 return DecodeResult(
@@ -304,7 +336,7 @@ object SisaCrypto {
             }
 
             // Remove workaround character if present
-            result.decoded = result.decoded.replace(workaround_1_char_adding_constant, "")
+            result.decoded = result.decoded.replace(WORKAROUND_SINGLE_CHAR_ADDITION, "")
 
             return result
 
@@ -351,7 +383,7 @@ object SisaCrypto {
                 )
             }
 
-            // Decrypt
+            // Decrypt with the provided IV (which came from the message)
             val plaintextBytes = decryptWithRetries(ciphertext, aesKey, iv)
             val plaintext = String(plaintextBytes, Charsets.UTF_8)
 
@@ -395,58 +427,13 @@ object SisaCrypto {
     private fun getDateString(timestamp: Long): String {
         val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
         calendar.timeInMillis = timestamp
-        return SimpleDateFormat("yyyyMMdd", Locale.US).apply {
+        return SimpleDateFormat(DATE_FORMAT, Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
         }.format(calendar.time)
     }
 
     // =============================================
-    // 3. KEY DERIVATION (unchanged but now returns nullable)
-    // =============================================
-
-    private fun deriveAesKeyFromPassword(
-        context: Context,
-        password: String,
-        timestamp: Long = 0
-    ): SecretKey? {
-        return try {
-            // Get the DAY of timestamp
-            val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-            calendar.timeInMillis = if (timestamp > 0) timestamp else System.currentTimeMillis()
-
-            // Reset to start of day
-            calendar.set(Calendar.HOUR_OF_DAY, 0)
-            calendar.set(Calendar.MINUTE, 0)
-            calendar.set(Calendar.SECOND, 0)
-            calendar.set(Calendar.MILLISECOND, 0)
-
-            val dateStr = SimpleDateFormat("yyyyMMdd", Locale.US).apply {
-                timeZone = TimeZone.getTimeZone("UTC")
-            }.format(calendar.time)
-
-            val salt = dateStr.toByteArray(Charsets.UTF_8)
-
-            val iterations = 100000
-            val keyLength = 512
-
-            val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-            val spec = PBEKeySpec(password.toCharArray(), salt, iterations, keyLength)
-            val key = factory.generateSecret(spec)
-
-            // Take first 256 bits (32 bytes) for AES-256
-            val aesKeyBytes = key.encoded.copyOfRange(0, 32)
-
-            LogUtils.d(context, "SisaCrypto", "🔑 Key derived: ${aesKeyBytes.size} bytes")
-
-            SecretKeySpec(aesKeyBytes, "AES")
-        } catch (e: Exception) {
-            LogUtils.e(context, "SisaCrypto", "❌ Key derivation failed", e)
-            null
-        }
-    }
-
-    // =============================================
-    // 4. UTILITY FUNCTIONS (unchanged)
+    // 5. UTILITY FUNCTIONS
     // =============================================
 
     private fun decryptWithRetries(
@@ -460,7 +447,7 @@ object SisaCrypto {
         for (attempt in 1..maxAttempts) {
             try {
                 val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-                val gcmSpec = GCMParameterSpec(128, iv)
+                val gcmSpec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
                 cipher.init(Cipher.DECRYPT_MODE, aesKey, gcmSpec)
                 return cipher.doFinal(ciphertext)
             } catch (e: Exception) {
@@ -493,5 +480,4 @@ object SisaCrypto {
                 (message.contains(EncryptionMapper.SISA_ENCR_PREFIX) &&
                         message.matches("^.*#[A-Za-z0-9+/=]+$".toRegex()))
     }
-
 }
