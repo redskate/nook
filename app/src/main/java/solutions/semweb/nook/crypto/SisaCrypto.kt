@@ -44,8 +44,7 @@ object SisaCrypto {
         context: Context,
         phoneNumber: String,
         password: String,
-        dateStr: String,
-        timestamp: Long
+        dateStr: String
     ): SecretKey? {
         // 1. Try to get from cache first (KeyStore only, no memory)
         var cachedKey = SisaKeyCache.getCachedKey(context, phoneNumber, dateStr)
@@ -95,16 +94,14 @@ object SisaCrypto {
             val previousDateStr = dateFormat.format(calendar.time)
 
             // For Android 6+, we can try to delete directly
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val keystoreAlias = generateKeystoreAlias(phoneNumber, previousDateStr)
+            val keystoreAlias = generateKeystoreAlias(phoneNumber, previousDateStr)
 
-                val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore")
-                keyStore.load(null)
+            val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore")
+            keyStore.load(null)
 
-                if (keyStore.containsAlias(keystoreAlias)) {
-                    keyStore.deleteEntry(keystoreAlias)
-                    LogUtils.d(context, "SisaCrypto", "🗑️ Cleaned up previous day key: $previousDateStr")
-                }
+            if (keyStore.containsAlias(keystoreAlias)) {
+                keyStore.deleteEntry(keystoreAlias)
+                LogUtils.d(context, "SisaCrypto", "🗑️ Cleaned up previous day key: $previousDateStr")
             }
         } catch (e: Exception) {
             LogUtils.e(context, "SisaCrypto", "⚠️ Error cleaning up previous day key", e)
@@ -200,8 +197,8 @@ object SisaCrypto {
             val timestamp = System.currentTimeMillis()
             val dateStr = getDateString(timestamp)
 
-            // 3. Get or create key for this date (uses cache)
-            val aesKey = getOrCreateKeyForDate(context, phoneNumber, password, dateStr, timestamp)
+            // 3. Get or create key for this date (using cache for today's date)
+            val aesKey = getOrCreateKeyForDate(context, phoneNumber, password, dateStr)
             if (aesKey == null) {
                 LogUtils.e(context, "SisaCrypto", "❌ Failed to get/create encryption key")
                 return plainText
@@ -236,6 +233,7 @@ object SisaCrypto {
 
     /**
      * Decrypts the message trying current day and previous day
+     * in order to jump the day gap (sent yesterday)
      */
     fun decryptMessage(context: Context,
                        phoneNumber: String,
@@ -355,6 +353,7 @@ object SisaCrypto {
 
     /**
      * Try decryption with a specific date
+     * taken from timestamp
      */
     private fun tryDecryptionWithDate(
         context: Context,
@@ -370,10 +369,8 @@ object SisaCrypto {
             val dateStr = getDateString(timestamp)
 
             // Get key for this date (from cache or derive)
-            val aesKey = getOrCreateKeyForDate(context, phoneNumber, password, dateStr, timestamp)
-
-            if (aesKey == null) {
-                return DecodeResult(
+            val aesKey = getOrCreateKeyForDate(context, phoneNumber, password, dateStr)
+                ?: return DecodeResult(
                     original = encryptedMessage,
                     decoded = "[ERROR: Failed to get decryption key]",
                     scheme = EncryptionMapper.ENCRYPTION_SISA,
@@ -381,7 +378,6 @@ object SisaCrypto {
                     success = false,
                     notes = "Key unavailable for date $dateStr",
                 )
-            }
 
             // Decrypt with the provided IV (which came from the message)
             val plaintextBytes = decryptWithRetries(ciphertext, aesKey, iv)
@@ -465,7 +461,7 @@ object SisaCrypto {
 
     private fun isValidPlaintext(plaintext: String): Boolean {
         return plaintext.isNotBlank() &&
-                plaintext.length >= 1 &&
+                plaintext.isNotEmpty() &&
                 plaintext.length <= 10000 &&
                 !plaintext.contains(Char(0)) &&
                 plaintext.all { char ->
