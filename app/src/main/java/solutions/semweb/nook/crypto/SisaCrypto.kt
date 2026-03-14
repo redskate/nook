@@ -1,10 +1,8 @@
 package solutions.semweb.nook.crypto
 
 import android.content.Context
-import android.os.Build
 import solutions.semweb.nook.LogUtils
 import solutions.semweb.nook.crypto.EncryptionMapper.extractEncodingBase
-import java.security.SecureRandom
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
