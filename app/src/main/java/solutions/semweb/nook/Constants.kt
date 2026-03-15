@@ -6,9 +6,9 @@ object Constants {
     //////////////////////////////////////////////////////
     // 🔴 CENTRALIZED VERSIONING - Edit only these values
     const val VERSION_MAJOR = 1
-    const val VERSION_MINOR = 4
-    const val VERSION_PATCH = 6
-    const val VERSION_CODE = 286  // fixed determiministic cache/deriving of AES keys
+    const val VERSION_MINOR = 5
+    const val VERSION_PATCH = 1
+    const val VERSION_CODE = 288  // encoding reduced to 32/64/256 due to padding problems - new alphabet deterministic password scrambling
 
     // Computed version name (DO NOT EDIT DIRECTLY)
     const val VERSION_NAME = "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_CODE"

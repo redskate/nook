@@ -171,12 +171,8 @@ object CryptoManager {
                     //else encode plain text only (for those cases where encryption is outer law):
                     EncryptionMapper.ENCODING_BASE32 -> encodeWithBaseScheme( text, 32, encodingPassword, EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE32 )
                     EncryptionMapper.ENCODING_BASE64 -> encodeWithBaseScheme( text, 64, encodingPassword, EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE64 )
-                    EncryptionMapper.ENCODING_BASE128 -> encodeWithBaseScheme( text, 128,encodingPassword,  EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE128 )
                     EncryptionMapper.ENCODING_BASE256 -> encodeWithBaseScheme( text, 256, encodingPassword, EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE256 )
-                    EncryptionMapper.ENCODING_BASE512 -> encodeWithBaseScheme( text, 512, encodingPassword, EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE512 )
-                    EncryptionMapper.ENCODING_BASE1024 -> encodeWithBaseScheme( text, 1024, encodingPassword, EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE1024 )
-                    EncryptionMapper.ENCODING_BASE2048 -> encodeWithBaseScheme( text, 2048, encodingPassword, EncryptionMapper.ENCRYPTION_SCHEME_TEXT, EncryptionMapper.ENCODING_BASE2048 )
-                    else-> {
+                     else-> {
                         LogUtils.d(null, "CryptoManager", "  Plaintext wished (no obfuscation)")
                         text
                     }

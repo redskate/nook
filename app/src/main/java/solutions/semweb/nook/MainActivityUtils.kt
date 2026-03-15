@@ -1098,11 +1098,7 @@ class MainActivityUtils(private val activity: MainActivity) {
         return when (encoding) {
             EncryptionMapper.ENCODING_BASE32 -> activity.getString(R.string.base32_encoding_configured)
             EncryptionMapper.ENCODING_BASE64 -> activity.getString(R.string.base64_encoding_configured)
-            EncryptionMapper.ENCODING_BASE128 -> activity.getString(R.string.base128_encoding_configured)
             EncryptionMapper.ENCODING_BASE256 -> activity.getString(R.string.base256_encoding_configured)
-            EncryptionMapper.ENCODING_BASE512 -> activity.getString(R.string.base512_encoding_configured)
-            EncryptionMapper.ENCODING_BASE1024 -> activity.getString(R.string.base1024_encoding_configured)
-            EncryptionMapper.ENCODING_BASE2048 -> activity.getString(R.string.base2048_encoding_configured)
             EncryptionMapper.ENCODING_PLAIN -> activity.getString(R.string.plain_text_set)
             else -> activity.getString(R.string.encoding_set, encoding)
         }

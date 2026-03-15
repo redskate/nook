@@ -8,7 +8,6 @@ import android.os.Looper
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import solutions.semweb.nook.BuildConfig
 import solutions.semweb.nook.ChatConversation
 import solutions.semweb.nook.ChatMessage
@@ -21,7 +20,6 @@ import solutions.semweb.nook.crypto.BaseXXXUtils
 import solutions.semweb.nook.crypto.CryptoManager
 import solutions.semweb.nook.crypto.DecryptionFailureMonitor
 import solutions.semweb.nook.crypto.EncryptionMapper
-import solutions.semweb.nook.data.database.ChatMessageEntity
 import solutions.semweb.nook.data.database.DatabaseActor
 import solutions.semweb.nook.data.database.DatabaseManager
 import solutions.semweb.nook.sms.SMSSender
@@ -76,83 +74,6 @@ class ChatManager(val context: Context) {
         }
     }
 
-
-    fun addSystemMessageAndGetId(
-        conversationId: Long,
-        text: String,
-        metadataType: String,
-        metadata: Map<String, String>? = null
-    ): Long {
-        return try {
-            val message = ChatMessage(
-                id = System.currentTimeMillis(), // This will be IGNORED by Room!
-                text = text,
-                sender = "system",
-                timestamp = System.currentTimeMillis(),
-                isDecoded = true,
-                isOutgoing = false,
-                isSystemMessage = true,
-                metadata = metadata ?: mapOf("type" to metadataType)
-            )
-
-            val databaseManager = DatabaseManager.getInstance(context)
-            val entity = ChatMessageEntity.fromDomain(message, conversationId, context)
-
-            // The insert returns the ACTUAL Room-generated ID!
-            val actualId = databaseManager.database.chatMessageDao().insert(entity)
-
-            LogUtils.d(context, "ChatManager",
-                "📝 System message added: requested ID=${message.id}, actual DB ID=$actualId")
-
-            actualId // Return the REAL database ID, not the one we passed in
-        } catch (e: Exception) {
-            LogUtils.e(context, "ChatManager", "❌ Error adding system message", e)
-            -1L
-        }
-    }
-
-    /**
-     * Add a system/info message to the chat and return its ID
-     */
-    // Make it a suspend function
-    suspend fun addSystemMessageAndGetId(
-        messageText: String,
-        conversationId: Long,
-        partCount: Int
-    ): Long {
-        return withContext(Dispatchers.IO) {
-            try {
-                val message = ChatMessage(
-                    id = 2, // IGNORED by Room!
-                    text = messageText,
-                    sender = "system",
-                    timestamp = System.currentTimeMillis(),
-                    isDecoded = true,
-                    isOutgoing = false,
-                    isSystemMessage = true,
-                    metadata = mapOf(
-                        "part_count" to partCount.toString(),
-                        "expected_parts" to partCount.toString(),
-                        "type" to "multipart_progress"
-                    )
-                )
-
-                val databaseManager = DatabaseManager.getInstance(context)
-                val entity = ChatMessageEntity.fromDomain(message, conversationId, context)
-
-                // The insert returns the ACTUAL Room-generated ID!
-                val actualId = databaseManager.database.chatMessageDao().insert(entity)
-
-                LogUtils.d(context, "ChatManager",
-                    "📝 System message added: requested ID=${message.id}, actual DB ID=$actualId")
-
-                return@withContext actualId // Return the REAL database ID
-            } catch (e: Exception) {
-                LogUtils.e(context, "ChatManager", "❌ Error adding system message", e)
-                return@withContext -1L
-            }
-        }
-    }
 
     fun addMessageInChat(message: ChatMessage, conversation: ChatConversation, saveConversation: Boolean = true) {
         synchronized(messageLock) {

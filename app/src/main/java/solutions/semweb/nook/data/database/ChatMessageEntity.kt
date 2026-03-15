@@ -6,7 +6,6 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.Gson
 import solutions.semweb.nook.ChatMessage
 import solutions.semweb.nook.crypto.EncryptionVerifier
 
@@ -26,7 +25,7 @@ import solutions.semweb.nook.crypto.EncryptionVerifier
         Index(value = ["is_read", "conversation_id"], name = "idx_read_conversation"),
         Index(value = ["is_system_message"], name = "idx_system_message"),
         Index(value = ["metadata_type"], name = "idx_metadata_type"),
-        Index(value = ["updated_at"], name = "idx_updated_at")  // NEW INDEX
+        Index(value = ["updated_at"], name = "idx_updated_at")
     ]
 )
 data class ChatMessageEntity(
@@ -87,8 +86,6 @@ data class ChatMessageEntity(
     val isReplaced: Boolean = false
 ) {
     companion object {
-        private val gson = Gson()
-
         fun fromDomain(message: ChatMessage, conversationId: Long, context: Context): ChatMessageEntity {
             val now = System.currentTimeMillis()
             return ChatMessageEntity(

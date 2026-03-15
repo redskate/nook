@@ -28,14 +28,11 @@ object EncryptionMapper {
     val ENCRYPTION_SCHEME_SISA = "sisa"
 
     // Menu encoding
-    val encodingSchemes = arrayOf("Base32", "Base64", "Base128", "Base256", "Base512", "Base1024")
+    val encodingSchemes = arrayOf("Base32", "Base64", "Base256")
     val encodingValues = arrayOf(
         ENCODING_BASE32,   // 0
         ENCODING_BASE64,   // 1
-        ENCODING_BASE128,  // 2
-        ENCODING_BASE256,  // 3
-        ENCODING_BASE512,  // 4
-        ENCODING_BASE1024, // 5
+        ENCODING_BASE256,  // 2
     )
 
     //////////////////////////////////////////////////////////

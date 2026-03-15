@@ -1,6 +1,7 @@
 package solutions.semweb.nook.crypto
 
 import android.content.Context
+import solutions.semweb.nook.BuildConfig
 import solutions.semweb.nook.LogUtils
 import solutions.semweb.nook.crypto.EncryptionMapper.extractEncodingBase
 import java.text.SimpleDateFormat
@@ -221,7 +222,22 @@ object SisaCrypto {
             } else {
                 val base = extractEncodingBase(encoding)
                 val encodedResult = BaseXXXUtils.encode(combined, base)
-                "${EncryptionMapper.SISA_ENCR_PREFIX}$encodedResult"
+
+                val result = "${EncryptionMapper.SISA_ENCR_PREFIX}$encodedResult"
+
+                if (BuildConfig.DEBUG) {
+                    // Print IV and ciphertext as hex for clarity
+                    val ivHex = iv.joinToString("") { "%02x".format(it) }
+                    val ciphertextHex = cipherText.joinToString("") { "%02x".format(it) }
+                    val combinedHex = combined.joinToString("") { "%02x".format(it) }
+
+                    LogUtils.d("ECHECK","iv (hex: $ivHex)")
+                    LogUtils.d("ECHECK","ciphertext (hex: $ciphertextHex)")
+                    LogUtils.d("ECHECK","combined (hex: $combinedHex)")
+                    LogUtils.d("ECHECK","result ("+result+")")
+                }
+
+                result
             }
         } catch (e: Exception) {
             LogUtils.e(context, "SisaCrypto", "❌ Error SiSa encryption:", e)
@@ -306,11 +322,29 @@ object SisaCrypto {
             // 5. Try decryption with provided timestamp (or current time)
             val decryptionTimestamp = if (timestamp > 0) timestamp else System.currentTimeMillis()
 
+            if (BuildConfig.DEBUG) {
+                LogUtils.d("DCHECK","Decrypting encrypted message ("+encryptedMessage+")")
+                LogUtils.d("DCHECK","password ("+password+")")
+
+                val ivHex = iv.joinToString("") { "%02x".format(it) }
+                val ciphertextHex = ciphertext.joinToString("") { "%02x".format(it) }
+
+                LogUtils.d("DCHECK","iv (hex: $ivHex)")
+                LogUtils.d("DCHECK","ciphertext (hex: $ciphertextHex)")
+                LogUtils.d("DCHECK","decryptionTimestamp ("+decryptionTimestamp+")")
+            }
+
             // Try current day first
             var result = tryDecryptionWithDate(
                 context, phoneNumber, password, ciphertext, iv,
                 decryptionTimestamp, encoding, encryptedMessage
             )
+
+            if (BuildConfig.DEBUG) {
+                LogUtils.d("DCHECK","result.success ("+result.success+")")
+            }
+
+
 
             // 6. If failed, try previous day
             if (!result.success) {
