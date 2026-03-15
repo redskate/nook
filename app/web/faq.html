@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- === PAGE PARAMS === -->
+    <meta name="nook-version" content="v1.5.1.288">
+    <meta name="nook-apk-url" content="https://github.com/redskate/nook/raw/refs/heads/master/app/releases/nook-v1.5.1.288.apk">
+    <meta name="nook-pub-date" content="14.03.2026">
+
+    <!-- === SEO SECTION === -->
+    <title>NooK · Private & Encrypted SMS Messenger for Android</title>
+    <!-- META DESCRIPTION under 160 chars -->
+    <meta name="description" content="NooK is a free, open-source Android app that encrypts your SMS with AES-256. Communicate securely using SMS infrastructure. No internet needed, no tracking.">
+
+    <!-- KEYWORDS: used by some engines -->
+    <meta name="keywords" content="encrypted SMS, secure messaging, Android encryption, AES-256 SMS, private messenger, open source SMS, NooK app">
+
+    <!-- === ROBOTS: Controls crawling and indexing (IMPORTANT FOR YOUR GOALS) === -->
+    <meta name="robots" content="index, follow">
+
+    <!-- === CANONICAL URL === -->
+    <link rel="canonical" href="https://semweb.solutions/nook">
+
+    <!-- === OPEN GRAPH TAGS (for social sharing - Facebook, LinkedIn, WhatsApp) === -->
+    <meta property="og:title" content="NooK - Private Encrypted SMS Messenger">
+    <meta property="og:description" content="Encrypt your SMS with AES-256. Open source, no internet required, no tracking. Download now.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://semweb.solutions/nook">
+    <meta property="og:image" content="https://semweb.solutions/nook/gallery/nook-app-lock.png">
+    <meta property="og:site_name" content="NooK SMS Messenger">
+
+    <!-- === TWITTER CARD TAGS (for X/Twitter sharing) === -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="NooK - Private Messenger - Encrypted SMS">
+    <meta name="twitter:description" content="Encrypt your SMS with AES-256. Open source, no internet, no tracking.">
+    <meta name="twitter:image" content="/nook/gallery/nook-app-lock.png">
+
+    <!-- === FAVICON & APP ICONS (UX) === -->
+    <link rel="icon" type="image/x-icon" href="/nook/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/nook/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/nook/images/favicon-16x16.png">
+
+    <!-- === STRUCTURED DATA (JSON-LD) - ADVANCED: Helps Google understand your app page === -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "NooK Messenger",
+            "description": "Private SMS messenger for Android with AES-256 SMS encryption",
+            "applicationCategory": "Communication",
+            "operatingSystem": "Android",
+            "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+            },
+            "sameAs": "https://github.com/redskate/nook",
+            "featureList": [
+                "AES-256 encryption",
+                "No internet required",
+                "Open source",
+                "Encrypted database",
+                "Screenshot block"
+            ],
+            "screenshot": "/nook/gallery/nook-chats.png",
+            "author": {
+                "@type": "Organization",
+                "name": "NooK Team",
+                "url": "https://github.com/redskate/nook"
+            }
+        }
+    </script>
+    <!-- === END OF SEO SECTION === -->
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        /* --- RESET & VARIABLES --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-white: #ffffff;
+            --bg-light: #f8fafc;
+            --bg-card: #f1f5f9;
+            --border-light: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;s
+            --nook-green: #1a1;        /* Pure NooK green */
+            --nook-green-light: #d9f0d9;
+            --danger-red: #dc2626;
+            --warning-orange: #f97316;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-white);
+            color: var(--text-primary);
+            line-height: 1.5;
+            font-size: 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* --- TYPOGRAPHY - FULLY RESPONSIVE --- */
+        h1 {
+            font-size: clamp(2.2rem, 8vw, 3.5rem);
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            line-height: 1.2;
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: clamp(1.8rem, 6vw, 2.2rem);
+            letter-spacing: -0.01em;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--nook-green);
+            padding-bottom: 0.5rem;
+            display: inline-block;
+            font-weight: 600;
+        }
+
+        h2 i, h3 i {
+            margin-right: 0.75rem;
+            color: var(--nook-green);
+        }
+
+        h3 {
+            font-size: clamp(1.3rem, 4vw, 1.6rem);
+            font-weight: 600;
+        }
+
+        .section-subhead {
+            font-size: clamp(1rem, 3vw, 1.2rem);
+            color: var(--text-secondary);
+            max-width: 800px;
+            margin-bottom: 3rem;
+        }
+
+        p, li, .permission-item, .btn, .disclaimer-text, .footer-links a {
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+        }
+
+        .hero-badge, .stat-item, .slideshow-caption, .encryption-tag, .security-note small, .permission-note {
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+        }
+
+
+	p.micro {
+	    margin: 0 !important;
+	    margin-bottom: 20px !important;
+	}
+
+	p label.micro {
+	}
+
+        /* --- LINKS & BUTTONS --- */
+        a {
+            color: var(--nook-green);
+            font-weight: 500;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--nook-green);
+            color: #000;
+            font-weight: 600;
+            padding: 0.8rem 2rem;
+            border-radius: 40px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+        }
+
+        .btn i {
+            margin-right: 0.5rem;
+        }
+
+        .btn:hover {
+            background-color: #000;
+            color: #fff;
+            text-decoration: none;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(17, 170, 17, 0.15);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--nook-green);
+            background: var(--nook-green-light);
+            color: #000;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Stile per il bottone download diretto */
+        .btn-primary {
+            background: var(--nook-green);
+            color: #000;
+        }
+
+        /* --- LANGUAGE SELECTOR (Google Translate) --- */
+        .language-selector {
+            position: relative;
+            display: inline-block;
+            margin-left: 1rem;
+        }
+
+        .lang-btn {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 30px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .lang-btn i:first-child {
+            color: var(--nook-green);
+        }
+
+        .lang-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 120%;
+            background: white;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            min-width: 200px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            z-index: 9999;
+            overflow: hidden;
+        }
+
+        .lang-dropdown.show {
+            display: block;
+        }
+
+        .lang-dropdown a {
+            display: block;
+            padding: 0.7rem 1rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: background 0.2s;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .lang-dropdown a:last-child {
+            border-bottom: none;
+        }
+
+        .lang-dropdown a:hover {
+            background: var(--nook-green-light);
+            color: #000;
+        }
+
+        .lang-dropdown a i {
+            width: 20px;
+            margin-right: 0.5rem;
+            color: var(--nook-green);
+        }
+
+        /* Nascondi elementi di Google Translate */
+        .goog-te-banner-frame {
+            display: none !important;
+        }
+
+        body {
+            top: 0 !important;
+        }
+
+        .goog-tooltip {
+            display: none !important;
+        }
+
+        .goog-text-highlight {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        #google_translate_element {
+            display: none;
+        }
+
+        /* --- HEADER / NAV --- */
+        header {
+            padding: 1.5rem 0;
+            border-bottom: 1px solid var(--border-light);
+            background-color: var(--bg-white);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logo {
+            font-size: clamp(1.8rem, 5vw, 2rem);
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .logo span {
+            color: var(--nook-green);
+            font-size: 1.1em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            font-size: clamp(0.85rem, 2.3vw, 0.95rem);
+            margin-left: 0;
+        }
+
+        .nav-links a:hover {
+            color: var(--nook-green);
+        }
+
+        /* --- HERO SECTION --- */
+        .hero {
+            padding: 4rem 0 3rem 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: var(--nook-green-light);
+            border: 1px solid var(--nook-green);
+            color: #000;
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero p {
+            color: var(--text-secondary);
+            margin: 1.5rem 0 2rem 0;
+            max-width: 600px;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 2rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-item strong {
+            display: block;
+            font-size: clamp(1.5rem, 4vw, 1.8rem);
+            color: var(--nook-green);
+        }
+
+        /* --- SLIDESHOW --- */
+        .slideshow-area {
+            grid-column: span 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .slideshow-container {
+            position: relative;
+            width: min(300px, 100%);
+            aspect-ratio: 9/16;
+            background: var(--bg-light);
+            border: 2px dashed var(--nook-green);
+            border-radius: 20px;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .slideshow-img {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 24px;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+            pointer-events: none;
+            background: var(--bg-white);
+        }
+
+        .slideshow-img.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .slideshow-dots {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--border-light);
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .dot.active {
+            background: var(--nook-green);
+            transform: scale(1.2);
+            border-color: var(--nook-green);
+        }
+
+        .slideshow-caption {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* --- FEATURE GRID --- */
+        .features {
+            padding: 4rem 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 24px;
+            padding: 2rem;
+            transition: all 0.2s ease;
+        }
+
+        .feature-card:hover {
+            border-color: var(--nook-green);
+            box-shadow: 0 10px 25px rgba(17, 170, 17, 0.1);
+        }
+
+        .feature-icon {
+            background: var(--nook-green-light);
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--nook-green);
+        }
+
+        .feature-icon i {
+            font-size: 1.8rem;
+            color: var(--nook-green);
+        }
+
+        .feature-card h3 {
+            margin-bottom: 0.8rem;
+            color: var(--text-primary);
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+        }
+
+        .inline-badge {
+            display: inline-block;
+            background: var(--nook-green-light);
+            border: 1px solid var(--nook-green);
+            border-radius: 30px;
+            padding: 0.2rem 0.7rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-right: 0.4rem;
+            margin-top: 0.5rem;
+            color: #000;
+        }
+        .inline-badge i {
+            font-size: 0.7rem;
+            margin-right: 0.2rem;
+        }
+
+        /* --- ENCRYPTION MODELS --- */
+        .encryption {
+            padding: 4rem 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .encryption-flex {
+            display: flex;
+            gap: 3rem;
+            background: var(--bg-light);
+            border-radius: 32px;
+            padding: 3rem;
+            border: 1px solid var(--border-light);
+            flex-wrap: wrap;
+        }
+        .encryption-main { flex: 2; min-width: 280px; }
+        .encryption-secondary { flex: 1; min-width: 240px; background: var(--bg-white); border-radius: 24px; padding: 1.5rem; border: 1px solid var(--border-light); }
+        .security-note { background: #fff3cd; border-left: 4px solid var(--warning-orange); padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+        .encoding-list { list-style: none; }
+        .encoding-list li { margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.8rem; }
+
+        /* --- PERMISSIONS --- */
+        .permissions { padding: 4rem 0; border-bottom: 1px solid var(--border-light); }
+        .permissions-warning, .installation-warning-text { background: #d3ffd3; border: 1px solid var(--nook-green); border-radius: 24px; padding: 2rem; margin-bottom: 3rem; display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; }
+        .permission-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0; }
+        .permission-item { background: var(--bg-light); border: 1px solid var(--border-light); border-radius: 20px; padding: 1rem; font-family: 'Courier New', monospace; color: var(--text-secondary); }
+        .permission-note { background: var(--bg-light); padding: 1.5rem; border-radius: 20px; border-left: 4px solid var(--nook-green); }
+
+        /* --- PRIVACY STATEMENT --- */
+        .privacy-statement {
+            padding: 4rem 0;
+            border-bottom: 1px solid var(--border-light);
+            scroll-margin-top: 80px;
+        }
+        .privacy-card {
+            background: var(--bg-light);
+            border-radius: 32px;
+            padding: 1rem;
+            border: 1px solid var(--border-light);
+        }
+        .privacy-card h3 {
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+        .privacy-card h3 i {
+            color: var(--nook-green);
+        }
+        .green {
+            color: var(--nook-green);
+        }
+        .privacy-text {
+            overflow-y: auto;
+            background: var(--bg-white);
+            padding: 2rem;
+            border-radius: 24px;
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            color: var(--text-secondary);
+            margin: 1.5rem 0;
+            border: 1px solid var(--border-light);
+            white-space: pre-line;
+        }
+
+        .firstSteps {
+            overflow-y: auto;
+            padding-top:1rem;
+            padding-bottom:1rem;
+            background: #1a1;
+            paddin-top: 4rem;
+            padding-left: 4.5rem;
+            border-radius: 24px;
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            color: white;
+            margin: 1.5rem 0;
+            border: 1px solid var(--border-light);
+            white-space: pre-line;
+
+            background-image: url('nook/images/pacifier.png');
+	    background-repeat: no-repeat;
+	    background-position: bottom 10px left 10px;
+	    background-size: 50px 50px;
+        }
+
+        /* --- OPEN SOURCE --- */
+        .opensource {
+            padding: 4rem 0;
+        }
+        .github-card {
+            background: var(--bg-light);
+            border-radius: 32px;
+            padding: 3rem;
+            text-align: center;
+            border: 1px solid var(--border-light);
+            margin-bottom: 3rem;
+        }
+
+        footer {
+            padding: 3rem 0;
+            text-align: center;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-light);
+        }
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .deepseek-credit, .page-locked, .pubdate {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            opacity: 0.8;
+        }
+
+        .deepseek-credit i {
+            color: var(--nook-green) !important;
+        }
+
+        .page-locked i {
+            color: var(--warning-orange) !important;
+        }
+
+        .pubdate .fa-lock {
+	    color: var(--warning-orange);
+	}
+
+	.pubdate .fa-lock::before {
+	    color: var(--warning-orange);
+	}
+
+	.deepseek-credit .fa-robot {
+	    color: var(--nook-green);
+	}
+
+	.deepseek-credit .fa-robot::before {
+	    color: var(--nook-green);
+	}
+
+
+
+        @media (max-width: 900px) {
+            .hero-grid { grid-template-columns: 1fr; }
+            .nav-links { justify-content: center; margin-top: 0.5rem; }
+            .header-content { flex-direction: column; }
+        }
+    </style>
+
+    <!-- slideshow script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const slides = document.querySelectorAll('.slideshow-img');
+            const dots = document.querySelectorAll('.dot');
+            let currentSlide = 0;
+            const slideInterval = 10000;
+
+            if (slides.length === 0) return;
+
+            function showSlide(index) {
+                if (index >= slides.length) index = 0;
+                if (index < 0) index = slides.length - 1;
+
+                slides.forEach(slide => slide.classList.remove('active'));
+                dots.forEach(dot => dot.classList.remove('active'));
+
+                slides[index].classList.add('active');
+                if (dots[index]) dots[index].classList.add('active');
+
+                currentSlide = index;
+            }
+
+            function nextSlide() { showSlide(currentSlide + 1); }
+
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', function() {
+                    showSlide(index);
+                    clearInterval(slideTimer);
+                    slideTimer = setInterval(nextSlide, slideInterval);
+                });
+            });
+
+            showSlide(0);
+            let slideTimer = setInterval(nextSlide, slideInterval);
+
+            const container = document.querySelector('.slideshow-container');
+            if (container) {
+                container.addEventListener('mouseenter', () => clearInterval(slideTimer));
+                container.addEventListener('mouseleave', () => slideTimer = setInterval(nextSlide, slideInterval));
+            }
+        });
+
+        // Funzioni per il menu a tendina
+        function toggleLangDropdown() {
+            document.getElementById('langDropdown').classList.toggle('show');
+        }
+
+        // Chiudi dropdown cliccando fuori
+        window.onclick = function(event) {
+            if (!event.target.closest('.language-selector')) {
+                const dropdown = document.getElementById('langDropdown');
+                if (dropdown) dropdown.classList.remove('show');
+            }
+        }
+
+        // Nascondi elementi di Google Translate dopo il caricamento
+        setTimeout(() => {
+            const style = document.createElement('style');
+            style.textContent = `
+                .goog-te-banner-frame { display: none !important; }
+                body { top: 0 !important; }
+                .goog-tooltip { display: none !important; }
+                .goog-text-highlight { background-color: transparent !important; border: none !important; box-shadow: none !important; }
+                .goog-logo-link { display: none !important; }
+                .goog-te-gadget { color: transparent !important; }
+                .goog-te-gadget span { display: none !important; }
+            `;
+            document.head.appendChild(style);
+        }, 1000);
+
+        function changeLanguage(lang) {
+            // Mappa codici lingua per Google Translate
+            const langMap = {
+                'it': 'it',
+                'es': 'es',
+                'fr': 'fr',
+                'de': 'de',
+                'pt': 'pt',
+                'ru': 'ru',
+                'zh-CN': 'zh-CN',
+                'ja': 'ja',
+                'ar': 'ar',
+                'hi': 'hi'
+            };
+
+            // Reindirizza a Google Translate (funziona anche da file system)
+            const currentUrl = encodeURIComponent(window.location.href);
+            window.location.href = `https://translate.google.com/translate?hl=${langMap[lang]}&sl=en&tl=${langMap[lang]}&u=${currentUrl}`;
+        }
+    </script>
+</head>
+<body>
+<header>
+    <div class="container header-content">
+        <div class="logo">N<span style="color: #1a1;">oo</span>K Android SMS Messenger</div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#encryption">Encryption</a>
+            <a href="#permissions">Permissions</a>
+            <a href="#privacy">Privacy</a>
+            <a href="faq.html">FAQ</a>
+            <a href="https://github.com/redskate/nook" target="_blank">GitHub</a>
+
+            <!-- Language Selector -->
+            <div class="language-selector">
+                <button class="lang-btn" onclick="toggleLangDropdown()">
+                    <i class="fas fa-globe"></i>
+                    <span id="currentLang">🇬🇧 English</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="lang-dropdown" id="langDropdown">
+                    <a onclick="changeLanguage('en')"><i class="fas fa-check"></i> 🇬🇧 English</a>
+                    <a onclick="changeLanguage('it')"><i class="fas fa-check" style="opacity:0.3"></i> 🇮🇹 Italiano</a>
+                    <a onclick="changeLanguage('es')"><i class="fas fa-check" style="opacity:0.3"></i> 🇪🇸 Español</a>
+                    <a onclick="changeLanguage('fr')"><i class="fas fa-check" style="opacity:0.3"></i> 🇫🇷 Français</a>
+                    <a onclick="changeLanguage('de')"><i class="fas fa-check" style="opacity:0.3"></i> 🇩🇪 Deutsch</a>
+                    <a onclick="changeLanguage('pt')"><i class="fas fa-check" style="opacity:0.3"></i> 🇵🇹 Português</a>
+                    <a onclick="changeLanguage('ru')"><i class="fas fa-check" style="opacity:0.3"></i> 🇷🇺 Русский</a>
+                    <a onclick="changeLanguage('zh-CN')"><i class="fas fa-check" style="opacity:0.3"></i> 🇨🇳 中文</a>
+                    <a onclick="changeLanguage('ja')"><i class="fas fa-check" style="opacity:0.3"></i> 🇯🇵 日本語</a>
+                    <a onclick="changeLanguage('ar')"><i class="fas fa-check" style="opacity:0.3"></i> 🇸🇪 العربية</a>
+                    <a onclick="changeLanguage('hi')"><i class="fas fa-check" style="opacity:0.3"></i> 🇮🇳 हिन्दी</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- GOOGLE TRANSLATE:  -->
+<div id="google_translate_element" style="display: none;"></div>
+
+<main>
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <div class="container hero-grid">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-shield-halved"></i> Open Source · AES-256 · No Internet
+                </div>
+                <h1>Encrypted SMS<br>for Android</h1>
+                <p>NooK transforms your regular SMS into secure, encrypted messages using AES-256 technology. No internet required to operate, no data collection, nor data sharing, complete privacy. <b>Available starting from Android 8 ("Oreo", 2017) on</b>. <br><i>NooK speaks English, Italian, German and French but can host contacts and chats in every language</i>. <br><br>Important: This page does <span style="color:#1a1">not</span> track your browser!</p>
+
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <strong>AES-256</strong>
+                        Military-grade encryption
+                    </div>
+                    <div class="stat-item">
+                        <strong>0 bytes</strong>
+                        No internet access for SMS (pure SMS mode or upgrade/SHA check)
+                    </div>
+                    <div class="stat-item">
+                        <strong>Self Check</strong>
+                        App SHA256 automatic Self Check locally or via Internet (if pure SMS mode OFF)
+                    </div>
+                </div>
+
+                <!-- SEZIONE DOWNLOAD CON VERSIONE LEGGATA DAI META TAG -->
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 15px">
+
+                    <!-- Pulsante Download Diretto - gli attributi verranno popolati via JavaScript -->
+                    <a href="#" class="btn btn-primary download-btn" style="background: #1a1; color: #000;">
+                        <i class="fas fa-download"></i> Tap here to download and install NooK <span class="version-display">v1.2.1.262</span>
+                    </a>
+                    <p class="micro">
+                        <label class="micro">After tapping, look at the bottom of your screen. Tap the downloaded file to install.</label>
+                    </p>
+                </div>
+
+                <!-- Container per SHA256 (si auto-popola) -->
+                <div id="nook-sha-container" style="margin-top: 15px; min-height: 40px;"></div>
+
+            </div>
+
+            <!-- SLIDESHOW AREA -->
+            <div class="slideshow-area">
+                <div class="slideshow-container">
+                    <img src="/nook/gallery/nook-chats.png" alt="NooK Chat View" class="slideshow-img" loading="lazy">
+                    <img src="/nook/gallery/nook-app-lock.png" alt="NooK app Lock" class="slideshow-img active" loading="lazy">
+                    <img src="/nook/gallery/nook-settings.png" alt="NooK Settings" class="slideshow-img" loading="lazy">
+                    <img src="/nook/gallery/nook-encryption-settings.png" alt="NooK Encryption Settings" class="slideshow-img" loading="lazy">
+                    <img src="/nook/gallery/nook-chat.png" alt="NooK Chat" class="slideshow-img" loading="lazy">
+                    <img src="/nook/gallery/nook-version-mana.png" alt="NooK Version Management" class="slideshow-img" loading="lazy">
+                </div>
+
+                <div class="slideshow-dots">
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+                <p class="slideshow-caption"><i class="fas fa-lock" style="color: var(--nook-green);"></i> NooK app screenshots</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2><i class="fas fa-cubes"></i> Core Features</h2>
+            <p class="section-subhead">Everything you need for private SMS communication.</p>
+
+            <div class="feature-grid">
+                <!-- AES-256 -->
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-lock"></i></div>
+                    <h3>AES-256 Encryption</h3>
+                    <p>Military-grade encryption for all your messages. Data encrypted before leaving your device. Needs another NooK app for the receiver party</p>
+                </div>
+                <!-- Encrypted Database -->
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-database"></i></div>
+                    <h3>Encrypted Database</h3>
+                    <p>All messages stored encrypted on your device. Impossible decryption. Even if someone accesses NooK database directly on your device.</p>
+                </div>
+                <!-- Encrypted copy/paste -->
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-copy"></i></div>
+                    <h3>Encrypted Copy/Paste</h3>
+                    <p>Copy encrypted text safely. Decrypt only when needed. Prevents accidental exposure of your conversation's parts.</p>
+                </div>
+                <!-- Keyboard Management -->
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-keyboard"></i></div>
+                    <h3>Keyboard Management</h3>
+                    <p>Warning system for third-party keyboards that might leak your typing to unknown third parties.</p>
+                </div>
+                <!-- Root Warning -->
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <h3>Root Checking</h3>
+                    <p>Warning system for active root permissions on your phone. Root is good. But root might also help other apps looking into running NooK.</p>
+                </div>
+                <!-- Export/Import -->
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-file-export"></i></div>
+                    <h3>Export/Import Chats</h3>
+                    <p>It allows for Backup and restore of your encrypted conversations securely.</p>
+                </div>
+
+                <!-- Transmission Timestamp -->
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-clock"></i></div>
+                    <h3>Transmission Timestamps</h3>
+                    <p>Each message is provided with an additional (coded) trasmission (instead of a receiving one - standard Android) timestamp.</p>
+                </div>
+
+
+                <!-- Screenshot Block -->
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-camera"></i></div>
+                    <h3>Screenshot Block</h3>
+                    <p>Prevent you or other apps from taking screenshots of your private conversations.</p>
+                </div>
+                <!-- APP SEC CARD -->
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fas fa-shield-alt"></i></div>
+                    <h3>App Security</h3>
+                    <p>1) It password-protect the app after 2 minutes of inactivity or "now".</p>
+                    <br>
+                    <p>2) Periodic self SHA256 check against potential app modification by unknown agents.</p>
+
+                </div>
+
+                <!-- SMS Rescan -->
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-sms"></i></div>
+                    <h3>SMS ReScan</h3>
+                    <p>Button for re-scanning SMS inside a given time range. Never miss an encrypted SMS, even when NooK was OFF for a time.</p>
+                </div>
+
+                <!-- Version Management -->
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-cloud-download-alt"></i></div>
+                    <h3>Version Management</h3>
+                    <p>NooK informs you once a day on the existence of new NooK versions. Downgrade/Upgrade versions up to your needs.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ENCRYPTION MODELS (SiSa) -->
+    <section id="encryption" class="encryption">
+        <div class="container">
+            <h2><i class="fas fa-key"></i> <span class="green">SiSa</span> Encryption</h2>
+            <p class="section-subhead">"<span class="notranslate"><span class="green">Si</span>mple and <span class="green">Sa</span>fe</span>": shared secret encryption for trusted contacts.</p>
+            <div class="encryption-flex">
+                <div class="encryption-main">
+                    <span class="encryption-tag">SiSa Protocol</span>
+                    <h3>Shared Secret Encryption</h3>
+                    <p>Both users (on their relative NooK apps) define a relationship password (shared secret) and an additional encoding password in chat settings. This password is never transmitted during exchange and is used to derives unique encryption keys for the exchange. At Chat creation a default Base256 encoding (without password) is pre-set. This allows for a first (weakly) protected exchange of informations without setting passwords (use with parsimony!) - this can be used e.g. to set up passwords for encryption/encoding if no third channel (e.g. telephony) is possible.</p>
+                    <div class="security-note"><i class="fas fa-info-circle"></i> <strong>Note on Forward Secrecy:</strong> Decrypted messages remain readable on your device. This is intentional to preserve conversation history.</div>
+                    <h4 style="margin-top: 2rem; color: var(--nook-green);margin-bottom:10px">Dynamic Encoding Technologies:</h4>
+                    <ul class="encoding-list">
+                        <li><i class="fas fa-check-circle"></i> 6 custom alphabets for message encoding</li>
+                        <li><i class="fas fa-check-circle"></i> Shared encoding password shuffles the alphabets for each chat</li>
+                        <li><i class="fas fa-check-circle"></i> Each message uses a unique encoding variant</li>
+                        <li><i class="fas fa-check-circle"></i> Additional security layer beyond AES-256</li>
+                    </ul>
+                </div>
+                <div class="encryption-secondary">
+                    <h4><i class="fas fa-shield"></i> Security Layers</h4>
+                    <br>
+                    <ul style="list-style: none;">
+                        <li style="margin-bottom: 0.8rem;">✓ AES-256-GCM</li>
+                        <li style="margin-bottom: 0.8rem;">✓ SiSa Key Exchange</li>
+                        <li style="margin-bottom: 0.8rem;">✓ 6 Dynamic Alphabets</li>
+                        <li style="margin-bottom: 0.8rem;">✓ Encrypted Storage</li>
+                    </ul>
+                    <div style="margin-top: 2rem; background: var(--nook-green-light); padding: 1rem; border-radius: 16px;">
+                        <i class="fas fa-phone" style="color: var(--nook-green);"></i>
+                        <small>Your phone number helps derive automatic relationship passwords.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PERMISSIONS -->
+    <section id="permissions" class="permissions">
+        <div class="container">
+            <h2><i class="fas fa-shield-halved"></i> App Security & Permissions</h2>
+            <div class="permissions-warning">
+                <div class="warning-text">
+                    <h3>⚠️ Important: "Malware" Warning</h3><br>
+                    <p>Google Play Protect or virus scanners may flag NooK as malware due to SMS permissions. This is done to reduce the number of apps that do not come from the GOOGLE PLAY STORE, and in the case of NooK, it is de facto a FALSE POSITIVE or simply a WARNING because the app is not installed via PLAY PROTECT. NooK is 100% safe and 100% open source, sends SMS only when YOU press send, and never shares your data behind your back.
+                        <br><br>NooK contains no Google Libraries and it will never track your smartphone. Look yourself in the code on GitHub.</p>
+                    <br>
+                    <p style="margin-top: 0.5rem;"><strong>💚 Install with confidence.</strong> A permanent notification reminds you NooK is safe.</p>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 1.5rem;">Permissions</h3>
+            <div class="permission-grid">
+                <div class="permission-item"><i class="fas fa-envelope"></i> <span class="notranslate">SEND_SMS </span></div>
+                <div class="permission-item"><i class="fas fa-envelope-open"></i> <span class="notranslate"> READ_SMS </span></div>
+                <div class="permission-item"><i class="fas fa-inbox"></i> <span class="notranslate"> RECEIVE_SMS </span></div>
+                <div class="permission-item"><i class="fas fa-address-book"></i> <span class="notranslate"> READ_CONTACTS </span></div>
+                <div class="permission-item"><i class="fas fa-phone"></i> <span class="notranslate"> READ_PHONE_STATE </span></div>
+                <div class="permission-item"><i class="fas fa-bell"></i> <span class="notranslate"> POST_NOTIFICATIONS </span></div>
+                <div class="permission-item"><i class="fas fa-server"></i> <span class="notranslate"> FOREGROUND_SERVICE </span></div>                    <div class="permission-item"><i class="fas fa-server"></i> <span class="notranslate"> ACCESS_NETWORK_STATE </span></div>
+                <div class="permission-item"><i class="fas fa-server"></i> <span class="notranslate"> INTERNET </span></div>
+
+            </div>
+
+            <div class="permission-note">
+                <i class="fas fa-info-circle" style="color: var(--nook-green);"></i>
+                <strong>Why these permissions?</strong><br>
+                • <strong class="notranslate">SEND_SMS, READ_SMS, RECEIVE_SMS:</strong>&nbsp;To send, receive, and decrypt encrypted messages<br>
+                • <strong class="notranslate">READ_CONTACTS:</strong>&nbsp;To select trusted contacts and use their numbers for encryption<br>
+                • <strong class="notranslate">READ_PHONE_STATE:</strong>&nbsp;To identify your number for automatic shared secrets (optional)<br>
+                • <strong class="notranslate">POST_NOTIFICATIONS:</strong>&nbsp;To issue notifications<br>
+                • <strong class="notranslate">FOREGROUND_SERVICE:</strong>&nbsp;To capture incoming encrypted SMS<br>
+                • <strong class="notranslate">INTERNET, ACCESS_NETWORK_STATE:</strong>&nbsp;Periodic Self Check (SHA) + app Upgrade - these permissions are not expressely requested; if internet is working - they allow NooK to use them<br><br>
+                Some permissions are requested when needed
+            </div>
+        </div>
+    </section>
+
+    <!-- PRIVACY STATEMENT SECTION -->
+    <section id="privacy" class="privacy-statement">
+        <div class="container">
+            <h2><i class="fas fa-file-contract"></i> Privacy Statement</h2>
+            <div class="privacy-card">
+                <h3><i class="fas fa-eye"></i> Your data, your rules</h3>
+                <div class="privacy-text">
+                    <strong>🔐 NooK Privacy Commitment</strong><br><br>
+                    • No data collected / shared – NooK does not collect, store, or share any data. No analytics, no trackers.<br>
+                    • Encryption keys stay on device – Shared secrets are derived from your passwords and never transmitted.<br>
+                    • All messages are stored encrypted using AES-256-GCM.<br>
+                    • Open source – The entire codebase is public for audit.<br><br>
+                    <strong>📋 What is visible?</strong><br>
+                    Standard SMS metadata (sender phone number, timestamp) remains visible to your cellular carrier, as with any SMS. Content is encrypted end-to-end between NooK users.<br><br>
+                    <strong>✅ Your responsibility</strong><br>
+                    You are responsible for the safety of your device and your shared secrets. NooK provides the tools; you control the privacy.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- INSTALLATION GUIDE SECTION -->
+    <section id="privacy" class="privacy-statement">
+        <div class="container">
+            <h2><i class="fas fa-file-contract"></i> Installation Guide</h2>
+            <div class="privacy-card">
+                <h3><i class="fas fa-eye"></i> Ready to take control of your SMS privacy? Getting started can be easy!</h3>
+                <div class="privacy-text" style="padding-top: 0;">
+                    <div class="firstSteps">Skip this if you are an experienced Android user...<br><br>This extra section explains in details the basics for non-experts in Android: how to download from here the apk file for your NooK app directly on your spartphone in its Download folder.<br><br>When you start the file download (see below, Click "Download APK"), a download process is started - here you should see (depending whether you have a high or low internet speed) on the upper left side of the screen a moving arrow showing that a file download has been initiated. If you stay on your smartphone screen, at the end of the download process you will see (on the bottom of the smartphone screen) a tiny dialog asking to open/install what you have just downloaded. Another possibility to catch your fresh download is to open the notifications on your smartphones. There you should see something like "download complete" and the name of the downloaded file - ending with ".apk". Click on this notification to start installing the downloaded apk file. Otherwise, if you could catch the tiny dialog at the end of the download process, tap on that to start the installation process. Otherwise - no problem - you can repeat the download and be more responsive or you can go for your Download folder on your smartphone: In order to do this, you have to be familiar with basic file navigation steps on your smartphone. <br><br>Specifically, to localize NooK's install APK file in your Download folder on your smartphone (after its complete download), you'll have to be familiar with:
+
+                        1) Switching among apps on your smartphone, close all apps, recall one app;
+                        2) Your file explorer APP - normally called "Archive" - you should know where find it and to open it (hint: all Applications, then Archive, then open);
+                        3) The Download folder on your smartphone - you can visualize the download folder in the Archive app or directly if you are fast enough to press the open link appearing after the APK download. </div>
+                    • Click "Download APK" in the start section of this page. (A download process is started) <br>
+                    • If you missed the "Download finished - click to install" Notification on your smartphone, just open your file exploring App, fgo to Downloads, identify the latest Nook APK file you just downloaded and click on the file. The installation process will start.<br>
+                    • Both parties need the NooK app installed on their phones - however, each NooK app might talk to n other NooK apps with other parties<br>
+                    • The installation "motto" is "<b>install anyway</b>"!<br>
+                    • <b>Enable Installation from Unknown Sources</b>: On your Android device, go to Settings > Security.
+                    In your device settings on privacy and security, enable the option "Install unknown apps" or "Allow from this source" or uncheck "app Installation Block" or similar actions (which might change in the future) for your file manager or browser (You may always enable that again after this installation).<br>
+                    • The installation process asks you to let PLAY PROTECT first scan first NooK to Google Play Protect for analysis before you install it. No problem - let scan - or bypass this. If no other link is clickable use this link and then install, or search for a tiny text between big buttons saying 'install anyway' and press / click it to install it.<br>
+
+                    • Download the latest NooK APK here from this page or from <a title="Click to open github repository in another page" href="https://github.com/redskate/nook/tree/master/app/releases"target="_blank">github directly</a>: <br>
+                    • NB: Starting from version <b>1.4.x.yyy</b> the encryption sign used in the underlying SMS has been changed from '#' to '✅' - this introduced a significant change in how message are understood. <b>Please update NooK to this version or newer</b> in order to guarantee the exchange. The use of '#' in an SMS caused some AI augmented Android OS to "understand" the intention of a command - and to answers back to the transmitter with a base64 coded message (!) saying something like "command not recognized - type ##help for help", thus comsuming uselessy one SMS for the answer.
+                    • NB: Starting from version <b>1.5.1.yyy</b> due to detected padding problems the encoding of encrypted message has been changed to only be only base32, base64 or base256 - this version is not compatible with the previous ones
+                </div>
+                <div class="installation-warning-text">
+                    <p>
+                        <b>Warnings</b>: <br><br>
+                        • Android installer will want to "understand" that the app be potentially dangerous
+                        Well: maybe "potential-ly" (useful). But not dangerous at all -> see yourself the code on GitHub (SmsReceiver, SmsSender, SmsScanner) - NooK is safe.<br><br>
+                        • In case NooK be behind a local inner <b>proxy</b> app (like e.g. DuckDuckGo Tracking Protection) please exclude NooK from the list off apps considered to be analized. NooK does not track anything, and letting NooK traffic through this proxy might cause isolated communication problems (retention of encrypted messages, while thought to be dangerous...) and received encripted messages might not reach NooK and you might not see the message.
+
+                    </p>
+                </div>
+                <div class="privacy-text">
+                    💡 In the Warning Android Instalation Popup, CHOOSE "more details" and then <b>CONFIRM (INSTALL) ANYWAY</b><br>
+                    🚀 Launch NooK app<br>
+                    ❗ <b>READ</b> and Accept disclaimer (!!) & Grant 3 Permissions - <b>Check that the whole permissions</b> have been granted! Some OS, e.g. some Android 15, will not grant NooK the whole SMS permission - and Nook will not be able to run proberly.<br>
+                    • Define one or more trusted contacts from the settings or create directly a chat using the lupe (top right) symbol<br>
+                    • Start Chatting Securely!<br>
+                    • Change your (weak default) security settings (see above) in case you should feel more safe.<br>
+                    <a href="/nook/videos/nook-intro.mp4" title="Click to open video in a new page" target="nook1">See a short intro video showing the first steps</a>
+                    <a href="/nook/videos/Nook-trusted-contacts.mp4" title="Click to open video in a new page" target="nook2">See a short intro video showing using the more general trusted contacts</a><br>
+                    That's it! Your messages are now encrypted end-to-end and travel via SMS
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- TIPS & TRICKS SECTION -->
+    <section id="privacy" class="privacy-statement">
+        <div class="container">
+            <h2><i class="fas fa-file-contract"></i> Know-How pills</h2>
+            <div class="privacy-card">
+                <h3><i class="fas fa-eye"></i> Be effective with NooK</h3>
+                <div class="privacy-text">
+                    <strong>A note on Encryption vs Encoding</strong>:<br>
+                    Imagine you have a super cool diary with a lock on it, and inside you write all your secrets.
+
+                    <b>Encoding</b> is like writing your diary in a secret code that everyone knows.
+
+                    Let's say you and your friend both have the same "secret decoder ring" that turns A into 1, B into 2, and C into 3.
+
+                    You write "8-5-12-12-15" in your diary. Anyone who finds your diary and has the same decoder ring (or knows the trick) can instantly figure out it says "HELLO." It's not really a secret; it's just changing the way the message looks so it's easier to write or send. It's like turning a sentence into Pig Latin. Everyone knows the rules! Note however how the words morphology might unveil the words itself.
+
+                    Encryption - on the contrary - is like writing your diary in a secret code that only you and your best friend know.
+
+                    Imagine you and your best friend make up a brand new, super special alphabet that nobody else has ever seen. You write your diary entry using this special alphabet.
+
+                    Now, if your brother finds your diary, he'll just see a bunch of squiggles and lines. He has no idea what it says because he doesn't have the special key to understand it. You've scrambled your message so that only the person with the right "key" (your special alphabet) can unscramble it and read it.
+
+                    So, the main difference is the SECRET (password) part, another one is the alphabet used to encode:
+
+                    <b>Encoding</b>: Changing a message so it's shown with different characters, but preserves its originary morphology. It's not for keeping secrets.
+
+                    <b>Encryption</b>: Changing a message to keep it a secret. You need a special, private key to understand it.
+
+                    <b>NooK adds an additional SECRET (password) to derive a shuffle of available 3 * m (m derived from your encoding password!) encoding alphabets</b> (base32, base64 or base254) each with 32, 64 or 256 different characters. This creates additional alphabets which first of all need to be discovered.
+
+                    <b>When you create a fresh chat between two participants</b>, NooK sets as a first (weak) default, just the base256 encoding. This means that the participants may already start exchanging things without being read by third parties. This is a facility to start sharing secrets. But BEWARE: encoding alone just substitutes characters of your text, do not alter the words morphology! So by only encoding - with a computer - some successful efforts can be done to guess the words thanks to their morphology. Passwords instead, might be still safely enough be exchanged (because they have no clear language morphology).
+
+                    <b>Encryption requires more Device CPU power (and battery)!</b> NooK's encryption method adopt a military degree encryption level (AES256) - this is far away and much more safe than just encoding. Third parties would need thausands of years to decode one single message! [Unless Quantum Computers be dramatically improved].
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- OPEN SOURCE -->
+    <section class="opensource">
+        <div class="container">
+            <div class="github-card">
+                <i class="fab fa-github"></i>
+                <h3>100% Open Source</h3>
+
+                <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto 2rem;">This project is released under the <a title="Click to open license in a new window" href="https://github.com/redskate/nook/blob/master/LICENSE" targer="blank">GNU General Public License v3.0.</a></p>
+
+                <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto 2rem;">Review the code, verify the encryption, contribute to development. No hidden backdoors, no data collection.</p>
+                <a href="https://github.com/redskate/nook" target="blank" class="btn"><i class="fab fa-github"></i> GitHub Repository</a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div class="container">
+        <div class="footer-links">
+            <a href="#">Home</a>
+            <a href="#">GitHub</a>
+            <a href="#">Privacy</a>
+
+        </div>
+        <p style="margin-top: 15px;">semweb ©2026 NooK Messenger · Free · Open Source · Secure</p>
+
+        <div class="pubdate">
+            <i class="fas fa-lock" style="color: var(--warning-orange);"></i>
+            <span id="pagedate"></span> (Page content cryptographically sealed)
+        </div>
+        <div class="deepseek-credit">
+            <i class="fas fa-robot" style="color: #1a1 !important;"></i>
+            co-shaped by deepseek
+        </div>
+    </div>
+</footer>
+
+<!-- Script per SHA256 (legge dai meta tag) -->
+<script>
+    (function() {
+        // === LEGGI VERSIONE E URL DAI META TAG (UNICA FONTE) ===
+        const versionMeta = document.querySelector('meta[name="nook-version"]');
+        const APK_VERSION = versionMeta ? versionMeta.content : 'error';
+        const pubdateMeta = document.querySelector('meta[name="nook-pub-date"]');
+        const PUBDATE = pubdateMeta ? pubdateMeta.content : 'Yesterday';
+        const urlMeta = document.querySelector('meta[name="nook-apk-url"]');
+        const APK_URL = urlMeta ? urlMeta.content : `https://github.com/redskate/nook/raw/refs/heads/master/app/releases/nook-${APK_VERSION}.apk`;
+
+        const apkName = `nook-${APK_VERSION}.apk`;
+        const githubUrl = 'https://raw.githubusercontent.com/redskate/nook/refs/heads/master/app/sha256';
+
+        // === AGGIORNA PULSANTE DI DOWNLOAD ===
+        function updateDownloadButton() {
+            const downloadBtn = document.querySelector('.download-btn');
+            if (downloadBtn) {
+                downloadBtn.href = APK_URL;
+
+                // Aggiorna il testo della versione se presente come span separato
+                const versionSpan = downloadBtn.querySelector('.version-display');
+                if (versionSpan) {
+                    versionSpan.textContent = APK_VERSION;
+                } else {
+                    // Altrimenti aggiorna tutto il contenuto
+                    downloadBtn.innerHTML = `<i class="fas fa-download"></i> Download APK ${APK_VERSION}`;
+                }
+            }
+        }
+
+        // AGGIORNA DATA
+	// AGGIORNA DATA IN FORMATO USA ESTESO CON "th", "st", "nd", "rd"
+function updateDateOnFooter() {
+    const pageDateSpan = document.querySelector('#pagedate');
+    if (!pageDateSpan) return;
+
+    // Ottieni la data dai meta tag (formato GG.MM.AAAA)
+    const pubdateMeta = document.querySelector('meta[name="nook-pub-date"]');
+    const PUBDATE = pubdateMeta ? pubdateMeta.content : '27.02.2026';
+
+    // Parsing della data italiana (GG.MM.AAAA)
+    const dateParts = PUBDATE.split('.');
+    if (dateParts.length === 3) {
+        const day = parseInt(dateParts[0]);
+        const month = parseInt(dateParts[1]) - 1; // I mesi in JS sono 0-based
+        const year = parseInt(dateParts[2]);
+
+        const date = new Date(year, month, day);
+
+        // Array dei mesi in inglese
+        const months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        // Funzione per aggiungere il suffisso corretto (st, nd, rd, th)
+        function getDaySuffix(d) {
+            if (d >= 11 && d <= 13) return 'th';
+            switch (d % 10) {
+                case 1: return 'st';
+                case 2: return 'nd';
+                case 3: return 'rd';
+                default: return 'th';
+            }
+        }
+
+        const monthName = months[month];
+        const dayWithSuffix = day + getDaySuffix(day);
+
+        // Formato: February 27th, 2026
+        const formattedDate = `${monthName} ${dayWithSuffix}, ${year}`;
+
+        pageDateSpan.innerHTML = `Last update: ${formattedDate}`;
+    } else {
+        // Fallback se non riesce a parsare
+        pageDateSpan.innerHTML = `Last update: ${PUBDATE}`;
+    }
+}
+
+        // === CERCA E MOSTRA SHA256 ===
+        async function findAndShowSha() {
+            const container = document.getElementById('nook-sha-container');
+            if (!container) return;
+
+            try {
+                // Download del file hash da GitHub
+                const response = await fetch(githubUrl);
+                if (!response.ok) throw new Error('GitHub file not accessible');
+
+                const content = await response.text();
+
+                // Cerca la riga che inizia con la nostra versione
+                const lines = content.split('\n');
+                let hash = null;
+
+                for (const line of lines) {
+                    if (line.startsWith(APK_VERSION + ':')) {
+                        hash = line.split(':')[1].trim();
+                        break;
+                    }
+                }
+
+                if (hash && hash.length === 64) {
+                    // Mostra l'hash trovato su GitHubf
+                    container.innerHTML = `
+                        <div style="margin-top: 20px; padding: 16px; background-color: #f0f7f0; border-left: 4px solid #1a1; border-radius: 8px; font-family: system-ui, -apple-system, sans-serif;">
+                            <div style="display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+                                <div style="display: flex; align-items: center; gap: 8px; min-width: 100px;">
+                                    <span style="font-size: 1.2em;">🔐</span>
+                                    <span style="font-weight: 600; color: #1a1;">app Fingerprint :</span>
+                                </div>
+                                <div style="min-width: 280px;">
+                                    <code style="display: block; background: white; padding: 12px 16px; border-radius: 8px; border: 1px solid #c8e6c9; font-family: 'Courier New', monospace; font-size: 0.9rem; word-break: break-all; line-height: 1.5; margin-bottom: 10px; cursor: pointer;"
+                                          onclick="navigator.clipboard.writeText('${hash}').then(() => { this.style.background='#1a1'; this.style.color='white'; this.textContent='✅ Copied!'; setTimeout(() => { this.style.background='white'; this.style.color='#1a1'; this.textContent='${hash}'; }, 1500); })"
+                                          title="Click to copy">
+                                        ${hash}
+                                    </code>
+                                    <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
+                                        <a target="blank" href="${githubUrl}" style="color: #1a1; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 500;">
+                                         <i class="fas fa-download"></i> Download .sha256 file and verify in terminal with:</a>
+                                         <span style="color: #666; font-size: 0.9rem;">
+                                            <i class="fas fa-info-circle"></i>
+                                            <code style="background: #eee; padding: 2px 6px; border-radius: 4px;">
+                                            sha256sum -c <<< "${hash}  ${apkName}"
+                                            </code>
+                                        </span>
+                                        <div>Result (on success):</div>
+                                        <span style="color: #666; font-size: 0.9rem;">
+                                            <i class="fas fa-info-circle"></i>
+                                            <code style="background: #eee; padding: 2px 6px; border-radius: 4px;">
+                                             ${apkName}: OK
+                                            </code>
+                                        </span>
+                                        <div> Good news: NooK is checking itself at installation time (via internet)</div>
+                                    </div>
+                                    <div style="margin-top: 8px; font-size: 0.8rem; color: #666;">
+                                    	<br>
+                                        <i class="fab fa-github"></i> NB: Fingerprint and app versions are immutably secured in GitHub
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                } else {
+                    throw new Error('Version not found in hash file');
+                }
+
+            } catch (error) {
+                console.error('Error loading SHA from GitHub:', error);
+                container.innerHTML = `
+                    <div style="margin-top: 15px; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; font-size: 0.9rem;">
+                        <i class="fas fa-info-circle" style="color: #ff9800;"></i>
+                        Fingerprint not found.
+                        <a href="#" onclick="alert('To verify ${apkName}:\\n\\n1. Download the APK\\n2. Open a terminal\\n3. Run: sha256sum ${apkName}\\n4. Compare with the fingerprint published on GitHub'); return false;" style="color: #ff9800;">How to verify?</a>
+                    </div>
+                `;
+            }
+        }
+
+        // === INIZIALIZZA TUTTO ===
+        updateDownloadButton();
+        findAndShowSha();
+        updateDateOnFooter();
+    })();
+</script>
+</body>
+</html>
