@@ -646,6 +646,8 @@ class ChatManager(val context: Context) {
                 ////////////////////////////////////////////////////////
 
                 // Just add the message normally
+                // in any case: eat possible present request for receipt if not processed
+                message.text = cleanupRequestForRequestIfPresent(message.text)
 
                 addMessageInChat(message, conversation)
 
@@ -666,6 +668,13 @@ class ChatManager(val context: Context) {
             }
         }
         return true
+    }
+
+    private fun cleanupRequestForRequestIfPresent(messageText: String):String {
+        var text = messageText
+        if (messageText.contains(EncryptionMapper.RECEIPT_REQUEST_MARKER))
+            text = messageText.substringBefore(EncryptionMapper.RECEIPT_REQUEST_MARKER)
+        return text
     }
 
     private fun parseReceiptRequest(messageText: String): Pair<Long,String>? {
