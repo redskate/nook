@@ -28,6 +28,7 @@ swiperefreshlayout = "1.2.0"
 ui = "1.10.2"
 datastoreCore = "1.2.0"
 litert = "2.1.1"
+playServicesMaps3d = "0.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -64,6 +65,7 @@ androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "s
 androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
 androidx-datastore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "datastoreCore" }
 litert = { group = "com.google.ai.edge.litert", name = "litert", version.ref = "litert" }
+play-services-maps3d = { group = "com.google.android.gms", name = "play-services-maps3d", version.ref = "playServicesMaps3d" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

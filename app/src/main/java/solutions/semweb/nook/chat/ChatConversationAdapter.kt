@@ -42,7 +42,27 @@ class ChatConversationAdapter(
         val displayName = conversation.contactName ?: conversation.phoneNumber
         val avatarChar = displayName.firstOrNull()
         holder.avatarText.text = avatarChar?.toString() ?: "?"
-        holder.avatarText.background.setTint(holder.itemView.context.getColor(R.color.middle_green))
+
+        // Set avatar color based on encryption scheme and password
+        val context = holder.itemView.context
+        val avatarColor = when {
+            // Case 1: Default encryption parameters detected (encryptionScheme == "Text" OR empty, encoding == "Base256", no password)
+            (conversation.encryptionScheme.isNullOrEmpty() || conversation.encryptionScheme == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) &&
+                    (conversation.encoding == EncryptionMapper.ENCODING_BASE256 || conversation.encoding.isNullOrEmpty()) &&
+                    conversation.encodingPassword.isNullOrEmpty() ->
+                R.color.default_encryption_outgoing
+
+            // Case 2: PlainText configuration (encryptionScheme == "Text", encoding == "Text", no password)
+            (conversation.encryptionScheme == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) &&
+                    (conversation.encoding == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) &&
+                    conversation.encodingPassword.isNullOrEmpty() ->
+                R.color.plaintext_incoming
+
+            // Case 3: All other configurations
+            else -> R.color.middle_green
+        }
+        holder.avatarText.background.setTint(context.getColor(avatarColor))
+
         val chatManager = ChatManager(holder.itemView.context)
         val encryptionAbbr = chatManager.getEncryptionSchemeForChat(conversation.phoneNumber)
         val encoding = conversation.encoding

@@ -264,6 +264,7 @@ dependencies {
     implementation(libs.protolite.well.known.types)
     implementation(libs.androidx.datastore.core)
     implementation(libs.litert)
+    implementation(libs.play.services.maps3d)
 
     val room_version = "2.8.4"
     implementation("androidx.room:room-runtime:$room_version")

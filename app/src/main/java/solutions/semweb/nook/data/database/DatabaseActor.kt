@@ -10,7 +10,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import solutions.semweb.nook.ChatConversation
 import solutions.semweb.nook.ChatMessage
@@ -118,7 +117,7 @@ class DatabaseActor private constructor(context: Context) {
         data class AddMessageForConversation(
             val phoneNumber: String,
             val message: ChatMessage,
-            val reply: CompletableDeferred<Boolean>
+            val reply: CompletableDeferred<Long>
         ) : DatabaseRequest()
 
         // Delete Message
@@ -210,26 +209,35 @@ class DatabaseActor private constructor(context: Context) {
         }
     }
 
+    // In DatabaseActor.kt - Replace the entire processRequest method
+
     private suspend fun processRequest(request: DatabaseRequest) {
         when (request) {
-
+            // FindMessageByMetadata
             is DatabaseRequest.FindMessageByMetadata -> {
                 val result = findMessageByMetadataInternal(request.metadataKey, request.metadataValue)
                 request.reply.complete(result)
             }
+
+            // MarkMessageAsReplaced
             is DatabaseRequest.MarkMessageAsReplaced -> {
                 val result = markMessageAsReplacedInternal(request.messageId)
                 request.reply.complete(result)
             }
+
+            // GetSystemMessagesByType
             is DatabaseRequest.GetSystemMessagesByType -> {
                 val result = getSystemMessagesByTypeInternal(request.conversationId, request.metadataType)
                 request.reply.complete(result)
             }
+
+            // DeleteMessageByMetadata
             is DatabaseRequest.DeleteMessageByMetadata -> {
                 val result = deleteMessageByMetadataInternal(request.metadataKey, request.metadataValue)
                 request.reply.complete(result)
             }
 
+            // UpdateChatName
             is DatabaseRequest.UpdateChatName -> {
                 val result = updateChatNameInternal(request.phoneNumber, request.newName)
                 request.reply.complete(result)
@@ -274,6 +282,7 @@ class DatabaseActor private constructor(context: Context) {
                 val result = deleteChatConversationByContactNameInternal(request.contactName)
                 request.reply.complete(result)
             }
+
             // App Settings
             is DatabaseRequest.GetSetting -> {
                 val result = databaseManager.getSetting(request.key, request.defaultValue, appContext)
@@ -291,14 +300,18 @@ class DatabaseActor private constructor(context: Context) {
                 databaseManager.saveBooleanSetting(request.key, request.value, appContext)
                 request.reply.complete(Unit)
             }
+
+            // MESSAGES - UPDATED CASE
             is DatabaseRequest.AddMessageForConversation -> {
                 val result = addMessageToConversationInternal(request.phoneNumber, request.message)
-                request.reply.complete(result)
+                request.reply.complete(result)  // Now completes with Long
             }
+
             is DatabaseRequest.DeleteMessageById -> {
                 val result = deleteMessageByIdUsingDatabaseManager(request.messageId)
                 request.reply.complete(result)
             }
+
             is DatabaseRequest.UpdateChatEncodingScheme -> {
                 val result = databaseManager.updateEncodingAndPassword(
                     request.phoneNumber,
@@ -308,10 +321,16 @@ class DatabaseActor private constructor(context: Context) {
                 )
                 request.reply.complete(result)
             }
+
             is DatabaseRequest.UpdateChatEncryptionScheme -> {
-                val result = databaseManager.updateChatEncryptionScheme(request.phoneNumber, request.encryptionScheme, appContext)
+                val result = databaseManager.updateChatEncryptionScheme(
+                    request.phoneNumber,
+                    request.encryptionScheme,
+                    appContext
+                )
                 request.reply.complete(result)
             }
+
             // Decoded Messages
             is DatabaseRequest.SaveDecodedMessage -> {
                 databaseManager.saveDecodedMessage(
@@ -328,6 +347,7 @@ class DatabaseActor private constructor(context: Context) {
                 )
                 request.reply.complete(Unit)
             }
+
             is DatabaseRequest.GetDecodedMessages -> {
                 val result = databaseManager.getDecodedMessages(appContext, request.limit)
                 request.reply.complete(result)
@@ -344,9 +364,8 @@ class DatabaseActor private constructor(context: Context) {
                 databaseManager.clearDatabase()
                 request.reply.complete(Unit)
             }
-            else -> {
 
-            }
+            else -> {}
         }
     }
 
@@ -456,75 +475,198 @@ class DatabaseActor private constructor(context: Context) {
         }
     }
 
+    /**
+     * Update an existing message
+     */
+    suspend fun updateMessage(message: ChatMessage): Boolean {
+        waitForInitialization()
+        return withContext(Dispatchers.IO) {
+            try {
+                LogUtils.d(null, "DatabaseActor", "📝 Updating message ID: ${message.id}")
 
-
-    private fun addMessageToConversationInternal(phoneNumber: String, message: ChatMessage): Boolean {
-        return try {
-            LogUtils.d(null,"DatabaseActor", "🔍 ====== SEARCH FOR CONVERSATION ======")
-            LogUtils.d(null,"DatabaseActor", "📱 Original number: $phoneNumber")
-
-            val normalizedNumber = PhoneUtils.normalizePhoneNumber(phoneNumber)
-            LogUtils.d(null,"DatabaseActor", "📱 Normalized number: $normalizedNumber")
-
-            LogUtils.d(null,"DatabaseActor", "💬 Message text: '${message.text.take(30)}...'")
-            LogUtils.d(null,"DatabaseActor", "📝 Message ID: ${message.id}")
-
-            val encryptedPhoneValue = AppCryptoManager.encrypt64Value(normalizedNumber)
-            val encryptedPhoneKey = AppCryptoManager.encrypt64Key(normalizedNumber)
-
-            LogUtils.d(null,"DatabaseActor", "🔑 Generated values:")
-            LogUtils.d(null,"DatabaseActor", "  encryptValue: ${encryptedPhoneValue.take(30)}...")
-            LogUtils.d(null,"DatabaseActor", "  encryptKey: ${encryptedPhoneKey.take(30)}...")
-
-            LogUtils.d(null,"DatabaseActor", "📊 Conversation in database:")
-            val allConversations = databaseManager.database.chatConversationDao().getAll()
-
-            if (allConversations.isEmpty()) {
-                LogUtils.d(null,"DatabaseActor", "  ❌ Empty Database!")
-                return createNewConversationForMessage(normalizedNumber, message)
-            }
-
-            LogUtils.d(null,"DatabaseActor", "🔍 Manual search among ${allConversations.size} conversations...")
-
-            var foundEntity: ChatConversationEntity? = null
-
-            for (conv in allConversations) {
-                try {
-                    // Decrypt number from db
-                    val decryptedPhone = AppCryptoManager.decrypt64Value(conv.phoneNumber)
-                    val normalizedDecryptedPhone = PhoneUtils.normalizePhoneNumber(decryptedPhone)
-
-                    LogUtils.d(null,"DatabaseActor", "  Comparison:")
-                    LogUtils.d(null,"DatabaseActor", "    DB: '$decryptedPhone' -> '$normalizedDecryptedPhone'")
-                    LogUtils.d(null,"DatabaseActor", "    Search: '$phoneNumber' -> '$normalizedNumber'")
-
-                    if (normalizedDecryptedPhone == normalizedNumber) {
-                        foundEntity = conv
-                        LogUtils.d(null,"DatabaseActor", "    ✅✅✅ MATCHING NUMBER FOUND!")
-                        LogUtils.d(null,"DatabaseActor", "      ID: ${conv.id}")
-                        LogUtils.d(null,"DatabaseActor", "      phone_hash in DB: ${conv.phoneHash?.take(30)}...")
-                        break
-                    } else {
-                        LogUtils.d(null,"DatabaseActor", "    ❌ Does not match")
-                    }
-
-                } catch (e: Exception) {
-                    LogUtils.d(null,"DatabaseActor", "  ❌ Error decrypting conversation")
+                // Find the conversation to get conversationId
+                val conversation = getChatConversation(message.sender)
+                if (conversation == null) {
+                    LogUtils.e("DatabaseActor", "❌ Conversation not found for message")
+                    return@withContext false
                 }
-            }
 
-            if (foundEntity != null) {
-                LogUtils.d(null,"DatabaseActor", "🎯 CONVERSATION FOUND! ID: ${foundEntity.id}")
-                return saveMessageToEntity(foundEntity, message)
-            } else {
-                LogUtils.d(null,"DatabaseActor", "❌ Conversation not found")
-                LogUtils.d(null,"DatabaseActor", "🔨 Create new conversation...")
-                return createNewConversationForMessage(normalizedNumber, message)
-            }
+                // Get existing entity to preserve conversationId
+                val existingEntity = databaseManager.database.chatMessageDao()
+                    .findById(message.id)
 
+                if (existingEntity == null) {
+                    LogUtils.e("DatabaseActor", "❌ Message not found for update: ${message.id}")
+                    return@withContext false
+                }
+
+                // Create updated entity with same conversationId
+                val updatedEntity = ChatMessageEntity.fromDomain(
+                    message,
+                    existingEntity.conversationId,
+                    appContext
+                )
+
+                // Update in database
+                databaseManager.database.chatMessageDao().update(updatedEntity)
+
+                LogUtils.d(null, "DatabaseActor", "✅ Message ${message.id} updated")
+                true
+
+            } catch (e: Exception) {
+                LogUtils.e("DatabaseActor", "❌ Error updating message", e)
+                false
+            }
+        }
+    }
+
+    /**
+     * Internal implementation that actually does the database work
+     * @return The generated database ID, or -1 if failed
+     */
+
+    private suspend fun addMessageToConversationInternal(phoneNumber: String, message: ChatMessage): Long {
+        return withContext(Dispatchers.IO) {
+            try {
+                LogUtils.d(null, "DatabaseActor", "🔍 Adding message to conversation for: $phoneNumber")
+                LogUtils.d(null, "DatabaseActor", "📝 Message temp ID: ${message.id}, text: ${message.text.take(30)}...")
+
+                // Find or create conversation
+                val conversation = findOrCreateConversation(phoneNumber, message)
+
+                LogUtils.d(null, "DatabaseActor", "✅ Using conversation ID: ${conversation.id}")
+
+                // Create message entity
+                val messageEntity = ChatMessageEntity.fromDomain(message, conversation.id, appContext)
+
+                // Insert and get the generated ID
+                val generatedId = databaseManager.database.chatMessageDao().insert(messageEntity)
+
+                LogUtils.d(null, "DatabaseActor",
+                    "✅✅✅ Message saved with generated ID: $generatedId (original temp ID: ${message.id})")
+
+                // Update conversation last message info
+                updateConversationLastMessage(conversation, message)
+
+                generatedId  // Return the generated ID
+
+            } catch (e: Exception) {
+                LogUtils.e("DatabaseActor", "❌ Error adding message to conversation", e)
+                -1L  // Return -1 to indicate failure
+            }
+        }
+    }
+
+    /**
+     * Find an existing conversation or create a new one
+     */
+    private suspend fun findOrCreateConversation(phoneNumber: String, message: ChatMessage): ChatConversationEntity {
+        val normalizedNumber = PhoneUtils.normalizePhoneNumber(phoneNumber)
+        val phoneHash = AppCryptoManager.encrypt64Key(normalizedNumber)
+
+        LogUtils.d(null, "DatabaseActor", "🔑 Looking for conversation with hash: ${phoneHash.take(30)}...")
+
+        // Try to find existing conversation
+        var conversation = databaseManager.database.chatConversationDao()
+            .findByPhoneHash(phoneHash)
+
+        if (conversation == null) {
+            // Try with encrypted phone number as fallback
+            val encryptedPhone = AppCryptoManager.encrypt64Value(normalizedNumber)
+            conversation = databaseManager.database.chatConversationDao()
+                .findByPhoneNumber(encryptedPhone)
+        }
+
+        if (conversation == null) {
+            // Create new conversation if not found
+            LogUtils.d(null, "DatabaseActor", "➕ Creating new conversation for: $normalizedNumber")
+
+            val chatManager = ChatManager(appContext)
+            val contactName = chatManager.getContactNameFromPhone(normalizedNumber)
+                ?: formatPhoneNumberForDisplay(normalizedNumber)
+
+            val newConversation = ChatConversation(
+                phoneNumber = normalizedNumber,
+                contactName = contactName,
+                lastMessage = message.text,
+                lastTimestamp = message.timestamp,
+                unreadCount = if (!message.isOutgoing) 1 else 0,
+                isYChat = false,
+                encryptionScheme = ""
+            )
+
+            // Save conversation - this is a suspend function call
+            this@DatabaseActor.saveChatConversation(newConversation)
+
+            // Fetch the newly created entity
+            conversation = databaseManager.database.chatConversationDao()
+                .findByPhoneHash(phoneHash)
+                ?: databaseManager.database.chatConversationDao()
+                    .findByPhoneNumber(AppCryptoManager.encrypt64Value(normalizedNumber))
+                        ?: throw IllegalStateException("Failed to create conversation")
+
+            LogUtils.d(null, "DatabaseActor", "✅ New conversation created with ID: ${conversation.id}")
+        } else {
+            LogUtils.d(null, "DatabaseActor", "✅ Found existing conversation with ID: ${conversation.id}")
+        }
+
+        return conversation
+    }
+
+// In DatabaseActor.kt - Add this method
+
+    /**
+     * Mark a message as sent by its database ID
+     * @param messageId The database ID of the message to mark as sent
+     * @return true if successful, false otherwise
+     */
+    /**
+     * Mark a message as sent by its database ID
+     * @param messageId The database ID of the message to mark as sent
+     * @return true if successful, false otherwise
+     */
+    suspend fun markMessageAsSent(messageId: Long): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                LogUtils.d(null, "DatabaseActor", "✉️ Marking message as sent by ID: $messageId")
+
+                // Find the message by its database ID
+                val messageEntity = databaseManager.database.chatMessageDao().findById(messageId)
+
+                if (messageEntity != null) {
+                    // Update the message to mark as sent
+                    val updatedEntity = messageEntity.copy(isSent = true)
+                    databaseManager.database.chatMessageDao().update(updatedEntity)
+
+                    LogUtils.d(null, "DatabaseActor", "✅ Message $messageId marked as sent successfully")
+                    true
+                } else {
+                    LogUtils.w(null, "DatabaseActor", "⚠️ Message $messageId not found")
+                    false
+                }
+            } catch (e: Exception) {
+                LogUtils.e("DatabaseActor", "❌ Error marking message as sent", e)
+                false
+            }
+        }
+    }
+
+
+    /**
+     * Update conversation with last message info
+     */
+    private suspend fun updateConversationLastMessage(conversation: ChatConversationEntity, message: ChatMessage) {
+        try {
+            val updatedEntity = conversation.copy(
+                lastMessage = AppCryptoManager.encrypt64Value(message.text),
+                lastTimestamp = message.timestamp,
+                unreadCount = if (!message.isOutgoing) conversation.unreadCount + 1 else conversation.unreadCount,
+                updatedAt = System.currentTimeMillis()
+            )
+            databaseManager.database.chatConversationDao().update(updatedEntity)
+            LogUtils.d(null, "DatabaseActor", "✅ Updated conversation last message")
         } catch (e: Exception) {
-            LogUtils.e("DatabaseActor", "💥 CRITICAL ERROR", e)
-            return false
+            LogUtils.e("DatabaseActor", "❌ Error updating conversation last message", e)
         }
     }
 
@@ -558,41 +700,45 @@ class DatabaseActor private constructor(context: Context) {
         }
     }
 
-    private fun createNewConversationForMessage(phoneNumber: String, message: ChatMessage): Boolean {
-        try {
-            LogUtils.d(null,"DatabaseActor", "🔨 Create new conversation for: $phoneNumber")
+    private suspend fun createNewConversationForMessage(phoneNumber: String, message: ChatMessage): Long {
+        return withContext(Dispatchers.IO) {
+            try {
+                LogUtils.d(null, "DatabaseActor", "🔨 Create new conversation for: $phoneNumber")
 
-            val normalizedNumber = PhoneUtils.normalizePhoneNumber(phoneNumber)
-            val formattedNumber = formatPhoneNumberForDisplay(normalizedNumber)
+                val normalizedNumber = PhoneUtils.normalizePhoneNumber(phoneNumber)
+                val formattedNumber = formatPhoneNumberForDisplay(normalizedNumber)
 
-            val chatManager = ChatManager(appContext)
-            val contactName = chatManager.getContactNameFromPhone(normalizedNumber) ?: formattedNumber
+                val chatManager = ChatManager(appContext)
+                val contactName = chatManager.getContactNameFromPhone(normalizedNumber) ?: formattedNumber
 
-            val newConversation = ChatConversation(
-                phoneNumber = normalizedNumber,
-                contactName = contactName,
-                lastMessage = message.text,
-                lastTimestamp = System.currentTimeMillis(),
-                messages = mutableListOf(message),
-                unreadCount = if (!message.isOutgoing) 1 else 0,
-                isYChat = false,
-                encryptionScheme = ""
-            )
+                val newConversation = ChatConversation(
+                    phoneNumber = normalizedNumber,
+                    contactName = contactName,
+                    lastMessage = message.text,
+                    lastTimestamp = System.currentTimeMillis(),
+                    messages = mutableListOf(message),
+                    unreadCount = if (!message.isOutgoing) 1 else 0,
+                    isYChat = false,
+                    encryptionScheme = ""
+                )
 
-            // Save conversation
-            runBlocking {
+                // Save conversation - this is a suspend function call
+                // We need to call it properly within the coroutine context
                 this@DatabaseActor.saveChatConversation(newConversation)
+
+                LogUtils.d(null, "DatabaseActor", "✅ New conversation created with number: $normalizedNumber")
+
+                // Now try to add the message to the new conversation
+                // Call the internal method recursively - it's also suspend
+                addMessageToConversationInternal(normalizedNumber, message)
+
+            } catch (e: Exception) {
+                LogUtils.e("DatabaseActor", "❌ Error creating new conversation", e)
+                -1L
             }
-
-            LogUtils.d(null,"DatabaseActor", "✅ New conversation created with number: $normalizedNumber")
-
-            return addMessageToConversationInternal(normalizedNumber, message)
-
-        } catch (e: Exception) {
-            LogUtils.e("DatabaseActor", "❌ Error creating new conversation", e)
-            return false
         }
     }
+
     private fun deleteChatConversationByContactNameInternal(contactName: String): Boolean {
         return try {
             LogUtils.d(null, "DatabaseActor", "🗑️ Deleting chat for contactName (decrypted): $contactName")
@@ -1181,9 +1327,15 @@ class DatabaseActor private constructor(context: Context) {
         reply.await()
     }
 
-    suspend fun addMessageToConversation(phoneNumber: String, message: ChatMessage): Boolean {
+    /**
+     * Add a message to a conversation and return the generated database ID
+     * @param phoneNumber The phone number of the conversation
+     * @param message The message to add
+     * @return The generated database ID, or -1 if failed
+     */
+    suspend fun addMessageToConversation(phoneNumber: String, message: ChatMessage): Long {
         waitForInitialization()
-        val reply = CompletableDeferred<Boolean>()
+        val reply = CompletableDeferred<Long>()
         requestChannel.send(DatabaseRequest.AddMessageForConversation(phoneNumber, message, reply))
         return reply.await()
     }

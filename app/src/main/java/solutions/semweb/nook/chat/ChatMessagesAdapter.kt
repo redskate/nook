@@ -11,13 +11,12 @@ import android.text.style.UnderlineSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
-import solutions.semweb.nook.BuildConfig
 import solutions.semweb.nook.ChatMessage
 import solutions.semweb.nook.Constants
-import solutions.semweb.nook.LogUtils
 import solutions.semweb.nook.R
 import solutions.semweb.nook.SharedPreferencesManager
 import java.text.SimpleDateFormat
@@ -30,7 +29,7 @@ class ChatMessagesAdapter(
     private var messages: List<ChatMessage>,
     private val context: Context,
     private val onMessageLongClick: (ChatMessage) -> Unit,
-    private val onLoadMoreClick: () -> Unit // Callback per caricare più messaggi
+    private val onLoadMoreClick: () -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -38,46 +37,52 @@ class ChatMessagesAdapter(
         private const val TYPE_CONTINUATION = 1
     }
 
-    // Message continuation (getting older messages)
     private var showContinuation = false
     private var isLoadingMore = false
     private var hasLoadedAll = false
     private var remainingMessages = 0
-
     private var fontSize = 14f
-
+    private var isDefaultEncryptionMode = false
     var onContinuationStateChanged: ((show: Boolean, loading: Boolean) -> Unit)? = null
     private var adapterMsgSeq = 1
+    var useDefaultEncryption = isDefaultEncryptionMode
 
-    // ==================== VIEW HOLDER CLASSES ====================
 
     class MessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        // Existing messages
-        val incomingMessageLayout: View = itemView.findViewById(R.id.incoming_message_layout)
-        val decodedMessageLayout: View = itemView.findViewById(R.id.decoded_message_layout)
-        val plaintextMessageLayout: View = itemView.findViewById(R.id.plaintext_message_layout)
-        val outgoingMessageLayout: View = itemView.findViewById(R.id.outgoing_message_layout)
+        val incomingMessageLayout: View = itemView.findViewById(R.id.enc_incoming_message_layout)
+        val plaintextIncomingMessageLayout: View = itemView.findViewById(R.id.plaintext_incoming_message_layout)
+        val encOutgoingMessageLayout: View = itemView.findViewById(R.id.enc_outgoing_message_layout)
         val plaintextOutgoingLayout: View = itemView.findViewById(R.id.plaintext_outgoing_layout)
-
-        // Existing TextViews
+        val defaultEncryptionIncomingMessageLayout: View = itemView.findViewById(R.id.default_encryption_incoming_message_layout)
+        val defaultEncryptionOutgoingLayout: View = itemView.findViewById(R.id.default_encryption_outgoing_layout)
+        val defaultEncryptionOutgoingReceiptStatusLayout: LinearLayout = itemView.findViewById(R.id.default_encryption_outgoing_receipt_status_layout)
+        val encOutgoingReceiptStatusLayout: LinearLayout = itemView.findViewById(R.id.enc_outgoing_receipt_status_layout)
+        val encOutgoingReceiptTimestamp: TextView = itemView.findViewById(R.id.enc_outgoing_receipt_timestamp)
+        val encOutgoingReceiptIconMsgArrived: android.widget.ImageView = itemView.findViewById(R.id.enc_outgoing_receipt_icon_msg_arrived)
+        val encOutgoingReceiptIconStatus: android.widget.ImageView = itemView.findViewById(R.id.enc_outgoing_receipt_icon_status)
+        val defaultEncryptionOutgoingReceiptIconArrived: android.widget.ImageView = itemView.findViewById(R.id.default_encryption_outgoing_receipt_icon_arrived)
+        val defaultEncryptionOutgoingReceiptIconStatus: android.widget.ImageView = itemView.findViewById(R.id.default_encryption_outgoing_receipt_icon_status)
+        val defaultEncryptionOutgoingReceiptTimestamp: TextView = itemView.findViewById(R.id.default_encryption_outgoing_receipt_timestamp)
         val plaintextOutgoingMessageText: TextView = itemView.findViewById(R.id.plaintext_outgoing_message_text)
         val incomingMessageText: TextView = itemView.findViewById(R.id.incoming_message_text)
-        val decodedMessageText: TextView = itemView.findViewById(R.id.decoded_message_text)
-        val plaintextMessageText: TextView = itemView.findViewById(R.id.plaintext_message_text)
-        val outgoingMessageText: TextView = itemView.findViewById(R.id.outgoing_message_text)
-
-        // Existing Timestamps
+        val plaintextIncomingMessageText: TextView = itemView.findViewById(R.id.plaintext_incoming_message_text)
+        val encOutgoingMessageText: TextView = itemView.findViewById(R.id.enc_outgoing_message_text)
+        val defaultEncryptionMessageText: TextView = itemView.findViewById(R.id.default_encryption_message_text)
+        val defaultEncryptionOutgoingText: TextView = itemView.findViewById(R.id.default_encryption_outgoing_text)
         val plaintextOutgoingTimeTop: TextView = itemView.findViewById(R.id.plaintext_outgoing_time_top)
-        val incomingSendTimeTop: TextView = itemView.findViewById(R.id.sending_time_top)
-        val incomingTimeTop: TextView = itemView.findViewById(R.id.incoming_time_top)
-        val decodedTRansTimeTop: TextView = itemView.findViewById(R.id.decoded_sending_time_top)
-        val decodedTimeTop: TextView = itemView.findViewById(R.id.decoded_receiving_time_top)
-        val plaintextTransTimeTop: TextView = itemView.findViewById(R.id.plaintext_sending_time_top)
-        val plaintextTimeTop: TextView = itemView.findViewById(R.id.plaintext_receiving_time_top)
-        val outgoingTimeTop: TextView = itemView.findViewById(R.id.outgoing_time_top)
-
-        // Warning icons
-        val plaintextWarningIcon: TextView = itemView.findViewById(R.id.plaintext_warning_icon)
+        val encIncomingSendingTimeTop: TextView = itemView.findViewById(R.id.enc_incoming_sending_time_top)
+        val encIncomingTimeTop: TextView = itemView.findViewById(R.id.enc_incoming_time_top)
+        val plaintextIncomingSendingTimeTop: TextView = itemView.findViewById(R.id.plaintext_incoming_sending_time_top)
+        val plaintextIncomingReceivingTimeTop: TextView = itemView.findViewById(R.id.plaintext_incoming_receiving_time_top)
+        val encOutgoingTimeTop: TextView = itemView.findViewById(R.id.enc_outgoing_time_top)
+        val defaultEncryptionIncomingSendingTimeTop: TextView = itemView.findViewById(R.id.default_encryption_incoming_sending_time_top)
+        val defaultEncryptionIncomingReceivingTimeTop: TextView = itemView.findViewById(R.id.default_encryption_incoming_receiving_time_top)
+        val defaultEncryptionOutgoingTimeTop: TextView = itemView.findViewById(R.id.default_encryption_outgoing_time_top)
+        val encIncomingEncryptionIndicator: TextView = itemView.findViewById(R.id.enc_incoming_encryption_indicator)
+        val encOutgoingEncryptionIndicator: TextView = itemView.findViewById(R.id.enc_outgoing_encryption_indicator)
+        val defaultEncryptionIncomingIndicator: TextView = itemView.findViewById(R.id.default_encryption_incoming_indicator)
+        val defaultEncryptionOutgoingIndicator: TextView = itemView.findViewById(R.id.default_encryption_outgoing_indicator)
+        val plaintextIncomingWarningIcon: TextView = itemView.findViewById(R.id.plaintext_incoming_warning_icon)
         val plaintextOutgoingWarningIcon: TextView = itemView.findViewById(R.id.plaintext_outgoing_warning_icon)
     }
 
@@ -86,8 +91,6 @@ class ChatMessagesAdapter(
             itemView.findViewById(R.id.continuation_progress)
         val textView: TextView = itemView.findViewById(R.id.continuation_text)
     }
-
-    // ==================== ADAPTER METHODS ====================
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
@@ -114,280 +117,396 @@ class ChatMessagesAdapter(
             1 -> {
                 if (position == 0) TYPE_CONTINUATION else TYPE_MESSAGE
             }
-            else -> { // 0
+            else -> {
                 val isLastPosition = position == messages.size
                 if (isLastPosition) TYPE_CONTINUATION else TYPE_MESSAGE
             }
         }
     }
 
-    /*
-     *   Message Visualizer
-     */
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
             is ContinuationViewHolder -> {
-                val prefs = SharedPreferencesManager.getInstance(context)
-                val msgSeq = prefs.msgSeq
-
-                val isContinuationPosition = when (msgSeq) {
-                    1 -> {
-                        showContinuation && position == 0
-                    }
-                    else -> {
-                        showContinuation && position == messages.size
-                    }
-                }
-
-                if (!isContinuationPosition) {
-                    holder.progressIndicator.visibility = View.GONE
-                    holder.textView.text = ""
-                    holder.itemView.isClickable = false
-                    LogUtils.w(context, "ChatMessagesAdapter",
-                        "⚠️ Position is not a continuation: position=$position, messages=${messages.size}, showContinuation=$showContinuation")
-                    return
-                }
-
-                if (isLoadingMore) {
-                    holder.progressIndicator.visibility = View.VISIBLE
-                    holder.itemView.isClickable = false
-                    holder.textView.text = context.getString(R.string.loading_messages)
-                } else {
-                    holder.progressIndicator.visibility = View.GONE
-
-                    if (hasLoadedAll) {
-                        holder.textView.text = context.getString(R.string.no_more_messages)
-                        holder.itemView.isClickable = false
-                    } else {
-                        val remainingText = if (remainingMessages > 0) {
-                            // Formatta il testo con il conteggio
-                            val nextLoad = minOf(Constants.MESSAGES_LIMIT, remainingMessages)
-                            val remainingFormatted = when {
-                                remainingMessages > 1000 -> "${remainingMessages / 1000}k+"
-                                remainingMessages > 100 -> "~${remainingMessages}"
-                                else -> "$remainingMessages"
-                            }
-
-                            // do not show (out of...) if
-                            // end of loading
-                            if (nextLoad == remainingMessages)
-                            {
-                                if (nextLoad==1)
-                                    context.getString(
-                                        R.string.load_last_message
-                                    )
-                                else
-                                    context.getString(
-                                        R.string.load_last_with_count,
-                                        nextLoad
-                                    )
-                            }
-                            else
-                                context.getString(
-                                    R.string.load_more_with_count,
-                                    nextLoad,
-                                    remainingMessages
-                                    // era: remainingFormatted.toInt()
-                                )
-                        } else {
-                            context.getString(R.string.load_more_messages)
-                        }
-
-                        holder.textView.text = remainingText
-                        holder.itemView.isClickable = true
-                    }
-                }
-
-                holder.itemView.setOnClickListener {
-                    if (!isLoadingMore && !hasLoadedAll) {
-                        LogUtils.d(context, "ChatMessagesAdapter", "🎯 Continuation clicked, calling onLoadMoreClick")
-                        onLoadMoreClick()
-
-                        isLoadingMore = true
-                        holder.progressIndicator.visibility = View.VISIBLE
-                        holder.textView.text = context.getString(R.string.loading_messages)
-                        holder.itemView.isClickable = false
-                    }
-                }
+                bindContinuationViewHolder(holder, position)
             }
-
             is MessageViewHolder -> {
-                val prefs = SharedPreferencesManager.getInstance(context)
-                val msgSeq = prefs.msgSeq
-
-                val messageIndex = when (msgSeq) {
-                    1 -> {
-                        if (showContinuation) position - 1 else position
-                    }
-                    else -> { // 0
-                        position
-                    }
-                }
-
-                if (messageIndex < 0 || messageIndex >= messages.size) {
-                    LogUtils.e(context, "ChatMessagesAdapter",
-                        "❌ Index out of range: $messageIndex / ${messages.size}, " +
-                                "position: $position, showContinuation: $showContinuation, msgSeq: $msgSeq")
-
-                    holder.incomingMessageLayout.visibility = View.GONE
-                    holder.decodedMessageLayout.visibility = View.GONE
-                    holder.plaintextMessageLayout.visibility = View.GONE
-                    holder.plaintextOutgoingLayout.visibility = View.GONE
-                    holder.outgoingMessageLayout.visibility = View.GONE
-                    return
-                }
-
-                val message = messages[messageIndex]
-
-                holder.incomingMessageLayout.visibility = View.GONE
-                holder.decodedMessageLayout.visibility = View.GONE
-                holder.plaintextMessageLayout.visibility = View.GONE
-                holder.plaintextOutgoingLayout.visibility = View.GONE
-                holder.outgoingMessageLayout.visibility = View.GONE
-
-                val formattedTransTime = if (message.trans_timestamp > 0 && message.trans_timestamp != message.timestamp)
-                    formatTimestamp(message.trans_timestamp)
-                else
-                    ""
-                val formattedTime = formatTimestamp(message.timestamp)
-
-                when {
-                    // INCOMING PLAINTEXT MESSAGE (LEFT)
-                    !message.isOutgoing && !message.isDecoded && !message.isYMessage -> {
-                        holder.plaintextMessageLayout.visibility = View.VISIBLE
-                        holder.plaintextMessageText.text = message.text
-                        holder.plaintextMessageText.textSize = fontSize
-                        holder.plaintextMessageText.setTextColor(
-                            ContextCompat.getColor(context, android.R.color.black)
-                        )
-                        holder.plaintextTimeTop.text = formattedTime
-                        holder.plaintextWarningIcon.visibility = View.VISIBLE
-                        holder.plaintextWarningIcon.text = "⚠️"
-                        holder.plaintextTransTimeTop.text = formattedTransTime
-                        holder.plaintextTransTimeTop.visibility = View.GONE // since no timestamp in a plaintext message ...
-                        holder.plaintextMessageText.setOnLongClickListener {
-                            onMessageLongClick(message)
-                            true
-                        }
-                    }
-
-                    // OUTGOING PLAINTEXT MESSAG (RIGHT)
-                    message.isOutgoing && !message.isDecoded && !message.isYMessage -> {
-                        holder.plaintextOutgoingLayout.visibility = View.VISIBLE
-                        holder.plaintextOutgoingMessageText.text = message.text
-                        holder.plaintextOutgoingMessageText.textSize = fontSize
-                        holder.plaintextOutgoingMessageText.setTextColor(
-                            ContextCompat.getColor(context, android.R.color.white)
-                        )
-                        holder.plaintextOutgoingTimeTop.text = formattedTime
-                        holder.plaintextOutgoingWarningIcon.visibility = View.VISIBLE
-                        holder.plaintextOutgoingWarningIcon.text = "⚠️"
-                        holder.plaintextOutgoingMessageText.setOnLongClickListener {
-                            onMessageLongClick(message)
-                            true
-                        }
-                    }
-
-                    // INCOMING DECODED MESSAGE - show trasmission time when different from receive time
-                    !message.isOutgoing && message.isDecoded -> {
-                        holder.decodedMessageLayout.visibility = View.VISIBLE
-                        holder.decodedTimeTop.text = formattedTime
-                        holder.decodedTRansTimeTop.text = formattedTransTime
-                        holder.decodedTRansTimeTop.visibility = if (formattedTransTime.isNotEmpty() && !formattedTransTime.equals(formattedTime)) View.VISIBLE else View.GONE
-
-                        val displayText = if (message.isYMessage) {
-                            "\uD83D\uDCE1 ${message.text}"
-                        } else {
-                            message.text
-                        }
-
-                        val spannableText = makeLinksClickable(displayText)
-                        holder.decodedMessageText.text = spannableText
-                        holder.decodedMessageText.movementMethod = LinkMovementMethod.getInstance()
-                        holder.decodedMessageText.setTextColor(ContextCompat.getColor(context, android.R.color.black))
-                        holder.decodedMessageText.textSize = fontSize
-                        holder.decodedMessageText.setOnLongClickListener {
-                            onMessageLongClick(message)
-                            true
-                        }
-                    }
-
-                    // OUTGOING MESSAGE
-                    message.isOutgoing -> {
-                        holder.outgoingMessageLayout.visibility = View.VISIBLE
-                        holder.outgoingTimeTop.text = formattedTime
-
-                        val displayText = message.text
-
-                        val spannableText = makeLinksClickable(displayText)
-                        holder.outgoingMessageText.text = spannableText
-                        holder.outgoingMessageText.movementMethod = LinkMovementMethod.getInstance()
-                        holder.outgoingMessageText.setTextColor(
-                            ContextCompat.getColor(context, android.R.color.white)
-                        )
-                        holder.outgoingMessageText.textSize = fontSize
-
-                        holder.outgoingMessageText.setOnLongClickListener {
-                            onMessageLongClick(message)
-                            true
-                        }
-                    }
-
-                    // Fallback NON DECODED INCOMING MESSAGE
-                    else -> {
-                        holder.incomingMessageLayout.visibility = View.VISIBLE
-                        holder.incomingTimeTop.text = formattedTime
-                        holder.incomingSendTimeTop.text = formattedTransTime
-                        holder.incomingSendTimeTop.visibility = if (formattedTransTime.isNotEmpty()) View.VISIBLE else View.GONE
-
-                        holder.incomingMessageText.text = message.text
-                        holder.incomingMessageText.textSize = fontSize
-                        holder.incomingMessageText.setTextColor(
-                            ContextCompat.getColor(context, android.R.color.black)
-                        )
-                        holder.incomingMessageText.setOnLongClickListener {
-                            onMessageLongClick(message)
-                            true
-                        }
-                    }
-                }
-
-                // Remove previous listeners
-                holder.itemView.setOnLongClickListener(null)
+                bindMessageViewHolder(holder, position)
             }
         }
     }
 
+    private fun bindContinuationViewHolder(holder: ContinuationViewHolder, position: Int) {
+        val prefs = SharedPreferencesManager.getInstance(context)
+        val msgSeq = prefs.msgSeq
 
-    fun setLoadingState(loading: Boolean) {
-        isLoadingMore = loading
-        notifyItemChanged(0) // Notifica l'elemento di continuazione
-    }
+        val isContinuationPosition = when (msgSeq) {
+            1 -> showContinuation && position == 0
+            else -> showContinuation && position == messages.size
+        }
 
-    override fun getItemCount(): Int {
-        return messages.size + (if (showContinuation) 1 else 0)
-    }
-
-    // ==================== PUBLIC INTERFACE ====================
-
-    fun addMoreMessages(newMessages: List<ChatMessage>, msgSeq: Int) {
-        if (newMessages.isEmpty()) {
-            LogUtils.d(context, "ChatMessagesAdapter", "⚠️ No new messge to add")
+        if (!isContinuationPosition) {
+            holder.progressIndicator.visibility = View.GONE
+            holder.textView.text = ""
+            holder.itemView.isClickable = false
             return
         }
 
-        LogUtils.d(context, "ChatMessagesAdapter",
-            "➕ addMoreMessages called with ${newMessages.size} messages, " +
-                    "${newMessages.size}, MSG_SEQ: $msgSeq")
+        if (isLoadingMore) {
+            holder.progressIndicator.visibility = View.VISIBLE
+            holder.itemView.isClickable = false
+            holder.textView.text = context.getString(R.string.loading_messages)
+        } else {
+            holder.progressIndicator.visibility = View.GONE
 
-        val sortedNewMessages = newMessages.sortedBy { it.trans_timestamp }
+            if (hasLoadedAll) {
+                holder.textView.text = context.getString(R.string.no_more_messages)
+                holder.itemView.isClickable = false
+            } else {
+                val remainingText = if (remainingMessages > 0) {
+                    val nextLoad = minOf(Constants.MESSAGES_LIMIT, remainingMessages)
+                    val remainingFormatted = when {
+                        remainingMessages > 1000 -> "${remainingMessages / 1000}k+"
+                        remainingMessages > 100 -> "~${remainingMessages}"
+                        else -> "$remainingMessages"
+                    }
 
-        if (BuildConfig.DEBUG) {
-            sortedNewMessages.forEachIndexed { index, msg ->
-                LogUtils.d(context, "ChatMessagesAdapter",
-                    "  Nuovo[$index]: ${Date(msg.timestamp)} - '${msg.text.take(20)}...'")
+                    if (nextLoad == remainingMessages) {
+                        if (nextLoad == 1)
+                            context.getString(R.string.load_last_message)
+                        else
+                            context.getString(R.string.load_last_with_count, nextLoad)
+                    } else {
+                        context.getString(R.string.load_more_with_count, nextLoad, remainingMessages)
+                    }
+                } else {
+                    context.getString(R.string.load_more_messages)
+                }
+
+                holder.textView.text = remainingText
+                holder.itemView.isClickable = true
             }
         }
+
+        holder.itemView.setOnClickListener {
+            if (!isLoadingMore && !hasLoadedAll) {
+                onLoadMoreClick()
+                isLoadingMore = true
+                holder.progressIndicator.visibility = View.VISIBLE
+                holder.textView.text = context.getString(R.string.loading_messages)
+                holder.itemView.isClickable = false
+            }
+        }
+    }
+
+    private fun bindMessageViewHolder(holder: MessageViewHolder, position: Int) {
+        val prefs = SharedPreferencesManager.getInstance(context)
+        val msgSeq = prefs.msgSeq
+
+        val messageIndex = when (msgSeq) {
+            1 -> if (showContinuation) position - 1 else position
+            else -> position
+        }
+
+        if (messageIndex < 0 || messageIndex >= messages.size) {
+            hideAllMessageLayouts(holder)
+            return
+        }
+
+        val message = messages[messageIndex]
+
+        // Encryption indicator from metadata
+        val encryptionIndicator = message.metadata?.get("e_ind") ?: ""
+
+        //recalculate from metadata
+        useDefaultEncryption = encryptionIndicator.equals("@b3")
+                || encryptionIndicator.equals("@b2")
+                || encryptionIndicator.equals("@b1")
+
+        val formattedTransTime = if (message.trans_timestamp > 0 && message.trans_timestamp != message.timestamp)
+            formatTimestamp(message.trans_timestamp)
+        else formatTimestamp(message.timestamp)
+
+        //Sometime we have the one but not the other
+        val formattedTime =  formatTimestamp(message.timestamp)
+
+        val timestampNeeded = formattedTime.isNotBlank() && formattedTransTime.isNotBlank() &&
+                !formattedTime.equals(formattedTransTime)
+
+        hideAllMessageLayouts(holder)
+
+        when {
+            // INCOMING PLAINTEXT MESSAGE (LEFT)
+            !message.isOutgoing && encryptionIndicator.isBlank() -> {
+                holder.plaintextIncomingMessageLayout.visibility = View.VISIBLE
+                holder.plaintextIncomingMessageText.text = makeLinksClickable(message.text)
+                holder.plaintextIncomingMessageText.movementMethod = LinkMovementMethod.getInstance()
+                holder.plaintextIncomingMessageText.textSize = fontSize
+                holder.plaintextIncomingMessageText.setTextColor(
+                    ContextCompat.getColor(context, android.R.color.black)
+                )
+
+                // Show timestamps
+                holder.plaintextIncomingSendingTimeTop.visibility = if (formattedTransTime.isNotEmpty()) View.VISIBLE else View.GONE
+                holder.plaintextIncomingSendingTimeTop.text = formattedTransTime
+
+                if (timestampNeeded) {
+                    holder.plaintextIncomingReceivingTimeTop.text = formattedTime
+                    holder.plaintextIncomingReceivingTimeTop.visibility = View.VISIBLE
+                } else {
+                    holder.plaintextIncomingReceivingTimeTop.visibility = View.GONE
+                }
+
+                // Show warning icon for plaintext
+                holder.plaintextIncomingWarningIcon.text = "⚠️"
+                holder.plaintextIncomingWarningIcon.visibility = View.VISIBLE
+
+                holder.plaintextIncomingMessageText.setOnLongClickListener {
+                    onMessageLongClick(message)
+                    true
+                }
+            }
+
+            // OUTGOING PLAINTEXT MESSAGE (RIGHT)
+            message.isOutgoing && encryptionIndicator.isBlank() -> {
+                holder.plaintextOutgoingLayout.visibility = View.VISIBLE
+                holder.plaintextOutgoingMessageText.text = makeLinksClickable(message.text)
+                holder.plaintextOutgoingMessageText.movementMethod = LinkMovementMethod.getInstance()
+                holder.plaintextOutgoingMessageText.textSize = fontSize
+                holder.plaintextOutgoingMessageText.setTextColor(
+                    ContextCompat.getColor(context, android.R.color.white)
+                )
+
+                // Set timestamp
+                holder.plaintextOutgoingTimeTop.text = formattedTime
+                holder.plaintextOutgoingTimeTop.visibility = if (formattedTime.isNotEmpty()) View.VISIBLE else View.GONE
+
+                // Show warning icon
+                holder.plaintextOutgoingWarningIcon.visibility = View.VISIBLE
+                holder.plaintextOutgoingWarningIcon.text = "⚠️"
+
+                holder.plaintextOutgoingMessageText.setOnLongClickListener {
+                    onMessageLongClick(message)
+                    true
+                }
+            }
+
+            // INCOMING DECODED MESSAGE (Encrypted & Decoded)
+            !message.isOutgoing && message.isDecoded -> {
+                if (useDefaultEncryption) {
+                    // DEFAULT ENCRYPTION MODE - Incoming Decoded
+                    holder.defaultEncryptionIncomingMessageLayout.visibility = View.VISIBLE
+
+                    val spannableText = makeLinksClickable(message.text)
+                    holder.defaultEncryptionMessageText.text = spannableText
+                    holder.defaultEncryptionMessageText.movementMethod = LinkMovementMethod.getInstance()
+                    holder.defaultEncryptionMessageText.textSize = fontSize
+                    // Make sure bubble color comes from drawable, not set here
+                    // holder.defaultEncryptionMessageText.setTextColor(...) // DON'T SET COLOR HERE
+
+                    // Set timestamps
+                    holder.defaultEncryptionIncomingSendingTimeTop.visibility = if (formattedTransTime.isNotEmpty()) View.VISIBLE else View.GONE
+                    holder.defaultEncryptionIncomingSendingTimeTop.text = formattedTransTime
+
+                    if (timestampNeeded) {
+                        holder.defaultEncryptionIncomingReceivingTimeTop.visibility = View.VISIBLE
+                        holder.defaultEncryptionIncomingReceivingTimeTop.text = formattedTime
+                    } else {
+                        holder.defaultEncryptionIncomingReceivingTimeTop.visibility = View.GONE
+                    }
+
+                    // Encryption indicator from metadata
+                    val encryptionIndicator = message.metadata?.get("e_ind") ?: ""
+                    holder.defaultEncryptionIncomingIndicator.text = encryptionIndicator
+                    holder.defaultEncryptionIncomingIndicator.visibility = if (encryptionIndicator.isNotEmpty()) View.VISIBLE else View.GONE
+
+                    holder.defaultEncryptionMessageText.setOnLongClickListener {
+                        onMessageLongClick(message)
+                        true
+                    }
+                } else {
+                    // REGULAR MODE - Incoming Decoded
+                    holder.incomingMessageLayout.visibility = View.VISIBLE
+
+                    val spannableText = makeLinksClickable(message.text)
+                    holder.incomingMessageText.text = spannableText
+                    holder.incomingMessageText.movementMethod = LinkMovementMethod.getInstance()
+                    holder.incomingMessageText.textSize = fontSize
+                    holder.incomingMessageText.setTextColor(
+                        ContextCompat.getColor(context, android.R.color.black)
+                    )
+
+                    // Set timestamps
+                    holder.encIncomingTimeTop.text = formattedTime
+                    if (timestampNeeded) {
+                        holder.encIncomingTimeTop.visibility = View.VISIBLE
+                    }
+                    else {
+                        holder.encIncomingTimeTop.visibility = View.GONE
+                    }
+
+                    holder.encIncomingSendingTimeTop.text = formattedTransTime
+                    holder.encIncomingSendingTimeTop.visibility = if (formattedTransTime.isNotEmpty()) View.VISIBLE else View.GONE
+
+                    // Encryption indicator
+                    val encryptionIndicator = message.metadata?.get("e_ind") ?: ""
+                    holder.encIncomingEncryptionIndicator.text = encryptionIndicator
+                    holder.encIncomingEncryptionIndicator.visibility = if (encryptionIndicator.isNotEmpty()) View.VISIBLE else View.GONE
+
+                    holder.incomingMessageText.setOnLongClickListener {
+                        onMessageLongClick(message)
+                        true
+                    }
+                }
+            }
+
+            // OUTGOING MESSAGE (Encrypted/Decoded)
+            message.isOutgoing -> {
+                if (useDefaultEncryption) {
+                    // DEFAULT ENCRYPTION MODE - Outgoing
+                    holder.defaultEncryptionOutgoingLayout.visibility = View.VISIBLE
+
+                    val spannableText = makeLinksClickable(message.text)
+                    holder.defaultEncryptionOutgoingText.text = spannableText
+                    holder.defaultEncryptionOutgoingText.movementMethod = LinkMovementMethod.getInstance()
+                    holder.defaultEncryptionOutgoingText.textSize = fontSize
+                    // DON'T set text color here - let drawable handle it
+
+                    // Set timestamp
+
+                    holder.defaultEncryptionOutgoingTimeTop.text = formattedTime
+                    holder.defaultEncryptionOutgoingTimeTop.visibility = if (formattedTime.isNotEmpty()) View.VISIBLE else View.GONE
+
+                    // Encryption indicator
+                    val encryptionIndicator = message.metadata?.get("e_ind") ?: ""
+                    holder.defaultEncryptionOutgoingIndicator.text = encryptionIndicator
+                    holder.defaultEncryptionOutgoingIndicator.visibility = if (encryptionIndicator.isNotEmpty()) View.VISIBLE else View.GONE
+
+                    holder.defaultEncryptionOutgoingText.setOnLongClickListener {
+                        onMessageLongClick(message)
+                        true
+                    }
+
+                    // Setup receipt status for default encryption
+                    setupReceiptStatus(
+                        message.metadata,
+                        holder.defaultEncryptionOutgoingReceiptStatusLayout,
+                        holder.defaultEncryptionOutgoingReceiptIconArrived,
+                        holder.defaultEncryptionOutgoingReceiptIconStatus,
+                        holder.defaultEncryptionOutgoingReceiptTimestamp
+                    )
+                } else {
+                    // REGULAR MODE DECODED - Outgoing
+                    holder.encOutgoingMessageLayout.visibility = View.VISIBLE
+
+                    val spannableText = makeLinksClickable(message.text)
+                    holder.encOutgoingMessageText.text = spannableText
+                    holder.encOutgoingMessageText.movementMethod = LinkMovementMethod.getInstance()
+                    holder.encOutgoingMessageText.textSize = fontSize
+                    holder.encOutgoingMessageText.setTextColor(
+                        ContextCompat.getColor(context, android.R.color.white)
+                    )
+
+                    // Set timestamp
+                    holder.encOutgoingTimeTop.text = formattedTime
+                    holder.encOutgoingTimeTop.visibility = if (formattedTime.isNotEmpty()) View.VISIBLE else View.GONE
+
+                    // Encryption indicator
+                    val encryptionIndicator = message.metadata?.get("e_ind") ?: ""
+                    holder.encOutgoingEncryptionIndicator.text = encryptionIndicator
+                    holder.encOutgoingEncryptionIndicator.visibility = if (encryptionIndicator.isNotEmpty()) View.VISIBLE else View.GONE
+
+                    holder.encOutgoingMessageText.setOnLongClickListener {
+                        onMessageLongClick(message)
+                        true
+                    }
+
+                    // Setup receipt status for regular mode
+                    setupReceiptStatus(
+                        message.metadata,
+                        holder.encOutgoingReceiptStatusLayout,
+                        holder.encOutgoingReceiptIconMsgArrived,
+                        holder.encOutgoingReceiptIconStatus,
+                        holder.encOutgoingReceiptTimestamp
+                    )
+                }
+            }
+
+            // FALLBACK: NON-DECODED INCOMING MESSAGE (Encrypted but not decoded)
+            else -> {
+                if (useDefaultEncryption) {
+                    holder.defaultEncryptionIncomingMessageLayout.visibility = View.VISIBLE
+                    holder.defaultEncryptionMessageText.text = makeLinksClickable(message.text)
+                    holder.defaultEncryptionMessageText.movementMethod = LinkMovementMethod.getInstance()
+                    holder.defaultEncryptionMessageText.textSize = fontSize
+                    // DON'T set text color here
+
+                    // Set timestamps
+                    holder.defaultEncryptionIncomingSendingTimeTop.text = formattedTransTime
+                    holder.defaultEncryptionIncomingReceivingTimeTop.text = formattedTime
+                    holder.defaultEncryptionIncomingSendingTimeTop.visibility = if (formattedTransTime.isNotEmpty()) View.VISIBLE else View.GONE
+                    holder.defaultEncryptionIncomingReceivingTimeTop.visibility = if (formattedTime.isNotEmpty()) View.VISIBLE else View.GONE
+
+                    // Encryption indicator
+                    val encryptionIndicator = message.metadata?.get("e_ind") ?: "🔒"
+                    holder.defaultEncryptionIncomingIndicator.text = encryptionIndicator
+                    holder.defaultEncryptionIncomingIndicator.visibility = View.VISIBLE
+
+                    holder.defaultEncryptionMessageText.setOnLongClickListener {
+                        onMessageLongClick(message)
+                        true
+                    }
+                } else {
+                    //This is the place where decryption system errors come
+                    holder.plaintextIncomingMessageLayout.visibility = View.VISIBLE
+                    holder.plaintextIncomingMessageText.text = makeLinksClickable(message.text)
+                    holder.plaintextIncomingMessageText.movementMethod = LinkMovementMethod.getInstance()
+                    holder.plaintextIncomingMessageText.textSize = fontSize
+                    holder.plaintextIncomingMessageText.setTextColor(
+                        ContextCompat.getColor(context, android.R.color.black)
+                    )
+
+                    // Show timestamps
+                    holder.plaintextIncomingSendingTimeTop.visibility = if (formattedTransTime.isNotEmpty()) View.VISIBLE else View.GONE
+                    holder.plaintextIncomingSendingTimeTop.text = formattedTransTime
+
+                    if (timestampNeeded) {
+                        holder.plaintextIncomingReceivingTimeTop.text = formattedTime
+                        holder.plaintextIncomingReceivingTimeTop.visibility = View.VISIBLE
+                    } else {
+                        holder.plaintextIncomingReceivingTimeTop.visibility = View.GONE
+                    }
+
+                    // Show warning icon for plaintext
+                    holder.plaintextIncomingWarningIcon.text = "⚠️"
+                    holder.plaintextIncomingWarningIcon.visibility = View.VISIBLE
+
+                    holder.plaintextIncomingMessageText.setOnLongClickListener {
+                        onMessageLongClick(message)
+                        true
+                    }
+                }
+            }
+        }
+    }
+
+    fun setLoadingState(loading: Boolean) {
+        isLoadingMore = loading
+        notifyItemChanged(0)
+    }
+
+    override fun getItemCount(): Int = messages.size + (if (showContinuation) 1 else 0)
+
+    fun setDefaultEncryptionMode(enabled: Boolean) {
+        if (isDefaultEncryptionMode != enabled) {
+            isDefaultEncryptionMode = enabled
+            notifyDataSetChanged()
+        }
+    }
+
+    fun addMoreMessages(newMessages: List<ChatMessage>, msgSeq: Int) {
+        if (newMessages.isEmpty()) return
+
+        val sortedNewMessages = newMessages.sortedBy { it.trans_timestamp }
 
         val updatedList = messages.toMutableList()
 
@@ -396,17 +515,15 @@ class ChatMessagesAdapter(
                 updatedList.addAll(0, sortedNewMessages)
                 messages = updatedList.sortedBy { it.timestamp }
             }
-            else -> { // 0
+            else -> {
                 updatedList.addAll(sortedNewMessages)
                 messages = updatedList.sortedByDescending { it.timestamp }
             }
         }
 
         val insertionPosition = when (msgSeq) {
-            1 -> {
-                if (showContinuation) 1 else 0
-            }
-            else -> { // 0
+            1 -> if (showContinuation) 1 else 0
+            else -> {
                 val basePosition = messages.size - sortedNewMessages.size
                 if (showContinuation) basePosition else basePosition
             }
@@ -417,27 +534,13 @@ class ChatMessagesAdapter(
         if (remainingMessages > 0) {
             remainingMessages = maxOf(0, remainingMessages - sortedNewMessages.size)
         }
-
-        LogUtils.d(context, "ChatMessagesAdapter",
-            "✅ ${sortedNewMessages.size} messages added in position $insertionPosition, " +
-                    "total: ${messages.size}, remaining: $remainingMessages")
     }
 
-
     fun updateMessages(newMessages: List<ChatMessage>) {
-        LogUtils.d(context, "ChatMessagesAdapter", "📥 updateMessages() called with ${newMessages.size} messages")
-
         messages = emptyList()
-
         val prefs = SharedPreferencesManager.getInstance(context)
-        val msgSeq = prefs.msgSeq
-
-        addMoreMessages(newMessages, msgSeq)
-
+        addMoreMessages(newMessages, prefs.msgSeq)
         notifyDataSetChanged()
-
-        LogUtils.d(context, "ChatMessagesAdapter",
-            "🔄 List updated, total: ${messages.size} messages, MSG_SEQ: $msgSeq")
     }
 
     fun addMessages(newMessages: List<ChatMessage>) {
@@ -448,7 +551,6 @@ class ChatMessagesAdapter(
     fun setMsgSeq(msgSeq: Int) {
         if (adapterMsgSeq != msgSeq) {
             adapterMsgSeq = msgSeq
-            LogUtils.d(context, "ChatMessagesAdapter", "🔄 MSG_SEQ Adapter updated: $msgSeq")
             notifyDataSetChanged()
         }
     }
@@ -471,12 +573,7 @@ class ChatMessagesAdapter(
         hasLoadedAll = allLoaded
         remainingMessages = remainingCount
 
-        LogUtils.d(context, "ChatMessagesAdapter",
-            "🔄 Continuation state: show=$show, loading=$loading, " +
-                    "allLoaded=$allLoaded, remaining=$remainingMessages")
-
         onContinuationStateChanged?.invoke(show, loading)
-
         notifyDataSetChanged()
     }
 
@@ -485,7 +582,50 @@ class ChatMessagesAdapter(
         notifyDataSetChanged()
     }
 
-    // ==================== PRIVATE METHODS ====================
+    private fun hideAllMessageLayouts(holder: MessageViewHolder) {
+        holder.incomingMessageLayout.visibility = View.GONE
+        holder.plaintextIncomingMessageLayout.visibility = View.GONE
+        holder.plaintextOutgoingLayout.visibility = View.GONE
+        holder.encOutgoingMessageLayout.visibility = View.GONE
+        holder.defaultEncryptionIncomingMessageLayout.visibility = View.GONE
+        holder.defaultEncryptionOutgoingLayout.visibility = View.GONE
+    }
+
+    private fun setupReceiptStatus(
+        metadata: Map<String, String>?,
+        receiptLayout: LinearLayout,
+        iconArrived: android.widget.ImageView,
+        iconStatus: android.widget.ImageView,
+        timestampView: TextView
+    ) {
+        if (metadata != null && metadata["rr"] == "true" && metadata["rres"] != null) {
+            receiptLayout.visibility = View.VISIBLE
+            iconArrived.visibility = View.VISIBLE
+            iconArrived.setImageResource(R.drawable.ic_check_green)
+
+            val receiptTimestamp = metadata["rrt"]?.toLongOrNull()
+            if (receiptTimestamp != null) {
+                timestampView.visibility = View.VISIBLE
+                timestampView.text = formatShortTime(receiptTimestamp)
+            } else {
+                timestampView.visibility = View.GONE
+            }
+
+            when (metadata["rres"]) {
+                "OK" -> {
+                    iconStatus.visibility = View.VISIBLE
+                    iconStatus.setImageResource(R.drawable.ic_check_blue)
+                }
+                "NOK" -> {
+                    iconStatus.visibility = View.VISIBLE
+                    iconStatus.setImageResource(R.drawable.ic_cross_red)
+                }
+                else -> iconStatus.visibility = View.GONE
+            }
+        } else {
+            receiptLayout.visibility = View.GONE
+        }
+    }
 
     private fun makeLinksClickable(text: String): SpannableString {
         val spannableString = SpannableString(text)
@@ -529,6 +669,18 @@ class ChatMessagesAdapter(
             SimpleDateFormat("HH:mm", Locale.getDefault()).format(messageDate)
         } else {
             SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()).format(messageDate)
+        }
+    }
+
+    private fun formatShortTime(timestamp: Long): String {
+        val date = Date(timestamp)
+        val now = Date()
+        val diff = now.time - date.time
+
+        return if (diff < 24 * 60 * 60 * 1000) {
+            SimpleDateFormat("HH:mm", Locale.getDefault()).format(date)
+        } else {
+            SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()).format(date)
         }
     }
 }

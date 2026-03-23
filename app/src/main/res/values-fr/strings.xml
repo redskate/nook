@@ -151,7 +151,7 @@
     <string name="select_from_phonebook_button">📒 Sélectionner depuis le carnet d\'adresses</string>
     <string name="selective_mode_active">✅ Mode sélectif : seulement les contacts de confiance actifs</string>
     <string name="send_button_text">➤</string>
-    <string name="set_encryption">🔐 Définir chiffrement/enveloppe</string>
+    <string name="set_encryption">⚙️ Définir chiffrement/enveloppe</string>
     <string name="settings_section_title">⚙️ Paramètres</string>
     <string name="silent_mode_on">🔇 Mode silencieux ACTIVÉ</string>
     <string name="silent_mode_title">Mode silencieux</string>
@@ -299,7 +299,7 @@
 
     <!-- ===== EXPORTATION CHAT ===== -->
     <string name="export_failed">❌ Erreur lors de l\'exportation du chat</string>
-    <string name="export_encrypted_chat">🔐 Exporter et protéger le chat</string>
+    <string name="export_encrypted_chat">📤 Exporter et protéger le chat</string>
     <string name="export_no_messages">📭 Aucun message à exporter</string>
     <string name="chatesport_errorfolder">❌ Erreur : impossible de créer le dossier temporaire</string>
     <string name="chatexport_nofilescreated">❌ Erreur : impossible de créer les fichiers</string>
@@ -524,5 +524,33 @@
     <string name="error_encrypting_password">Erreur lors du chiffrement du mot de passe en memoire</string>
     <string name="menu_resend_msg">Transmettre à nouveau</string>
     <string name="debug_failures_hint">Erreurs et plantages récents pour débogage. Appuyez pour détails.</string>
+    <!-- Receipt status messages -->
+    <string name="decrypted_on_other_side">✓ Déchiffré de l\'autre côté</string>
+    <string name="decryption_failed_on_other_side">✗ Échec du déchiffrement de l\'autre côté</string>
+    <string name="waiting_for_decryption_receipt">⏳ En attente de confirmation</string>
+    <string name="receipt_sent">Confirmation envoyée</string>
+    <!-- Settings toggles -->
+    <string name="auto_send_receipts">Envoi automatique des accusés de déchiffrement</string>
+    <string name="auto_send_receipts_summary">Envoyer automatiquement une confirmation lorsque vous déchiffrez des messages</string>
+    <string name="request_receipts">Demander des accusés de déchiffrement</string>
+    <string name="request_receipts_summary">Demander aux autres de confirmer qu\'ils ont déchiffré vos messages</string>
+    <!-- Receipt preferences -->
+    <string name="request_receipts_title">Demander des accusés de déchiffrement</string>
+    <string name="request_receipts_description">Demander à l\'expéditeur s\'il a déchiffré vos messages avec succès</string>
+    <string name="allow_sending_receipts_title">Envoyer des accusés de déchiffrement</string>
+    <string name="allow_sending_receipts_description">Notifier aux expéditeurs demandeurs lorsque vous déchiffrez avec succès leurs messages</string>
+    <string name="receipts_requested">✓ Accusés demandés</string>
+    <string name="receipts_not_requested">✗ Accusés non demandés</string>
+    <string name="receipts_sending_allowed">✓ Envoi d\'accusés autorisé</string>
+    <string name="receipts_sending_disabled">✗ Envoi d\'accusés désactivé</string>
+
+    <string name="default_button">DEFAULT</string>
+    <string name="reset_to_default">Réinitialiser par défaut</string>
+    <string name="reset_to_default_title">Réinitialiser les paramètres par défaut</string>
+    <string name="reset_to_default_message">Réinitialiser les paramètres de chiffrement et d\'encodage par défaut pour %s ?\n\nCeci définira :\n- Aucun chiffrement\n- Encodage Base256\n- Aucun mot de passe d\'encodage</string>
+    <string name="reset_to_default_values">Réinitialiser aux valeurs par défaut</string>
+    <string name="reset_to_default_success">Conversation réinitialisée aux paramètres par défaut</string>
+    <string name="reset_to_default_error">Erreur lors de la réinitialisation des paramètres de la conversation</string>
+    <string name="MessageNotDecrypted"><![CDATA[<Désolé: Message non déchiffré>]]></string>
 
 </resources>

@@ -9,7 +9,8 @@ data class TrustedContact(
 
 data class ChatMessage(
     val id: Long = System.currentTimeMillis(),
-    val text: String,
+    val conversationId: Long = -1,
+    var text: String,
     val sender: String,
     val senderName: String? = null,
     val trans_timestamp: Long = -1,
@@ -32,9 +33,9 @@ data class ChatConversation(
     val unreadCount: Int = 0,
     val messages: MutableList<ChatMessage> = mutableListOf(),
     val isYChat: Boolean = false,
-    val encryptionScheme: String = Constants.DEFAULT_encryptionScheme,
-    val encoding: String = Constants.DEFAULT_encoding,
-    val encodingPassword: String = "",
+    var encryptionScheme: String = Constants.DEFAULT_encryptionScheme,
+    var encoding: String = Constants.DEFAULT_encoding,
+    var encodingPassword: String = "",
     val createdAt: Long = System.currentTimeMillis()
 )
 

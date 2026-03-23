@@ -155,7 +155,7 @@
     <string name="select_from_phonebook_button">📒 Seleziona dalla Rubrica</string>
     <string name="selective_mode_active">✅ Modalità selettiva: solo contatti fidati attivi</string>
     <string name="send_button_text">➤</string>
-    <string name="set_encryption">🔐 Imposta cifratura/encoding</string>
+    <string name="set_encryption">⚙️ Imposta cifratura/encoding</string>
     <string name="settings_section_title">⚙️ Impostazioni</string>
     <string name="silent_mode_on">🔇 Modalità silenziosa ON</string>
     <string name="silent_mode_title">Modalità Silenziosa</string>
@@ -540,7 +540,7 @@
     <string name="install_apk_chooser_title">Installa l\'aggiornamento di NooK usando:\n</string>
     <string name="sms_total_scanned">📨 SMS scannerizzate: %d</string>
 
-    <string name="pure_sms_title">Modalità SMS Puri</string>
+    <string name="pure_sms_title">Modalità solo SMS</string>
     <string name="pure_sms_description">Non contatta automaticamente GitHub per aggiornamenti o verifiche SHA</string>
     <string name="pure_sms_mode_active">Modalità SMS Puro attiva - nessuna connessione a GitHub</string>
     <string name="pure_sms_mode_inactive">Modalità SMS Puro disattivata</string>
@@ -552,10 +552,10 @@
     <string name="pure_sms_deactivation_always">Sempre</string>
     <string name="pure_sms_temporarily_disabled">Pure SMS disattivato temporaneamente per questo controllo</string>
     <string name="pure_sms_permanently_disabled">Pure SMS disattivato permanentemente</string>
-    <string name="update_check_pure_sms">Controllo aggiornamenti disabilitato (Modalità SMS puri attiva)</string>
-    <string name="disable_pure_sms_for_updates">Disattiva SMS puri per controllare aggiornamenti</string>
-    <string name="pure_sms_active_title">Modalità SMS puri Attiva</string>
-    <string name="pure_sms_upgrade_message">Per scaricare gli aggiornamenti, la modalità SMS puri deve essere temporaneamente disattivata. Come vuoi procedere?</string>
+    <string name="update_check_pure_sms">Controllo aggiornamenti disabilitato (Modalità solo SMS attiva)</string>
+    <string name="disable_pure_sms_for_updates">Disattiva solo SMS per controllare aggiornamenti</string>
+    <string name="pure_sms_active_title">Modalità solo SMS Attiva</string>
+    <string name="pure_sms_upgrade_message">Per scaricare gli aggiornamenti, la modalità solo SMS deve essere temporaneamente disattivata. Come vuoi procedere?</string>
     <string name="sms_queued">SMS in coda per l\'invio</string>
     <string name="sms_duplicate_suppressed">SMS duplicato soppresso (finestra %d secondi)</string>
     <string name="sms_already_pending">Messaggio già in attesa nella coda</string>
@@ -567,6 +567,33 @@
     <string name="error_encrypting_password">Errore durante la crittografazione in memoria della password</string>
     <string name="menu_resend_msg">Ritrasmetti messaggio</string>
     <string name="debug_failures_hint">Errori e crash recenti per debug. Tocca per dettagli.</string>
+    <!-- Receipt status messages -->
+    <string name="decrypted_on_other_side">✓ Decifrato dall\'altra parte</string>
+    <string name="decryption_failed_on_other_side">✗ Decifrazione fallita dall\'altra parte</string>
+    <string name="waiting_for_decryption_receipt">⏳ In attesa di conferma</string>
+    <string name="receipt_sent">Conferma inviata</string>
+    <!-- Settings toggles -->
+    <string name="auto_send_receipts">Invia automaticamente conferme di decifrazione</string>
+    <string name="auto_send_receipts_summary">Invia automaticamente conferma quando decifri i messaggi</string>
+    <string name="request_receipts">Richiedi conferme di decifrazione</string>
+    <string name="request_receipts_summary">Chiedi ad altri di confermare che hanno decifrato i tuoi messaggi</string>
 
+    <!-- Receipt preferences -->
+    <string name="request_receipts_title">Richiedi ricevute di decifratura</string>
+    <string name="request_receipts_description">Chiedi al mittente se ha decifrato con successo i tuoi messaggi</string>
+    <string name="allow_sending_receipts_title">Invia ricevute di decifratura</string>
+    <string name="allow_sending_receipts_description">Notifica ai mittenti richiedenti quando decifri con successo i loro messaggi</string>
+    <string name="receipts_requested">✓ Ricevute richieste</string>
+    <string name="receipts_not_requested">✗ Ricevute non richieste</string>
+    <string name="receipts_sending_allowed">✓ Invio ricevute consentito</string>
+    <string name="receipts_sending_disabled">✗ Invio ricevute disabilitato</string>
 
+    <string name="default_button">DEFAULT</string>
+    <string name="reset_to_default">Ripristina predefiniti</string>
+    <string name="reset_to_default_title">Ripristina impostazioni predefinite</string>
+    <string name="reset_to_default_message">Ripristinare le impostazioni di crittografia e codifica ai valori predefiniti per %s?\n\nQuesto imposterà:\n- Nessuna crittografia\n- Codifica Base256\n- Nessuna password di codifica</string>
+    <string name="reset_to_default_values">Ripristina valori predefiniti</string>
+    <string name="reset_to_default_success">Conversazione ripristinata alle impostazioni predefinite</string>
+    <string name="reset_to_default_error">Errore durante il ripristino delle impostazioni della conversazione</string>
+    <string name="MessageNotDecrypted"><![CDATA[<Pardon: Messaggio non decifrato>]]></string>
 </resources>

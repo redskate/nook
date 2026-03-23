@@ -11,6 +11,7 @@
     <!-- very dark green #C8E6C9 -->
     <!-- White -->
     <color name="white">#FFFFFF</color>
+    <color name="black">#333333</color>
     <color name="background_main">#222222</color>
     <color name="background_main2">#333333</color>
     <color name="gray">#aaaaaa</color>
@@ -22,6 +23,13 @@
     <color name="light_orange">#FF9800</color>
     <color name="gray_3">#757575</color>
     <color name="blue_version">#42A5F5</color>
+
+    <color name="default_encryption_outgoing">#FF4081</color>
+    <color name="default_encryption_incoming">#FFaBfF</color> <!-- Brighter version -->
+
+    <color name="gray_label">#757575</color>
+    <color name="plaintext_outgoing">#757575</color>
+    <color name="plaintext_incoming">#FF9800</color> <!-- Brighter version -->
 
 
     <!--

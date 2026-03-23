@@ -559,6 +559,334 @@ class DatabaseManager private constructor(context: Context) {
         }
     }
 
+
+    /**
+     * Clean up decoded_messages table with various strategies
+     * Returns number of deleted records
+     */
+    fun cleanupDecodedMessages(
+        context: Context,
+        olderThanDays: Int = 30,           // Delete messages older than X days
+        keepOnlySuccessful: Boolean = false, // If true, delete all failed decryptions
+        maxRecordsToKeep: Int = 100,        // Keep only the most recent N records
+        deleteAll: Boolean = false           // If true, delete everything regardless of other params
+    ): Int {
+        return try {
+            LogUtils.d("DB_CLEANUP", "🧹 Starting decoded_messages cleanup...")
+
+            val db = database.openHelper.writableDatabase
+            var totalDeleted = 0
+
+            if (deleteAll) {
+                // Nuclear option - delete everything
+                db.query("DELETE FROM decoded_messages").use { cursor ->
+                    // SQLite DELETE doesn't return count directly, need to query first
+                }
+                val countBefore = db.query("SELECT COUNT(*) FROM decoded_messages").use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                }
+                // Since DELETE doesn't return count, we need to check after
+                db.execSQL("DELETE FROM decoded_messages")
+                val countAfter = db.query("SELECT COUNT(*) FROM decoded_messages").use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                }
+                totalDeleted = countBefore - countAfter
+                LogUtils.d("DB_CLEANUP", "🗑️ Deleted ALL decoded messages: $totalDeleted records")
+
+            } else {
+                // Strategy 1: Delete old messages
+                if (olderThanDays > 0) {
+                    val cutoffTime = System.currentTimeMillis() - (olderThanDays * 24 * 60 * 60 * 1000L)
+                    db.execSQL("DELETE FROM decoded_messages WHERE timestamp < $cutoffTime")
+
+                    // Get count of deleted (we need to query before/after)
+                    val oldCount = db.query("SELECT COUNT(*) FROM decoded_messages WHERE timestamp < $cutoffTime").use { cursor ->
+                        if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                    }
+                    if (oldCount > 0) {
+                        db.execSQL("DELETE FROM decoded_messages WHERE timestamp < $cutoffTime")
+                        LogUtils.d("DB_CLEANUP", "🗑️ Deleted $oldCount messages older than $olderThanDays days")
+                        totalDeleted += oldCount
+                    }
+                }
+
+                // Strategy 2: Delete failed decryptions
+                if (keepOnlySuccessful) {
+                    val failedCount = db.query("SELECT COUNT(*) FROM decoded_messages WHERE success = 0").use { cursor ->
+                        if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                    }
+                    if (failedCount > 0) {
+                        db.execSQL("DELETE FROM decoded_messages WHERE success = 0")
+                        LogUtils.d("DB_CLEANUP", "🗑️ Deleted $failedCount failed decryption messages")
+                        totalDeleted += failedCount
+                    }
+                }
+
+                // Strategy 3: Keep only most recent N records
+                if (maxRecordsToKeep > 0) {
+                    val totalCount = db.query("SELECT COUNT(*) FROM decoded_messages").use { cursor ->
+                        if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                    }
+
+                    if (totalCount > maxRecordsToKeep) {
+                        // Find the timestamp of the Nth most recent record
+                        val cutoffCursor = db.query("""
+                        SELECT timestamp FROM decoded_messages 
+                        ORDER BY timestamp DESC 
+                        LIMIT 1 OFFSET ${maxRecordsToKeep - 1}
+                    """)
+
+                        cutoffCursor.use { cursor ->
+                            if (cursor.moveToFirst()) {
+                                val cutoffTimestamp = cursor.getLong(0)
+                                val toDelete = db.query("SELECT COUNT(*) FROM decoded_messages WHERE timestamp < $cutoffTimestamp").use { countCursor ->
+                                    if (countCursor.moveToFirst()) countCursor.getInt(0) else 0
+                                }
+
+                                if (toDelete > 0) {
+                                    db.execSQL("DELETE FROM decoded_messages WHERE timestamp < $cutoffTimestamp")
+                                    LogUtils.d("DB_CLEANUP", "🗑️ Deleted $toDelete messages, keeping only most recent $maxRecordsToKeep")
+                                    totalDeleted += toDelete
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Log final stats after cleanup
+            val remainingCount = db.query("SELECT COUNT(*) FROM decoded_messages").use { cursor ->
+                if (cursor.moveToFirst()) cursor.getInt(0) else 0
+            }
+
+            LogUtils.d("DB_CLEANUP", "📊 After cleanup: $remainingCount messages remaining")
+            LogUtils.d("DB_CLEANUP", "✅ Cleanup completed, total deleted: $totalDeleted")
+
+            totalDeleted
+
+        } catch (e: Exception) {
+            LogUtils.e("DB_CLEANUP", "❌ Error during decoded_messages cleanup", e)
+            0
+        }
+    }
+
+    /**
+     * Dump decoded_messages table statistics and sample content
+     * Call this after testDatabaseOperations()
+     */
+    fun dumpDecodedMessagesTable(context: Context) {
+        try {
+            LogUtils.e("DB_DUMP", "🚨 ===== DECODED MESSAGES TABLE ANALYSIS =====")
+
+            val db = database.openHelper.writableDatabase
+
+            // Get table stats
+            db.query("SELECT COUNT(*) FROM decoded_messages").use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val totalCount = cursor.getInt(0)
+                    LogUtils.e("DB_DUMP", "📊 TOTAL RECORDS: $totalCount")
+
+                    // Get size in MB (approximate)
+                    val dbFile = File(context.filesDir, AppDatabase.getEncryptedDatabaseName(context))
+                    val dbSizeMB = dbFile.length() / (1024.0 * 1024.0)
+                    LogUtils.e("DB_DUMP", "📊 DATABASE SIZE: ${String.format("%.2f", dbSizeMB)} MB")
+                }
+            }
+
+            // Stats by success/failure
+            db.query("""
+            SELECT 
+                success,
+                COUNT(*) as count,
+                MIN(timestamp) as oldest,
+                MAX(timestamp) as newest,
+                COUNT(DISTINCT sender) as unique_senders
+            FROM decoded_messages 
+            GROUP BY success
+        """).use { cursor ->
+                LogUtils.e("DB_DUMP", "\n📈 STATS BY DECODING SUCCESS:")
+                while (cursor.moveToNext()) {
+                    val success = cursor.getInt(0) == 1
+                    val count = cursor.getInt(1)
+                    val oldest = cursor.getLong(2)
+                    val newest = cursor.getLong(3)
+                    val uniqueSenders = cursor.getInt(4)
+
+                    val status = if (success) "✅ SUCCESS" else "❌ FAILED"
+                    LogUtils.e("DB_DUMP", "  $status:")
+                    LogUtils.e("DB_DUMP", "    Count: $count")
+                    LogUtils.e("DB_DUMP", "    Unique senders: $uniqueSenders")
+                    LogUtils.e("DB_DUMP", "    Oldest: ${formatTimestamp(oldest)}")
+                    LogUtils.e("DB_DUMP", "    Newest: ${formatTimestamp(newest)}")
+                }
+            }
+
+            // Stats by message type
+            db.query("""
+            SELECT 
+                message_type,
+                COUNT(*) as count
+            FROM decoded_messages 
+            GROUP BY message_type
+            ORDER BY count DESC
+        """).use { cursor ->
+                LogUtils.e("DB_DUMP", "\n📊 STATS BY MESSAGE TYPE:")
+                while (cursor.moveToNext()) {
+                    val type = cursor.getString(0) ?: "unknown"
+                    val count = cursor.getInt(1)
+                    LogUtils.e("DB_DUMP", "  $type: $count")
+                }
+            }
+
+            // Stats by day (last 7 days)
+            val weekAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000)
+            db.query("""
+            SELECT 
+                date(timestamp/1000, 'unixepoch') as day,
+                COUNT(*) as count,
+                SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successes,
+                SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failures
+            FROM decoded_messages 
+            WHERE timestamp >= $weekAgo
+            GROUP BY day
+            ORDER BY day DESC
+        """).use { cursor ->
+                LogUtils.e("DB_DUMP", "\n📅 LAST 7 DAYS ACTIVITY:")
+                if (cursor.count == 0) {
+                    LogUtils.e("DB_DUMP", "  No activity in last 7 days")
+                } else {
+                    while (cursor.moveToNext()) {
+                        val day = cursor.getString(0)
+                        val total = cursor.getInt(1)
+                        val successes = cursor.getInt(2)
+                        val failures = cursor.getInt(3)
+                        LogUtils.e("DB_DUMP", "  $day: $total msgs (✅$successes/❌$failures)")
+                    }
+                }
+            }
+
+            // Top senders
+            db.query("""
+            SELECT 
+                sender,
+                COUNT(*) as count,
+                SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successes
+            FROM decoded_messages 
+            GROUP BY sender
+            ORDER BY count DESC
+            LIMIT 10
+        """).use { cursor ->
+                LogUtils.e("DB_DUMP", "\n👥 TOP SENDERS:")
+                var rank = 1
+                while (cursor.moveToNext()) {
+                    val encryptedSender = cursor.getString(0)
+                    val count = cursor.getInt(1)
+                    val successes = cursor.getInt(2)
+                    val failRate = ((count - successes) * 100 / count)
+
+                    // Try to decrypt sender for display (may fail if corrupted)
+                    val senderDisplay = try {
+                        AppCryptoManager.decrypt64Value(encryptedSender)
+                    } catch (e: Exception) {
+                        "[encrypted: ${encryptedSender.take(10)}...]"
+                    }
+
+                    LogUtils.e("DB_DUMP", "  ${rank++}. $senderDisplay")
+                    LogUtils.e("DB_DUMP", "     Messages: $count (✅$successes, ❌${count-successes}, ${failRate}% fail)")
+                }
+            }
+
+            // Sample of recent records (with decrypted content)
+            LogUtils.e("DB_DUMP", "\n🔍 RECENT DECODED MESSAGES (last 10):")
+            db.query("""
+            SELECT * FROM decoded_messages 
+            ORDER BY timestamp DESC 
+            LIMIT 10
+        """).use { cursor ->
+                if (cursor.count == 0) {
+                    LogUtils.e("DB_DUMP", "  No messages found")
+                } else {
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(cursor.getColumnIndexOrThrow("id"))
+                        val encryptedOriginal = cursor.getString(cursor.getColumnIndexOrThrow("original_message"))
+                        val encryptedDecoded = cursor.getString(cursor.getColumnIndexOrThrow("decoded_message"))
+                        val encryptedSender = cursor.getString(cursor.getColumnIndexOrThrow("sender"))
+                        val timestamp = cursor.getLong(cursor.getColumnIndexOrThrow("timestamp"))
+                        val success = cursor.getInt(cursor.getColumnIndexOrThrow("success")) == 1
+                        val scheme = cursor.getString(cursor.getColumnIndexOrThrow("decoding_scheme"))
+                        val isRead = cursor.getInt(cursor.getColumnIndexOrThrow("is_read")) == 1
+
+                        LogUtils.e("DB_DUMP", "\n  ────────────────────")
+                        LogUtils.e("DB_DUMP", "  🆔 ID: ${id.take(8)}...")
+                        LogUtils.e("DB_DUMP", "  📅 Time: ${formatTimestamp(timestamp)}")
+                        LogUtils.e("DB_DUMP", "  ${if (success) "✅" else "❌"} Success: $success | Scheme: $scheme | Read: $isRead")
+
+                        // Try to decrypt content
+                        try {
+                            val sender = AppCryptoManager.decrypt64Value(encryptedSender)
+                            LogUtils.e("DB_DUMP", "  👤 From: $sender")
+                        } catch (e: Exception) {
+                            LogUtils.e("DB_DUMP", "  👤 From: [encrypted: ${encryptedSender.take(20)}...]")
+                        }
+
+                        try {
+                            val original = AppCryptoManager.decrypt64Value(encryptedOriginal)
+                            LogUtils.e("DB_DUMP", "  📝 Original: ${original.take(100)}${if (original.length > 100) "..." else ""}")
+                        } catch (e: Exception) {
+                            LogUtils.e("DB_DUMP", "  📝 Original: [encrypted: ${encryptedOriginal.take(30)}...]")
+                        }
+
+                        try {
+                            val decoded = AppCryptoManager.decrypt64Value(encryptedDecoded)
+                            LogUtils.e("DB_DUMP", "  🔓 Decoded: ${decoded.take(100)}${if (decoded.length > 100) "..." else ""}")
+                        } catch (e: Exception) {
+                            LogUtils.e("DB_DUMP", "  🔓 Decoded: [encrypted: ${encryptedDecoded.take(30)}...]")
+                        }
+                    }
+                }
+            }
+
+            // Summary with cleanup recommendations
+            LogUtils.e("DB_DUMP", "\n💡 RECOMMENDATIONS:")
+
+            // Check for old messages
+            val threeMonthsAgo = System.currentTimeMillis() - (90 * 24 * 60 * 60 * 1000)
+            db.query("SELECT COUNT(*) FROM decoded_messages WHERE timestamp < $threeMonthsAgo").use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val oldCount = cursor.getInt(0)
+                    if (oldCount > 0) {
+                        LogUtils.e("DB_DUMP", "  • $oldCount messages older than 3 months")
+                    }
+                }
+            }
+
+            // Check for failed decryptions
+            db.query("SELECT COUNT(*) FROM decoded_messages WHERE success = 0").use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val failedCount = cursor.getInt(0)
+                    if (failedCount > 100) {
+                        LogUtils.e("DB_DUMP", "  • $failedCount failed decryption attempts (may indicate corrupted data)")
+                    }
+                }
+            }
+
+            LogUtils.e("DB_DUMP", "🚨 ===== END DECODED MESSAGES ANALYSIS =====\n")
+
+        } catch (e: Exception) {
+            LogUtils.e("DB_DUMP", "❌ Error analyzing decoded_messages table", e)
+        }
+    }
+
+    // Helper function to format timestamps
+    private fun formatTimestamp(timestamp: Long): String {
+        return try {
+            val date = Date(timestamp)
+            SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(date)
+        } catch (e: Exception) {
+            timestamp.toString()
+        }
+    }
+
     // =============================================
     // 8. DATABASE TEST - BASE FOR ALL DB ACTIONS
     // =============================================
@@ -724,6 +1052,7 @@ class DatabaseManager private constructor(context: Context) {
             if (conversationTestPassed) {
                 val testMessage = ChatMessage(
                     id = System.currentTimeMillis(),
+                    conversationId = conversation.id,
                     text = "Ciao, questo è un test del database!",
                     sender = testPhone,
                     senderName = "Test Sender",
@@ -827,9 +1156,18 @@ class DatabaseManager private constructor(context: Context) {
                 LogUtils.d(null,"DatabaseManager", "✅ DecodedMessages: OK")
 
                 if (BuildConfig.DEBUG) {
-                    dumpFileSystemInfo(context)
-                    dumpFullDatabaseDetails(context)
+                    //dumpFileSystemInfo(context)
+                    //dumpFullDatabaseDetails(context)
+                    //dumpDecodedMessagesTable(context)
                 }
+                LogUtils.d(null,"DatabaseManager", "\n🧹🧹🧹 CLEANING UP DECODED MESSAGES 🧹🧹🧹")
+                val deleted = cleanupDecodedMessages(
+                    context,
+                    olderThanDays = 2,
+                    keepOnlySuccessful = true,
+                    maxRecordsToKeep = 10,
+                    deleteAll = false
+                )
 
             } else {
                 LogUtils.e("DatabaseManager", "⚠️ SOME DB TESTS FAILED")
@@ -911,6 +1249,155 @@ class DatabaseManager private constructor(context: Context) {
     // =============================================
     // 9. DUMP E DEBUG
     // =============================================
+
+    /**
+     * Dump last n chat messages sorted by ID
+     */
+    fun dumpLastMessages(context: Context, n: Int = 2) {
+        try {
+            val db = database.openHelper.writableDatabase
+
+            LogUtils.d("DB_DUMP", "\n" + "=".repeat(80))
+            LogUtils.d("DB_DUMP", "📋 LAST $n CHAT MESSAGES (SORTED BY ID)")
+            LogUtils.d("DB_DUMP", "=".repeat(80))
+
+            // Get last 4 messages ordered by ID descending
+            db.query("""
+            SELECT * FROM chat_messages 
+            ORDER BY id DESC 
+            LIMIT $n
+        """).use { cursor ->
+
+                if (cursor.count == 0) {
+                    LogUtils.d("DB_DUMP", "No messages found")
+                    return
+                }
+
+                val columnNames = cursor.columnNames
+                var msgIndex = 0
+
+                cursor.moveToFirst()
+                while (!cursor.isAfterLast) {
+                    msgIndex++
+                    LogUtils.d("DB_DUMP", "\n  --- MESSAGE $msgIndex of ${cursor.count} (ID: ${cursor.getLong(cursor.getColumnIndexOrThrow("id"))}) ---")
+
+                    for (i in columnNames.indices) {
+                        val columnName = columnNames[i]
+                        val value = when (cursor.getType(i)) {
+                            Cursor.FIELD_TYPE_STRING -> {
+                                val str = cursor.getString(i)
+                                when {
+                                    columnName == "text" && str != null -> {
+                                        try {
+                                            val decrypted = AppCryptoManager.decrypt64Value(str)
+                                            "💬 $decrypted"
+                                        } catch (e: Exception) {
+                                            "❌ [encrypted: ${str.take(30)}...]"
+                                        }
+                                    }
+                                    columnName == "sender" && str != null -> {
+                                        try {
+                                            val decrypted = AppCryptoManager.decrypt64Value(str)
+                                            "👤 $decrypted"
+                                        } catch (e: Exception) {
+                                            "👤 [encrypted: ${str.take(20)}...]"
+                                        }
+                                    }
+                                    columnName == "sender_name" && str != null -> {
+                                        try {
+                                            val decrypted = AppCryptoManager.decrypt64Value(str)
+                                            "📛 $decrypted"
+                                        } catch (e: Exception) {
+                                            "📛 [encrypted: ${str.take(20)}...]"
+                                        }
+                                    }
+                                    columnName == "metadata_json" && str != null -> {
+                                        try {
+                                            // Try to decrypt metadata
+                                            val decryptedJson = try {
+                                                AppCryptoManager.decrypt64Value(str)
+                                            } catch (e: Exception) {
+                                                str // If not encrypted, use as is
+                                            }
+
+                                            try {
+                                                val json = org.json.JSONObject(decryptedJson)
+                                                val formatted = json.toString(2)
+                                                    .replace("\n", "\n        ")
+                                                "\n        📄 METADATA:\n        $formatted"
+                                            } catch (e: Exception) {
+                                                "📄 $decryptedJson"
+                                            }
+                                        } catch (e: Exception) {
+                                            "📄 [encrypted: ${str.take(30)}...]"
+                                        }
+                                    }
+                                    columnName == "metadata_type" && str != null -> "📌 [$str]"
+                                    columnName == "is_system_message" -> {
+                                        val isSystem = cursor.getInt(cursor.getColumnIndexOrThrow("is_system_message")) == 1
+                                        if (isSystem) "✅ SYSTEM MESSAGE" else "👤 USER MESSAGE"
+                                    }
+                                    columnName == "is_replaced" -> {
+                                        val isReplaced = cursor.getInt(cursor.getColumnIndexOrThrow("is_replaced")) == 1
+                                        if (isReplaced) "🔄 REPLACED" else "✓ ACTIVE"
+                                    }
+                                    columnName == "is_decoded" -> {
+                                        val isDecoded = cursor.getInt(cursor.getColumnIndexOrThrow("is_decoded")) == 1
+                                        if (isDecoded) "✅ DECODED" else "🔒 ENCRYPTED"
+                                    }
+                                    columnName == "is_outgoing" -> {
+                                        val isOutgoing = cursor.getInt(cursor.getColumnIndexOrThrow("is_outgoing")) == 1
+                                        if (isOutgoing) "📤 OUTGOING" else "📥 INCOMING"
+                                    }
+                                    columnName == "is_read" -> {
+                                        val isRead = cursor.getInt(cursor.getColumnIndexOrThrow("is_read")) == 1
+                                        if (isRead) "👁️ READ" else "🆕 UNREAD"
+                                    }
+                                    columnName == "is_sent" -> {
+                                        val isSent = cursor.getInt(cursor.getColumnIndexOrThrow("is_sent")) == 1
+                                        if (isSent) "✅ SENT" else "⏳ PENDING"
+                                    }
+                                    columnName == "is_y_message" -> {
+                                        val isYMessage = cursor.getInt(cursor.getColumnIndexOrThrow("is_y_message")) == 1
+                                        if (isYMessage) "🟡 Y-MESSAGE" else "📱 SMS"
+                                    }
+                                    else -> str
+                                }
+                            }
+                            Cursor.FIELD_TYPE_INTEGER -> {
+                                when (columnName) {
+                                    "timestamp", "trans_timestamp", "created_at", "updated_at" -> {
+                                        val timestamp = cursor.getLong(i)
+                                        if (timestamp > 0) {
+                                            val date = Date(timestamp)
+                                            SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(date)
+                                        } else "N/A"
+                                    }
+                                    else -> cursor.getLong(i).toString()
+                                }
+                            }
+                            Cursor.FIELD_TYPE_FLOAT -> cursor.getDouble(i).toString()
+                            Cursor.FIELD_TYPE_BLOB -> "[BLOB ${cursor.getBlob(i)?.size ?: 0} bytes]"
+                            else -> "NULL"
+                        }
+
+                        if (value != "NULL" && value != null) {
+                            LogUtils.d("DB_DUMP", "    ${columnName.padEnd(18)}: $value")
+                        }
+                    }
+
+                    cursor.moveToNext()
+                }
+            }
+
+            LogUtils.d("DB_DUMP", "=".repeat(80) + "\n")
+
+        } catch (e: Exception) {
+            LogUtils.e("DB_DUMP", "❌ Error dumping messages", e)
+        }
+    }
+
+
     fun dumpFullDatabaseDetails(context: Context) {
         try {
             val db = database.openHelper.writableDatabase
@@ -918,17 +1405,16 @@ class DatabaseManager private constructor(context: Context) {
             // For every important table
             val tables = listOf(
                 "chat_conversations",
-                "chat_messages",
                 "trusted_contacts",
                 "app_settings",
-                "y_user_associations",
-                "decoded_messages"
+               // "y_user_associations",
+               // "decoded_messages"
             )
 
             tables.forEach { tableName ->
-                LogUtils.d(null,"DB_DETAILS", "\n" + "=".repeat(50))
+                LogUtils.d(null,"DB_DETAILS", "\n" + "=".repeat(80))
                 LogUtils.d(null,"DB_DETAILS", "📋 TABELLA: $tableName")
-                LogUtils.d(null,"DB_DETAILS", "=".repeat(50))
+                LogUtils.d(null,"DB_DETAILS", "=".repeat(80))
 
                 try {
                     // Schema
@@ -956,18 +1442,22 @@ class DatabaseManager private constructor(context: Context) {
 
                         if (rowCount > 0) {
                             val columnNames = dataCursor.columnNames
-
                             var displayedRows = 0
-                            while (dataCursor.moveToNext() && displayedRows < 10) {
-                                LogUtils.d(null,"DB_DETAILS", "\nRow ${displayedRows + 1}:")
+
+                            dataCursor.moveToFirst()
+                            while (!dataCursor.isAfterLast) {
+                                displayedRows++
+                                LogUtils.d(null,"DB_DETAILS", "\n--- ROW $displayedRows of $rowCount ---")
+
                                 for (i in columnNames.indices) {
+                                    val columnName = columnNames[i]
                                     val value = when (dataCursor.getType(i)) {
                                         Cursor.FIELD_TYPE_STRING -> {
                                             val str = dataCursor.getString(i)
-                                            if (tableName == "chat_conversations" && columnNames[i] == "phone_number") {
-                                                "🔒 ${str?.take(20)}..."
-                                            } else {
-                                                str
+                                            when {
+                                                tableName == "chat_conversations" && columnName == "phone_number" ->
+                                                    "🔒 ${str?.take(20)}..."
+                                                else -> str
                                             }
                                         }
                                         Cursor.FIELD_TYPE_INTEGER -> dataCursor.getLong(i)
@@ -975,13 +1465,10 @@ class DatabaseManager private constructor(context: Context) {
                                         Cursor.FIELD_TYPE_BLOB -> "[BLOB ${dataCursor.getBlob(i)?.size ?: 0} bytes]"
                                         else -> "NULL"
                                     }
-                                    LogUtils.d(null,"DB_DETAILS", "  ${columnNames[i]}: $value")
+                                    LogUtils.d(null,"DB_DETAILS", "  ${columnName.padEnd(20)}: $value")
                                 }
-                                displayedRows++
-                            }
 
-                            if (rowCount > 10) {
-                                LogUtils.d(null,"DB_DETAILS", "... and further ${rowCount - 10} rows")
+                                dataCursor.moveToNext()
                             }
                         }
                     }
@@ -991,25 +1478,303 @@ class DatabaseManager private constructor(context: Context) {
                 }
             }
 
-            // Special debug query
-            LogUtils.d(null,"DB_DETAILS", "\n" + "=".repeat(50))
-            LogUtils.d(null,"DB_DETAILS", "🔍 SPECIAL DEBUG QUERY")
-            LogUtils.d(null,"DB_DETAILS", "=".repeat(50))
+            // ============= CHAT MESSAGES - SHOW LATEST 50 PER CONVERSATION =============
+            LogUtils.d(null,"DB_DETAILS", "\n" + "=".repeat(80))
+            LogUtils.d(null,"DB_DETAILS", "📋 TABELLA: chat_messages (LATEST 50 PER CONVERSATION)")
+            LogUtils.d(null,"DB_DETAILS", "=".repeat(80))
 
-            // Count conversations with/out hash
-            db.query("""
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN phone_hash IS NULL OR phone_hash = '' THEN 1 ELSE 0 END) as without_hash,
-                SUM(CASE WHEN phone_hash IS NOT NULL AND phone_hash != '' THEN 1 ELSE 0 END) as with_hash
-            FROM chat_conversations
-        """).use { cursor ->
-                if (cursor.moveToFirst()) {
-                    LogUtils.d(null,"DB_DETAILS", "📊 MIGRATION PHONE_HASH:")
-                    LogUtils.d(null,"DB_DETAILS", "  Total: ${cursor.getInt(0)}")
-                    LogUtils.d(null,"DB_DETAILS", "  Without hash: ${cursor.getInt(1)}")
-                    LogUtils.d(null,"DB_DETAILS", "  With hash: ${cursor.getInt(2)}")
+            try {
+                // First, get all conversations
+                val conversations = mutableListOf<Pair<Long, String>>()
+                db.query("SELECT id, phone_number FROM chat_conversations").use { convCursor ->
+                    while (convCursor.moveToNext()) {
+                        val id = convCursor.getLong(0)
+                        val phoneNumber = convCursor.getString(1)
+                        conversations.add(Pair(id, phoneNumber))
+                    }
                 }
+
+                LogUtils.d(null,"DB_DETAILS", "Found ${conversations.size} conversations")
+
+                // For each conversation, get latest 50 messages
+                conversations.forEach { (convId, encryptedPhone) ->
+                    // Decrypt phone number for display
+                    val phoneDisplay = try {
+                        AppCryptoManager.decrypt64Value(encryptedPhone)
+                    } catch (e: Exception) {
+                        "[encrypted: ${encryptedPhone.take(20)}...]"
+                    }
+
+                    LogUtils.d(null,"DB_DETAILS", "\n" + "-".repeat(60))
+                    LogUtils.d(null,"DB_DETAILS", "💬 CONVERSATION ID: $convId - Phone: $phoneDisplay")
+                    LogUtils.d(null,"DB_DETAILS", "-".repeat(60))
+
+                    // Get message count for this conversation
+                    db.query("SELECT COUNT(*) FROM chat_messages WHERE conversation_id = $convId").use { countCursor ->
+                        if (countCursor.moveToFirst()) {
+                            val totalMessages = countCursor.getInt(0)
+                            LogUtils.d(null,"DB_DETAILS", "Total messages in conversation: $totalMessages")
+                            LogUtils.d(null,"DB_DETAILS", "Showing latest ${minOf(50, totalMessages)} messages")
+                        }
+                    }
+
+                    // Get latest 50 messages for this conversation
+                    db.query("""
+                    SELECT * FROM chat_messages 
+                    WHERE conversation_id = $convId 
+                    ORDER BY timestamp DESC 
+                    LIMIT 50
+                """).use { msgCursor ->
+
+                        if (msgCursor.count == 0) {
+                            LogUtils.d(null,"DB_DETAILS", "  No messages found")
+                        } else {
+                            val columnNames = msgCursor.columnNames
+                            var msgIndex = 0
+
+                            msgCursor.moveToFirst()
+                            while (!msgCursor.isAfterLast) {
+                                msgIndex++
+                                LogUtils.d(null,"DB_DETAILS", "\n  --- MESSAGE $msgIndex of ${msgCursor.count} ---")
+
+                                for (i in columnNames.indices) {
+                                    val columnName = columnNames[i]
+                                    val value = when (msgCursor.getType(i)) {
+                                        Cursor.FIELD_TYPE_STRING -> {
+                                            val str = msgCursor.getString(i)
+                                            when {
+                                                columnName == "text" && str != null -> {
+                                                    try {
+                                                        val decrypted = AppCryptoManager.decrypt64Value(str)
+                                                        "💬 $decrypted"
+                                                    } catch (e: Exception) {
+                                                        "❌ [encrypted: ${str.take(30)}...]"
+                                                    }
+                                                }
+                                                columnName == "sender" && str != null -> {
+                                                    try {
+                                                        val decrypted = AppCryptoManager.decrypt64Value(str)
+                                                        "👤 $decrypted"
+                                                    } catch (e: Exception) {
+                                                        "👤 [encrypted: ${str.take(20)}...]"
+                                                    }
+                                                }
+                                                columnName == "sender_name" && str != null -> {
+                                                    try {
+                                                        val decrypted = AppCryptoManager.decrypt64Value(str)
+                                                        "📛 $decrypted"
+                                                    } catch (e: Exception) {
+                                                        "📛 [encrypted: ${str.take(20)}...]"
+                                                    }
+                                                }
+                                                columnName == "metadata_json" && str != null -> {
+                                                    try {
+                                                        // Try to decrypt metadata
+                                                        val decryptedJson = try {
+                                                            AppCryptoManager.decrypt64Value(str)
+                                                        } catch (e: Exception) {
+                                                            str // If not encrypted, use as is
+                                                        }
+
+                                                        try {
+                                                            val json = org.json.JSONObject(decryptedJson)
+                                                            val formatted = json.toString(2)
+                                                                .replace("\n", "\n        ")
+                                                            "\n        📄 METADATA:\n        $formatted"
+                                                        } catch (e: Exception) {
+                                                            "📄 $decryptedJson"
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        "📄 [encrypted: ${str.take(30)}...]"
+                                                    }
+                                                }
+                                                columnName == "metadata_type" && str != null -> "📌 [$str]"
+                                                columnName == "is_system_message" -> {
+                                                    val isSystem = msgCursor.getInt(msgCursor.getColumnIndexOrThrow("is_system_message")) == 1
+                                                    if (isSystem) "✅ SYSTEM MESSAGE" else "👤 USER MESSAGE"
+                                                }
+                                                columnName == "is_replaced" -> {
+                                                    val isReplaced = msgCursor.getInt(msgCursor.getColumnIndexOrThrow("is_replaced")) == 1
+                                                    if (isReplaced) "🔄 REPLACED" else "✓ ACTIVE"
+                                                }
+                                                columnName == "is_decoded" -> {
+                                                    val isDecoded = msgCursor.getInt(msgCursor.getColumnIndexOrThrow("is_decoded")) == 1
+                                                    if (isDecoded) "✅ DECODED" else "🔒 ENCRYPTED"
+                                                }
+                                                columnName == "is_outgoing" -> {
+                                                    val isOutgoing = msgCursor.getInt(msgCursor.getColumnIndexOrThrow("is_outgoing")) == 1
+                                                    if (isOutgoing) "📤 OUTGOING" else "📥 INCOMING"
+                                                }
+                                                columnName == "is_read" -> {
+                                                    val isRead = msgCursor.getInt(msgCursor.getColumnIndexOrThrow("is_read")) == 1
+                                                    if (isRead) "👁️ READ" else "🆕 UNREAD"
+                                                }
+                                                columnName == "is_sent" -> {
+                                                    val isSent = msgCursor.getInt(msgCursor.getColumnIndexOrThrow("is_sent")) == 1
+                                                    if (isSent) "✅ SENT" else "⏳ PENDING"
+                                                }
+                                                columnName == "is_y_message" -> {
+                                                    val isYMessage = msgCursor.getInt(msgCursor.getColumnIndexOrThrow("is_y_message")) == 1
+                                                    if (isYMessage) "🟡 Y-MESSAGE" else "📱 SMS"
+                                                }
+                                                else -> str
+                                            }
+                                        }
+                                        Cursor.FIELD_TYPE_INTEGER -> {
+                                            when (columnName) {
+                                                "timestamp", "trans_timestamp", "created_at", "updated_at" -> {
+                                                    val timestamp = msgCursor.getLong(i)
+                                                    if (timestamp > 0) formatTimestamp(timestamp) else "N/A"
+                                                }
+                                                else -> msgCursor.getLong(i)
+                                            }
+                                        }
+                                        Cursor.FIELD_TYPE_FLOAT -> msgCursor.getDouble(i)
+                                        Cursor.FIELD_TYPE_BLOB -> "[BLOB ${msgCursor.getBlob(i)?.size ?: 0} bytes]"
+                                        else -> "NULL"
+                                    }
+
+                                    // Only show columns that have non-null values or are important
+                                    if (value != "NULL" && value != null) {
+                                        LogUtils.d(null,"DB_DETAILS", "    ${columnName.padEnd(18)}: $value")
+                                    }
+                                }
+
+                                msgCursor.moveToNext()
+                            }
+                        }
+                    }
+                }
+
+            } catch (e: Exception) {
+                LogUtils.e("DB_DETAILS", "❌ Error processing chat_messages", e)
+            }
+
+            // ============= METADATA STATISTICS =============
+            LogUtils.d(null,"DB_DETAILS", "\n" + "=".repeat(80))
+            LogUtils.d(null,"DB_DETAILS", "📊 METADATA STATISTICS")
+            LogUtils.d(null,"DB_DETAILS", "=".repeat(80))
+
+            try {
+                // Overall metadata stats
+                db.query("""
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN metadata_json IS NOT NULL THEN 1 ELSE 0 END) as with_json,
+                    SUM(CASE WHEN metadata_type IS NOT NULL THEN 1 ELSE 0 END) as with_type,
+                    SUM(CASE WHEN is_system_message = 1 THEN 1 ELSE 0 END) as system_msgs,
+                    SUM(CASE WHEN is_replaced = 1 THEN 1 ELSE 0 END) as replaced_msgs
+                FROM chat_messages
+            """).use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        LogUtils.d(null,"DB_DETAILS", "Total messages: ${cursor.getInt(0)}")
+                        LogUtils.d(null,"DB_DETAILS", "With metadata_json: ${cursor.getInt(1)}")
+                        LogUtils.d(null,"DB_DETAILS", "With metadata_type: ${cursor.getInt(2)}")
+                        LogUtils.d(null,"DB_DETAILS", "System messages: ${cursor.getInt(3)}")
+                        LogUtils.d(null,"DB_DETAILS", "Replaced messages: ${cursor.getInt(4)}")
+                    }
+                }
+
+                // Metadata types breakdown
+                LogUtils.d(null,"DB_DETAILS", "\nMetadata Types:")
+                db.query("""
+                SELECT metadata_type, COUNT(*) as count 
+                FROM chat_messages 
+                WHERE metadata_type IS NOT NULL 
+                GROUP BY metadata_type
+                ORDER BY count DESC
+            """).use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val type = cursor.getString(0)
+                        val count = cursor.getInt(1)
+                        LogUtils.d(null,"DB_DETAILS", "  • $type: $count messages")
+                    }
+                }
+
+            } catch (e: Exception) {
+                LogUtils.e("DB_DETAILS", "❌ Error getting metadata stats", e)
+            }
+
+            // ============= DECRYPTED CONTENT SAMPLES =============
+            LogUtils.d(null,"DB_DETAILS", "\n" + "=".repeat(80))
+            LogUtils.d(null,"DB_DETAILS", "🔓 LATEST 10 MESSAGES WITH FULL DECRYPTION")
+            LogUtils.d(null,"DB_DETAILS", "=".repeat(80))
+
+            try {
+                db.query("""
+                SELECT * FROM chat_messages 
+                ORDER BY timestamp DESC 
+                LIMIT 10
+            """).use { cursor ->
+                    if (cursor.count > 0) {
+                        val columnNames = cursor.columnNames
+                        var index = 0
+
+                        cursor.moveToFirst()
+                        while (!cursor.isAfterLast) {
+                            index++
+                            LogUtils.d(null,"DB_DETAILS", "\n--- LATEST MESSAGE $index ---")
+
+                            for (i in columnNames.indices) {
+                                val columnName = columnNames[i]
+                                when (columnName) {
+                                    "id" -> LogUtils.d(null,"DB_DETAILS", "  ID: ${cursor.getLong(i)}")
+                                    "conversation_id" -> LogUtils.d(null,"DB_DETAILS", "  Conversation: ${cursor.getLong(i)}")
+                                    "text" -> {
+                                        val encrypted = cursor.getString(i)
+                                        try {
+                                            val decrypted = AppCryptoManager.decrypt64Value(encrypted)
+                                            LogUtils.d(null,"DB_DETAILS", "  TEXT: $decrypted")
+                                        } catch (e: Exception) {
+                                            LogUtils.d(null,"DB_DETAILS", "  TEXT: [ENCRYPTED] $encrypted")
+                                        }
+                                    }
+                                    "sender" -> {
+                                        val encrypted = cursor.getString(i)
+                                        try {
+                                            val decrypted = AppCryptoManager.decrypt64Value(encrypted)
+                                            LogUtils.d(null,"DB_DETAILS", "  SENDER: $decrypted")
+                                        } catch (e: Exception) {
+                                            LogUtils.d(null,"DB_DETAILS", "  SENDER: [ENCRYPTED]")
+                                        }
+                                    }
+                                    "timestamp" -> LogUtils.d(null,"DB_DETAILS", "  TIME: ${formatTimestamp(cursor.getLong(i))}")
+                                    "metadata_type" -> {
+                                        val type = cursor.getString(i)
+                                        if (type != null) LogUtils.d(null,"DB_DETAILS", "  METADATA TYPE: $type")
+                                    }
+                                    "metadata_json" -> {
+                                        val json = cursor.getString(i)
+                                        if (json != null) {
+                                            try {
+                                                val decryptedJson = try {
+                                                    AppCryptoManager.decrypt64Value(json)
+                                                } catch (e: Exception) {
+                                                    json
+                                                }
+                                                try {
+                                                    val jsonObj = org.json.JSONObject(decryptedJson)
+                                                    LogUtils.d(null,"DB_DETAILS", "  METADATA:")
+                                                    jsonObj.keys().forEach { key ->
+                                                        LogUtils.d(null,"DB_DETAILS", "    $key: ${jsonObj.get(key)}")
+                                                    }
+                                                } catch (e: Exception) {
+                                                    LogUtils.d(null,"DB_DETAILS", "  METADATA: $decryptedJson")
+                                                }
+                                            } catch (e: Exception) {
+                                                LogUtils.d(null,"DB_DETAILS", "  METADATA: [encrypted]")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            cursor.moveToNext()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                LogUtils.e("DB_DETAILS", "❌ Error getting decrypted samples", e)
             }
 
         } catch (e: Exception) {

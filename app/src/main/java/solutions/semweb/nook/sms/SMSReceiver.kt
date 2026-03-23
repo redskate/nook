@@ -210,10 +210,10 @@ class SMSReceiver : BroadcastReceiver() {
                     messageText0 = body,
                     isDecoded = false,
                     conversation,
-                    timestamp = timestamp,
                     transTimestamp = -1,
+                    timestamp = timestamp,
                     usedScheme = EncryptionMapper.ENCRYPTION_TEXT,
-                    multiPartSize = 1
+                    usedEncodingPassword = conversation.encodingPassword,
                 )
                 LogUtils.d(context, Constants.SMSTAG, "✅ Saved plaintext message from $sender")
             }
@@ -248,7 +248,14 @@ class SMSReceiver : BroadcastReceiver() {
         val chatManager = ChatManager(context)
 
         // Extract timestamp (fast)
-        val (messageWithoutTimestamp, transTimestamp) = extractTimestampFromPrefix(body, conversation.encoding)
+        var (messageWithoutTimestamp, transTimestamp) = extractTimestampFromPrefix(body, conversation.encoding)
+
+        // Try ultima ratio base 256 if non successful:
+        if (messageWithoutTimestamp == body) {
+            val (newMessage, newTimestamp) = extractTimestampFromPrefix(body, EncryptionMapper.ENCODING_BASE256)
+            messageWithoutTimestamp = newMessage
+            transTimestamp = newTimestamp
+        }
 
         // Decryption (may be slow - run in IO context)
         val result = withContext(Dispatchers.IO) {
@@ -262,16 +269,19 @@ class SMSReceiver : BroadcastReceiver() {
                 transTimestamp ?: timestamp
             )
         }
-
         if (result.success) {
+            val isDefaultUltimaRatio = result.notes.contains("DEFAULT")
+            // set correct enc parameters for fallback case isDefaultUltimaRatio:
             chatManager.handleIncomingMessage(
                 messageText0 = result.decoded,
-                isDecoded = true,
+                isDecoded = true, // not sufficient for Default
                 conversation,
                 timestamp = timestamp,
                 transTimestamp = transTimestamp ?: -1,
-                usedScheme = conversation.encryptionScheme,
-                usedEncoding = conversation.encoding,
+                usedScheme = if (isDefaultUltimaRatio) EncryptionMapper.ENCRYPTION_SCHEME_TEXT else conversation.encryptionScheme,
+                usedEncoding = if (isDefaultUltimaRatio) EncryptionMapper.ENCODING_BASE256 else conversation.encoding,
+                usedEncodingPassword = if (isDefaultUltimaRatio) "" else conversation.encodingPassword,
+                decryptionNotes = result.notes,
                 multiPartSize = 1
             )
 
@@ -281,6 +291,18 @@ class SMSReceiver : BroadcastReceiver() {
 
             LogUtils.d(context, Constants.SMSTAG, "✅ Decrypted and saved message from $sender")
         } else {
+            chatManager.handleIncomingMessage(
+                messageText0 = result.decoded,
+                isDecoded = false,
+                conversation,
+                timestamp = timestamp,
+                transTimestamp = transTimestamp ?: -1,
+                usedScheme = conversation.encryptionScheme,
+                usedEncoding = conversation.encoding,
+                usedEncodingPassword = conversation.encodingPassword,
+                decryptionNotes = result.notes,
+                multiPartSize = 1
+            )
             LogUtils.w(context, Constants.SMSTAG, "❌ Decryption failed for message from $sender")
         }
     }

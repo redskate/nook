@@ -153,7 +153,7 @@
     <string name="select_from_phonebook_button">📒 Select from Phonebook</string>
     <string name="selective_mode_active">✅ Selective mode: only active trusted contacts</string>
     <string name="send_button_text">➤</string>
-    <string name="set_encryption">🔐 Set encryption/encoding</string>
+    <string name="set_encryption">⚙️ Set encryption/encoding</string>
     <string name="settings_section_title">⚙️ Settings</string>
     <string name="silent_mode_on">🔇 Silent mode ON</string>
     <string name="silent_mode_title">Silent Mode</string>
@@ -295,7 +295,7 @@
     <string name="sort_order_on">Order: last message at bottom</string>
     <string name="sort_order_off">Order: last message on top</string>
     <string name="export_failed">Error exporting chat</string>
-    <string name="export_encrypted_chat">Export chat and protect</string>
+    <string name="export_encrypted_chat">📤 Export chat and protect</string>
     <string name="export_no_messages">No messages to export</string>
     <string name="chatesport_errorfolder">Error: unable to create temporary folder</string>
     <string name="chatexport_nofilescreated">Error: unable to create files</string>
@@ -530,5 +530,33 @@
     <string name="error_encrypting_password">Error encrypting password in memory</string>
     <string name="menu_resend_msg">Re-send message</string>
     <string name="debug_failures_hint">Recent errors and crashes for debugging. Tap for details.</string>
+    <!-- Receipt status messages -->
+    <string name="decrypted_on_other_side">✓ Decrypted on other side</string>
+    <string name="decryption_failed_on_other_side">✗ Decryption failed on other side</string>
+    <string name="waiting_for_decryption_receipt">⏳ Waiting for receipt</string>
+    <string name="receipt_sent">Receipt sent</string>
+    <!-- Settings toggles -->
+    <string name="auto_send_receipts">Auto-send decryption receipts</string>
+    <string name="auto_send_receipts_summary">Automatically send confirmation when you decrypt messages</string>
+    <string name="request_receipts">Request decryption receipts</string>
+    <string name="request_receipts_summary">Ask others to confirm they decrypted your messages</string>
+    <!-- Receipt preferences -->
+    <string name="request_receipts_title">Request decryption receipts</string>
+    <string name="request_receipts_description">Ask sender if they successfully decrypted your messages</string>
+    <string name="allow_sending_receipts_title">Send decryption receipts</string>
+    <string name="allow_sending_receipts_description">Notify senders on their request when you successfully decrypt their messages</string>
+    <string name="receipts_requested">✓ Receipts requested</string>
+    <string name="receipts_not_requested">✗ Receipts not requested</string>
+    <string name="receipts_sending_allowed">✓ Receipt sending allowed</string>
+    <string name="receipts_sending_disabled">✗ Receipt sending disabled</string>
+
+    <string name="default_button">DEFAULT</string>
+    <string name="reset_to_default">Reset to Default</string>
+    <string name="reset_to_default_title">Reset to Default Settings</string>
+    <string name="reset_to_default_message">Reset encryption and encoding settings to default for %s?\n\nThis will set:\n- No encryption\n- Base256 encoding\n- No encoding password</string>
+    <string name="reset_to_default_values">Reset to default values</string>
+    <string name="reset_to_default_success">Conversation reset to default settings</string>
+    <string name="reset_to_default_error">Error resetting conversation settings</string>
+    <string name="MessageNotDecrypted"><![CDATA[<Sorry: message not decrypted>]]></string>
 
 </resources>

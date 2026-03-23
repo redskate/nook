@@ -37,6 +37,17 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             app:tint="@android:color/white" />
 
+
+        <ImageButton
+            android:id="@+id/reset_default_button"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_reset_default"
+            android:contentDescription="@string/reset_to_default"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            app:tint="@android:color/white" />
+
         <TextView
             android:id="@+id/chat_title"
             android:layout_width="0dp"

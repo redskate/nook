@@ -284,6 +284,7 @@ class ChatImportTask(
                     // Dummy message to init conversation
                     val dummyMessage = ChatMessage(
                         text = context.getString(R.string.imported_chat),
+                        conversationId = conversation.id,
                         sender = exportData.phoneNumber,
                         timestamp = System.currentTimeMillis(),
                         isDecoded = true,

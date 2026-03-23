@@ -6,9 +6,9 @@ object Constants {
     //////////////////////////////////////////////////////
     // 🔴 CENTRALIZED VERSIONING - Edit only these values
     const val VERSION_MAJOR = 1
-    const val VERSION_MINOR = 5
-    const val VERSION_PATCH = 1
-    const val VERSION_CODE = 288  // encoding reduced to 32/64/256 due to padding problems - new alphabet deterministic password scrambling
+    const val VERSION_MINOR = 6
+    const val VERSION_PATCH = 8 // fixes for passwords
+    const val VERSION_CODE = 296
 
     // Computed version name (DO NOT EDIT DIRECTLY)
     const val VERSION_NAME = "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_CODE"
@@ -126,4 +126,14 @@ object Constants {
     //Protected - Now using BuildConfig values from gradle
     const val GITHUB_SHA256_URL = BuildConfig.GITHUB_SHA256_URL
     const val GITHUB_RELEASES_URL = BuildConfig.GITHUB_RELEASES_URL
+
+    // Decryption receipts feature
+    const val KEY_AUTO_SEND_RECEIPTS = "asr"  // auto_send_receipts For SharedPreferences
+    const val KEY_REQUEST_RECEIPTS = "r_rec"    // For SharedPreferences - requests a receipt sending a message
+    const val KEY_ALLOW_SENDING_RECEIPTS = "a_sr"  // allow sending receipts for incoming messages when requested
+
+    // DEBUG: SMS Loopback mode (solo per debug)
+    const val KEY_SMS_LOOPBACK_MODE = "sms_loopback_mode"
+    const val SMS_LOOPBACK_DELAY = 500L // 500ms delay
+
 }

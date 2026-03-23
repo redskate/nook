@@ -152,7 +152,7 @@
     <string name="select_from_phonebook_button">📒 Aus Telefonbuch auswählen</string>
     <string name="selective_mode_active">✅ Selektivmodus: nur aktive vertraute Kontakte</string>
     <string name="send_button_text">➤</string>
-    <string name="set_encryption">🔐 Verschlüsselung/Encoding einstellen</string>
+    <string name="set_encryption">⚙️ Verschlüsselung/Encoding einstellen</string>
     <string name="settings_section_title">⚙️ Einstellungen</string>
     <string name="silent_mode_on">🔇 Stiller Modus AN</string>
     <string name="silent_mode_title">Stiller Modus</string>
@@ -296,7 +296,7 @@
     <string name="sort_order_on">Sortierung: letzte Nachricht unten</string>
     <string name="sort_order_off">Sortierung: letzte Nachricht oben</string>
     <string name="export_failed">Fehler beim Exportieren des Chats</string>
-    <string name="export_encrypted_chat">Chat exportieren und schützen</string>
+    <string name="export_encrypted_chat">📤 Chat geschützt exportieren</string>
     <string name="export_no_messages">Keine Nachrichten zum Exportieren</string>
     <string name="chatesport_errorfolder">Fehler: Temporärer Ordner kann nicht erstellt werden</string>
     <string name="chatexport_nofilescreated">Fehler: Dateien können nicht erstellt werden</string>
@@ -533,5 +533,33 @@
     <string name="error_encrypting_password">Fehler beim Verschlüsseln des Passworts</string>
     <string name="menu_resend_msg">Nachricht erneut senden</string>
     <string name="debug_failures_hint">Kürzliche Fehler und Abstürze zum Debuggen. Tippen für Details.</string>
+    <!-- Receipt status messages -->
+    <string name="decrypted_on_other_side">✓ Auf der anderen Seite entschlüsselt</string>
+    <string name="decryption_failed_on_other_side">✗ Entschlüsselung auf der anderen Seite fehlgeschlagen</string>
+    <string name="waiting_for_decryption_receipt">⏳ Warte auf Bestätigung</string>
+    <string name="receipt_sent">Bestätigung gesendet</string>
+    <!-- Settings toggles -->
+    <string name="auto_send_receipts">Entschlüsselungsbestätigungen automatisch senden</string>
+    <string name="auto_send_receipts_summary">Automatisch eine Bestätigung senden, wenn Sie Nachrichten entschlüsseln</string>
+    <string name="request_receipts">Entschlüsselungsbestätigungen anfordern</string>
+    <string name="request_receipts_summary">Andere bitten zu bestätigen, dass sie Ihre Nachrichten entschlüsselt haben</string>
+    <!-- Receipt preferences -->
+    <string name="request_receipts_title">Entschlüsselungsbestätigungen anfordern</string>
+    <string name="request_receipts_description">Den Absender fragen, ob er Ihre Nachrichten erfolgreich entschlüsselt hat</string>
+    <string name="allow_sending_receipts_title">Entschlüsselungsbestätigungen senden</string>
+    <string name="allow_sending_receipts_description">Absender auf seine Nachfrage benachrichtigen, wenn Sie deren Nachrichten erfolgreich entschlüsseln</string>
+    <string name="receipts_requested">✓ Bestätigungen angefordert</string>
+    <string name="receipts_not_requested">✗ Bestätigungen nicht angefordert</string>
+    <string name="receipts_sending_allowed">✓ Senden von Bestätigungen erlaubt</string>
+    <string name="receipts_sending_disabled">✗ Senden von Bestätigungen deaktiviert</string>
+
+    <string name="default_button">DEFAULT</string>
+    <string name="reset_to_default">Auf Standard zurücksetzen</string>
+    <string name="reset_to_default_title">Auf Standardeinstellungen zurücksetzen</string>
+    <string name="reset_to_default_message">Verschlüsselungs- und Kodierungseinstellungen für %s auf Standard zurücksetzen?\n\nDies wird festlegen:\n- Keine Verschlüsselung\n- Base256-Kodierung\n- Kein Kodierungspasswort</string>
+    <string name="reset_to_default_values">Auf Standardwerte zurücksetzen</string>
+    <string name="reset_to_default_success">Konversation auf Standardeinstellungen zurückgesetzt</string>
+    <string name="reset_to_default_error">Fehler beim Zurücksetzen der Konversationseinstellungen</string>
+    <string name="MessageNotDecrypted"><![CDATA[<Sorry: Nachricht nicht entschlüsselt>]]></string>
 
 </resources>

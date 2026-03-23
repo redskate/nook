@@ -600,47 +600,37 @@ class SharedPreferencesManager private constructor(private var context: Context)
         }
     }
 
-    fun getMultipartInfo(sender: String, firstTimestamp: Long): MultipartInfo? {
-        return getAllMultipartInfo().find {
-            it.sender == sender &&
-                    abs(it.firstTimestamp - firstTimestamp) < 60000
-        }
+
+    fun setRequestReceipts(enabled: Boolean) {
+        putBoolean(Constants.KEY_REQUEST_RECEIPTS, enabled)
     }
 
-    fun removeMultipartInfo(sender: String, firstTimestamp: Long) {
-        try {
-            val currentList = getAllMultipartInfo().toMutableList()
-            val removed = currentList.removeAll {
-                it.sender == sender &&
-                        abs(it.firstTimestamp - firstTimestamp) < 60000
-            }
-
-            if (removed) {
-                val json = gson.toJson(currentList)
-                prefs.edit().putString(Constants.KEY_MULTIPART_INFO, json).apply()
-                LogUtils.d(context, "SharedPreferencesManager",
-                    "🗑️ Removed multipart info for $sender at $firstTimestamp")
-            }
-        } catch (e: Exception) {
-            LogUtils.e(context, "SharedPreferencesManager", "❌ Error removing multipart info", e)
-        }
+    fun getRequestReceipts(): Boolean {
+        return getBoolean(Constants.KEY_REQUEST_RECEIPTS, true)
     }
 
-    fun clearOldMultipartInfo(maxAgeMs: Long = 2 * 60 * 60 * 1000) { // 2 hours default
-        try {
-            val currentList = getAllMultipartInfo().toMutableList()
-            val cutoff = System.currentTimeMillis() - maxAgeMs
-            val removed = currentList.removeAll { it.timestamp < cutoff }
+    fun setAllowSendingReceipts(enabled: Boolean) {
+        putBoolean(Constants.KEY_ALLOW_SENDING_RECEIPTS, enabled)
+    }
 
-            if (removed) {
-                val json = gson.toJson(currentList)
-                prefs.edit().putString(Constants.KEY_MULTIPART_INFO, json).apply()
-                LogUtils.d(context, "SharedPreferencesManager", "🧹 Cleared old multipart info")
-            }
-        } catch (e: Exception) {
-            LogUtils.e(context, "SharedPreferencesManager", "❌ Error clearing old multipart info", e)
-        }
+    fun getAllowSendingReceipts(): Boolean {
+        return getBoolean(Constants.KEY_ALLOW_SENDING_RECEIPTS, true)
+    }
+
+    fun setSmsLoopbackMode(enabled: Boolean) {
+        putBoolean(Constants.KEY_SMS_LOOPBACK_MODE, enabled)
+    }
+
+    fun isSmsLoopbackMode(): Boolean {
+        return getBoolean(Constants.KEY_SMS_LOOPBACK_MODE, false)
     }
 
 
+    /**
+     * Check if a decoded SMS sound should be played
+     * Returns true if a custom notification sound is configured
+     */
+    fun shouldPlayDecodedSound(): Boolean {
+        return notificationSoundUri.isNotEmpty()
+    }
 }

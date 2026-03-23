@@ -253,10 +253,10 @@ class SmsScanner(private val context: Context) {
                             messageText0 = sms.body,
                             isDecoded = false,
                             conversation = conversation,
-                            timestamp = sms.date,
                             transTimestamp = -1,
+                            timestamp = sms.date,
                             usedScheme = if (isPlaintext) EncryptionMapper.ENCRYPTION_TEXT else "",
-                            multiPartSize = 1
+                            usedEncodingPassword = conversation.encodingPassword,
                         )
 
                         result.plaintext++
@@ -317,13 +317,13 @@ class SmsScanner(private val context: Context) {
                             // Add the real message WITH the part count in the prefix
                             chatManager.handleIncomingMessage(
                                 messageText0 = resultDecode.decoded,
-                                true,
-                                conversation,
-                                timestamp = sms.date,
+                                conversation = conversation,
                                 transTimestamp = -1,
+                                timestamp = sms.date,
                                 usedScheme = schemeToUse,
                                 usedEncoding = encodingToUse,
-                                multiPartSize = partCount
+                                usedEncodingPassword = conversation.encodingPassword,
+                                multiPartSize = partCount,
                             )
 
                             result.decrypted++

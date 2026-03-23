@@ -1,244 +1,537 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingVertical="4dp">
+    <!-- //////////////////////// -->
+    <!-- //////////////////////// -->
+    <!-- USES styles.xml          -->
+    <!-- //////////////////////// -->
+    <!-- //////////////////////// -->
 
-    <!-- Messaggio in arrivo NON DECODIFICATO (SINISTRA) -->
-    <LinearLayout
-        android:id="@+id/incoming_message_layout"
+    <!-- //////////////////////// -->
+    <!-- //////////////////////// -->
+    <!-- INCOMING MESSAGES (LEFT) -->
+    <!-- //////////////////////// -->
+    <!-- //////////////////////// -->
+
+
+    <!-- INCOMING MESSAGE: Encrypted/Decoded (left) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/enc_incoming_message_layout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:layout_gravity="start"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="80dp"
-        android:visibility="gone">
+        android:visibility="gone"
+        android:minWidth="100dp">
 
-        <!-- Timestamp trasmissione sopra il messaggio -->
-        <TextView
-            android:id="@+id/sending_time_top"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="15:30"
-            android:textSize="10sp"
-            android:textColor="#757575"
-            android:layout_marginBottom="2dp"
-            android:layout_marginStart="8dp"/>
-        <!-- Timestamp ricezione sopra il messaggio -->
-        <TextView
-            android:id="@+id/incoming_time_top"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="15:30"
-            android:textSize="10sp"
-            android:textColor="#757575"
-            android:layout_marginBottom="2dp"
-            android:layout_marginStart="8dp"/>
-
-        <!-- Bubble messaggio non decodificato -->
-        <TextView
-            android:id="@+id/incoming_message_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:background="@drawable/bubble_incoming"
-            android:textColor="@android:color/black"
-            android:maxWidth="280dp"
-            android:text="@string/incoming_message_placeholder"/>
-
-    </LinearLayout>
-
-    <!-- Messaggio cifrato DECODIFICATO (SINISTRA) -->
-    <LinearLayout
-        android:id="@+id/decoded_message_layout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_gravity="start"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="80dp"
-        android:visibility="gone">
-
-        <!-- Timestamp trasmissione sopra il messaggio -->
-        <TextView
-            android:id="@+id/decoded_sending_time_top"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="15:30"
-            android:textSize="10sp"
-            android:textColor="#757575"
-            android:layout_marginBottom="2dp"
-            android:layout_marginStart="8dp"/>
-        <!-- Timestamp ricezione sopra il messaggio -->
-        <TextView
-            android:id="@+id/decoded_receiving_time_top"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="15:30"
-            android:textSize="10sp"
-            android:textColor="#757575"
-            android:layout_marginBottom="2dp"
-            android:layout_marginStart="8dp"/>
-
-        <!-- Bubble messaggio decodificato -->
-        <TextView
-            android:id="@+id/decoded_message_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:background="@drawable/bubble_decoded"
-            android:textColor="@android:color/black"
-            android:maxWidth="280dp"
-            android:text="@string/decoded_message_placeholder"/>
-
-    </LinearLayout>
-
-    <!-- Messaggio PLAINTEXT IN CHIARO IN ARRIVO (SINISTRA) - EVIDENZIATO -->
-    <LinearLayout
-        android:id="@+id/plaintext_message_layout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_gravity="start"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="80dp"
-        android:visibility="gone">
-
-        <!-- Timestamp con icona warning -->
+        <!-- Header container - now constrained to bubble width -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:id="@+id/enc_incoming_header_container"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="2dp"
-            android:layout_marginStart="8dp">
+            android:layout_marginBottom="4dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            app:layout_constraintStart_toStartOf="@+id/incoming_message_text"
+            app:layout_constraintEnd_toEndOf="@+id/incoming_message_text"
+            app:layout_constraintTop_toTopOf="parent">
 
-            <TextView
-                android:id="@+id/plaintext_warning_icon"
+            <!-- Timestamps stacked vertically on left -->
+            <LinearLayout
+                android:id="@+id/enc_incoming_timestamps_container"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="⚠️"
-                android:textSize="10sp"
-                android:layout_marginEnd="4dp"/>
+                android:orientation="vertical">
 
+                <TextView
+                    android:id="@+id/enc_incoming_sending_time_top"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15:31"
+                    android:textSize="10sp"
+                    android:textColor="@color/gray_label"/>
+
+                <TextView
+                    android:id="@+id/enc_incoming_time_top"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15:32"
+                    android:textSize="10sp"
+                    android:textColor="@color/gray_label"
+                    android:layout_marginTop="2dp"/>
+            </LinearLayout>
+
+            <!-- Spacer that expands to push encryption indicator right -->
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+            <!-- Encryption indicator - now properly aligned to the right of header -->
             <TextView
-                android:id="@+id/plaintext_sending_time_top"
+                android:id="@+id/enc_incoming_encryption_indicator"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="15:30"
                 android:textSize="10sp"
-                android:textColor="#D32F2F"/>
-            <TextView
-                android:id="@+id/plaintext_receiving_time_top"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="15:30"
-                android:textSize="10sp"
-                android:textColor="#D32F2F"/>
-
+                android:textColor="@color/gray_label"/>
         </LinearLayout>
 
-        <!-- Bubble messaggio plaintext in arrivo -->
+        <!-- Bubble message -->
         <TextView
-            android:id="@+id/plaintext_message_text"
+            android:id="@+id/incoming_message_text"
+            style="@style/MessageBubble"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:background="@drawable/bubble_plaintext_incoming"
-            android:textColor="#D32F2F"
-            android:maxWidth="280dp"
-            android:text="@string/plaintext_message_placeholder"/>
+            android:background="@drawable/bubble_incoming"
+            android:textColor="@android:color/black"
+            android:text="@string/incoming_message_placeholder"
+            app:layout_constraintTop_toBottomOf="@id/enc_incoming_header_container"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:minWidth="100dp"/>
 
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Messaggio PLAINTEXT IN CHIARO IN USCITA (DESTRA) - EVIDENZIATO -->
-    <LinearLayout
-        android:id="@+id/plaintext_outgoing_layout"
+    <!-- INCOMING MESSAGE DEFAULT (left) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/default_encryption_incoming_message_layout"
+        android:layout_marginTop="20dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:layout_gravity="start"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="80dp"
+        android:visibility="gone"
+        android:minWidth="100dp">
+
+        <!-- Header container - now constrained to bubble width -->
+        <LinearLayout
+            android:id="@+id/default_encryption_incoming_header_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="4dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            app:layout_constraintStart_toStartOf="@+id/default_encryption_message_text"
+            app:layout_constraintEnd_toEndOf="@+id/default_encryption_message_text"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <!-- Timestamps stacked vertically on left -->
+            <LinearLayout
+                android:id="@+id/default_encryption_incoming_timestamps_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/default_encryption_incoming_sending_time_top"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15:33"
+                    android:textSize="10sp"
+                    android:textColor="@color/gray_label"/>
+
+                <TextView
+                    android:id="@+id/default_encryption_incoming_receiving_time_top"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15:34"
+                    android:textSize="10sp"
+                    android:textColor="@color/gray_label"
+                    android:visibility="gone"
+                    android:layout_marginTop="2dp"/>
+            </LinearLayout>
+
+            <!-- Spacer that expands to push encryption indicator right -->
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+            <!-- Encryption indicator - now properly aligned to the right of header -->
+            <TextView
+                android:id="@+id/default_encryption_incoming_indicator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:textColor="@color/gray_label"/>
+        </LinearLayout>
+
+        <!-- Bubble message -->
+        <TextView
+            android:id="@+id/default_encryption_message_text"
+            style="@style/MessageBubble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bubble_default_encryption_incoming"
+            android:textColor="@android:color/black"
+            android:text="@string/decoded_message_placeholder"
+            app:layout_constraintTop_toBottomOf="@id/default_encryption_incoming_header_container"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:minWidth="100dp"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- INCOMING MESSAGE PLAINTEXT (left) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/plaintext_incoming_message_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="80dp"
+        android:visibility="gone"
+        android:minWidth="100dp">
+
+        <!-- Header container - now constrained to bubble width -->
+        <LinearLayout
+            android:id="@+id/plaintext_incoming_header_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="4dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            app:layout_constraintStart_toStartOf="@+id/plaintext_incoming_message_text"
+            app:layout_constraintEnd_toEndOf="@+id/plaintext_incoming_message_text"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <!-- Timestamps stacked vertically on left -->
+            <LinearLayout
+                android:id="@+id/plaintext_incoming_timestamps_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/plaintext_incoming_sending_time_top"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15:36"
+                    android:textSize="10sp"
+                    android:textColor="@color/gray_label"/>
+
+                <TextView
+                    android:id="@+id/plaintext_incoming_receiving_time_top"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15:37"
+                    android:textSize="10sp"
+                    android:textColor="@color/gray_label"
+                    android:layout_marginTop="2dp"/>
+            </LinearLayout>
+
+            <!-- Spacer that expands to push warning icon right -->
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+            <!-- Warning icon - now properly aligned to the right of header -->
+            <TextView
+                android:id="@+id/plaintext_incoming_warning_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:textColor="@color/gray_label"/>
+        </LinearLayout>
+
+        <!-- Bubble message -->
+        <TextView
+            android:id="@+id/plaintext_incoming_message_text"
+            style="@style/MessageBubble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bubble_plaintext_incoming"
+            android:textColor="@color/black"
+            android:text="@string/plaintext_message_placeholder"
+            app:layout_constraintTop_toBottomOf="@id/plaintext_incoming_header_container"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:minWidth="100dp"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- ///////////////////////// -->
+    <!-- ///////////////////////// -->
+    <!-- OUTGOING MESSAGES (RIGHT) -->
+    <!-- ///////////////////////// -->
+    <!-- ///////////////////////// -->
+
+
+    <!-- OUTGOING MESSAGE: Encrypted/Decoded (right) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/enc_outgoing_message_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_gravity="end"
         android:layout_marginStart="80dp"
         android:layout_marginEnd="8dp"
-        android:visibility="gone">
+        android:visibility="gone"
+        android:minWidth="100dp">
 
-        <!-- Timestamp con icona warning -->
+        <!-- Header container - now constrained to bubble width -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:id="@+id/enc_outgoing_header_container"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="2dp"
-            android:layout_gravity="end"
-            android:layout_marginEnd="8dp">
+            android:layout_marginBottom="4dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            app:layout_constraintStart_toStartOf="@+id/enc_outgoing_message_text"
+            app:layout_constraintEnd_toEndOf="@+id/enc_outgoing_message_text"
+            app:layout_constraintTop_toTopOf="parent">
 
+            <!-- Encryption indicator - now properly aligned to the left -->
+            <TextView
+                android:id="@+id/enc_outgoing_encryption_indicator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:textColor="@color/gray_label"/>
+
+            <!-- Spacer that expands to push timestamp right -->
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+            <!-- Timestamp -->
+            <TextView
+                android:id="@+id/enc_outgoing_time_top"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="15:30"
+                android:textSize="10sp"
+                android:textColor="@color/gray_label"/>
+        </LinearLayout>
+
+        <!-- Bubble message -->
+        <TextView
+            android:id="@+id/enc_outgoing_message_text"
+            style="@style/MessageBubble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bubble_outgoing"
+            android:textColor="@android:color/white"
+            android:text="@string/outgoing_message_placeholder"
+            app:layout_constraintTop_toBottomOf="@id/enc_outgoing_header_container"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:minWidth="100dp"/>
+
+        <!-- Receipt layout -->
+        <LinearLayout
+            android:id="@+id/enc_outgoing_receipt_status_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_gravity="end"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/enc_outgoing_message_text"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageView
+                android:id="@+id/enc_outgoing_receipt_icon_msg_arrived"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_check_blue"
+                android:layout_marginEnd="2dp"/>
+
+            <ImageView
+                android:id="@+id/enc_outgoing_receipt_icon_status"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="2dp"/>
+
+            <TextView
+                android:id="@+id/enc_outgoing_receipt_timestamp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:textColor="@color/gray_label"/>
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    <!-- OUTGOING MESSAGE DEFAULT (right) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/default_encryption_outgoing_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginStart="80dp"
+        android:layout_marginEnd="8dp"
+        android:visibility="gone"
+        android:minWidth="100dp">
+
+        <!-- Header container - now constrained to bubble width -->
+        <LinearLayout
+            android:id="@+id/default_encryption_outgoing_header_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="4dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            app:layout_constraintStart_toStartOf="@+id/default_encryption_outgoing_text"
+            app:layout_constraintEnd_toEndOf="@+id/default_encryption_outgoing_text"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <!-- Encryption indicator - now properly aligned to the left -->
+            <TextView
+                android:id="@+id/default_encryption_outgoing_indicator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:textColor="@color/gray_label"/>
+
+            <!-- Spacer that expands to push timestamp right -->
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+            <!-- Timestamp -->
+            <TextView
+                android:id="@+id/default_encryption_outgoing_time_top"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="15:30"
+                android:textSize="10sp"
+                android:textColor="@color/gray_label"/>
+        </LinearLayout>
+
+        <!-- Bubble message -->
+        <TextView
+            android:id="@+id/default_encryption_outgoing_text"
+            style="@style/MessageBubble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bubble_default_encryption_outgoing"
+            android:textColor="@android:color/white"
+            android:text="@string/outgoing_message_placeholder"
+            app:layout_constraintTop_toBottomOf="@id/default_encryption_outgoing_header_container"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:minWidth="100dp"/>
+
+        <!-- Receipt layout for default encryption -->
+        <LinearLayout
+            android:id="@+id/default_encryption_outgoing_receipt_status_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_gravity="end"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/default_encryption_outgoing_text"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageView
+                android:id="@+id/default_encryption_outgoing_receipt_icon_arrived"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_check_blue"
+                android:layout_marginEnd="2dp"/>
+
+            <ImageView
+                android:id="@+id/default_encryption_outgoing_receipt_icon_status"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="2dp"/>
+
+            <TextView
+                android:id="@+id/default_encryption_outgoing_receipt_timestamp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:textColor="@color/gray_label"/>
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- OUTGOING MESSAGE PLAINTEXT (right) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/plaintext_outgoing_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginStart="80dp"
+        android:layout_marginEnd="8dp"
+        android:visibility="gone"
+        android:minWidth="100dp">
+
+        <!-- Header container - now constrained to bubble width -->
+        <LinearLayout
+            android:id="@+id/plaintext_outgoing_header_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="4dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            app:layout_constraintStart_toStartOf="@+id/plaintext_outgoing_message_text"
+            app:layout_constraintEnd_toEndOf="@+id/plaintext_outgoing_message_text"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <!-- Warning icon - now properly aligned to the left -->
             <TextView
                 android:id="@+id/plaintext_outgoing_warning_icon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="⚠️"
                 android:textSize="10sp"
-                android:layout_marginEnd="4dp"/>
+                android:textColor="@color/gray_label"/>
 
+            <!-- Spacer that expands to push timestamp right -->
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+            <!-- Timestamp -->
             <TextView
                 android:id="@+id/plaintext_outgoing_time_top"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="15:30"
                 android:textSize="10sp"
-                android:textColor="#D32F2F"/>
-
+                android:textColor="@color/gray_label"/>
         </LinearLayout>
 
-        <!-- Bubble messaggio plaintext in uscita -->
+        <!-- Bubble message -->
         <TextView
             android:id="@+id/plaintext_outgoing_message_text"
+            style="@style/MessageBubble"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="12dp"
             android:background="@drawable/bubble_plaintext_outgoing"
-            android:textColor="#D32F2F"
-            android:maxWidth="280dp"
-            android:text="@string/plaintext_message_placeholder"/>
+            android:textColor="@color/white"
+            android:text="@string/plaintext_message_placeholder"
+            app:layout_constraintTop_toBottomOf="@id/plaintext_outgoing_header_container"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:minWidth="100dp"/>
 
-    </LinearLayout>
-
-    <!-- Messaggio in uscita CIFRATO/DECODIFICATO (DESTRA) -->
-    <LinearLayout
-        android:id="@+id/outgoing_message_layout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_gravity="end"
-        android:layout_marginStart="80dp"
-        android:layout_marginEnd="8dp"
-        android:visibility="gone">
-
-        <!-- Timestamp sopra il messaggio -->
-        <TextView
-            android:id="@+id/outgoing_time_top"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="15:30"
-            android:textSize="10sp"
-            android:textColor="#757575"
-            android:layout_marginBottom="2dp"
-            android:layout_gravity="end"
-            android:layout_marginEnd="8dp"/>
-
-        <!-- Bubble messaggio in uscita -->
-        <TextView
-            android:id="@+id/outgoing_message_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:background="@drawable/bubble_outgoing"
-            android:textColor="@android:color/white"
-            android:maxWidth="280dp"
-            android:text="@string/outgoing_message_placeholder"/>
-
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </LinearLayout>

@@ -5,7 +5,7 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Codifica (Encoding) -->
+    <!-- Encoding -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -20,7 +20,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"/>
 
-    <!-- Container password encoding (mostrato solo quando encoding != "Text") -->
+    <!-- Container password encoding (shown only when encoding set) -->
     <LinearLayout
         android:id="@+id/encoding_password_container"
         android:layout_width="match_parent"
@@ -37,7 +37,7 @@
             android:layout_marginBottom="4dp"
             android:textColor="?android:attr/textColorPrimary"/>
 
-        <!-- Layout con campo password e pulsanti -->
+        <!-- Layout with buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -61,7 +61,7 @@
                 android:background="@android:color/transparent"
                 android:imeOptions="actionDone"/>
 
-            <!-- Layout per i due pulsanti a destra -->
+            <!-- Layout for both rightmost buttons -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -91,7 +91,7 @@
 
         </LinearLayout>
 
-        <!-- Informazioni sulla password encoding -->
+        <!-- Info on encoding password -->
         <TextView
             android:id="@+id/encoding_password_info"
             android:layout_width="match_parent"
@@ -104,7 +104,7 @@
 
     </LinearLayout>
 
-    <!-- Schema di cifratura (Encryption) -->
+    <!-- Encryption -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -119,7 +119,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"/>
 
-    <!-- Container password cifratura (solo per SiSa) -->
+    <!-- Container encryption password (SiSa) -->
     <LinearLayout
         android:id="@+id/encryption_password_container"
         android:layout_width="match_parent"
@@ -135,7 +135,7 @@
             android:layout_marginBottom="4dp"
             android:textColor="?android:attr/textColorPrimary"/>
 
-        <!-- Layout con campo password e pulsanti -->
+        <!-- Password layout with buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -159,7 +159,7 @@
                 android:background="@android:color/transparent"
                 android:imeOptions="actionDone"/>
 
-            <!-- Layout per i due pulsanti a destra -->
+            <!-- Layout for the right most 2 buttons -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -189,7 +189,7 @@
 
         </LinearLayout>
 
-        <!-- Informazioni sulla password cifratura -->
+        <!-- Info on password encryption -->
         <TextView
             android:id="@+id/encryption_password_info"
             android:layout_width="match_parent"

@@ -1,5 +1,6 @@
 package solutions.semweb.nook.chat
 
+
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -14,12 +15,15 @@ import solutions.semweb.nook.ChatMessage
 import solutions.semweb.nook.Constants
 import solutions.semweb.nook.LogUtils
 import solutions.semweb.nook.PhoneUtils
+import solutions.semweb.nook.R
 import solutions.semweb.nook.SharedPreferencesManager
 import solutions.semweb.nook.crypto.AppCryptoManager
 import solutions.semweb.nook.crypto.BaseXXXUtils
 import solutions.semweb.nook.crypto.CryptoManager
 import solutions.semweb.nook.crypto.DecryptionFailureMonitor
 import solutions.semweb.nook.crypto.EncryptionMapper
+import solutions.semweb.nook.crypto.EncryptionVerifier
+import solutions.semweb.nook.data.database.ChatMessageEntity
 import solutions.semweb.nook.data.database.DatabaseActor
 import solutions.semweb.nook.data.database.DatabaseManager
 import solutions.semweb.nook.sms.SMSSender
@@ -45,6 +49,9 @@ class ChatManager(val context: Context) {
 
     private var lastBroadcastTime = 0L
     private val BROADCAST_COOLDOWN = 500L // 0.5 secondi
+
+    private val tempIdToRealIdMap = mutableMapOf<Long, Long>()
+    private val mapLock = Any()
 
     /**
      * Elimina un messaggio dal database
@@ -75,9 +82,16 @@ class ChatManager(val context: Context) {
     }
 
 
-    fun addMessageInChat(message: ChatMessage, conversation: ChatConversation, saveConversation: Boolean = true) {
+    /**
+     * Add a message to a conversation and return the real database ID
+     * @return The real database ID, or -1 if failed
+     */
+    fun addMessageInChat(message: ChatMessage, conversation: ChatConversation, saveConversation: Boolean = true): Long {
         synchronized(messageLock) {
             try {
+                LogUtils.d(context, "ChatManager", "📝 Adding message to chat: ${conversation.phoneNumber}")
+                LogUtils.d(context, "ChatManager", "   Message temp ID: ${message.id}")
+                LogUtils.d(context, "ChatManager", "   Message text: ${message.text.take(30)}...")
 
                 val shouldIncrementUnread = when {
                     message.isOutgoing -> false
@@ -90,35 +104,46 @@ class ChatManager(val context: Context) {
                     conversation.unreadCount
                 }
 
-                // TODO: Update last stuff (only if message is last in chat)
                 val updatedConversation = conversation.copy(
                     lastMessage = message.text,
                     lastTimestamp = maxOf(conversation.lastTimestamp, message.timestamp),
                     unreadCount = newUnreadCount
                 )
 
-                if (saveConversation)
+                if (saveConversation) {
                     runBlocking {
                         databaseActor.saveChatConversation(updatedConversation)
                     }
+                }
 
-                val success = runBlocking {
+                // Capture the generated ID from the database
+                val generatedId = runBlocking {
                     databaseActor.addMessageToConversation(conversation.phoneNumber, message)
                 }
 
-                if (success) {
-                    LogUtils.d(context, "ChatManager", "✅ [SYNC] Message saved in database")
-                    LogUtils.d(context, "ChatManager", "  Chat: ${conversation.phoneNumber}")
-                    LogUtils.d(context, "ChatManager", "  New unreadCount: ${updatedConversation.unreadCount}")
-                    LogUtils.d(context, "ChatManager", "  Incremented unread: $shouldIncrementUnread")
+                if (generatedId > 0) {
+                    LogUtils.d(context, "ChatManager",
+                        "✅ [SYNC] Message saved in database with ID: $generatedId (temp ID: ${message.id})")
 
-                    // 6. UI - Invia broadcast per aggiornare
+                    // Store the mapping between temporary ID and real ID
+                    storeIdMapping(message.id, generatedId)
+
+                    LogUtils.d(context, "ChatManager",
+                        "  Chat: ${conversation.phoneNumber}")
+                    LogUtils.d(context, "ChatManager",
+                        "  New unreadCount: ${updatedConversation.unreadCount}")
+
+                    // Send broadcast to update UI
                     sendChatUpdateBroadcast()
+
+                    return generatedId  // Return the real database ID
                 } else {
                     LogUtils.e(context, "ChatManager", "❌ [SYNC] Database message save failed")
+                    return -1L
                 }
             } catch (e: Exception) {
                 LogUtils.e(context, "ChatManager", "❌ [SYNC] Error saving message", e)
+                return -1L
             }
         }
     }
@@ -242,8 +267,13 @@ class ChatManager(val context: Context) {
 
     private fun sendChatUpdateBroadcast() {
         val now = System.currentTimeMillis()
-        if (now - lastBroadcastTime < BROADCAST_COOLDOWN) {
-            return // Troppo presto, skip
+        val timeSinceLast = now - lastBroadcastTime
+
+        LogUtils.d(context, "ChatManager", "📡 sendChatUpdateBroadcast - timeSinceLast=$timeSinceLast ms, cooldown=$BROADCAST_COOLDOWN ms")
+
+        if (timeSinceLast < BROADCAST_COOLDOWN) {
+            LogUtils.d(context, "ChatManager", "⏱️ Broadcast SKIPPED - too soon (${timeSinceLast}ms < ${BROADCAST_COOLDOWN}ms)")
+            return // Too early, skip
         }
 
         lastBroadcastTime = now
@@ -254,7 +284,7 @@ class ChatManager(val context: Context) {
                     intent.setPackage(context.packageName)
                 }
                 context.sendBroadcast(intent)
-                LogUtils.d(context, "ChatManager", "📡 Broadcast sent")
+                LogUtils.d(context, "ChatManager", "📡 Broadcast SENT successfully")
             } catch (e: Exception) {
                 LogUtils.e(context, "ChatManager", "❌ Error sending broadcast", e)
             }
@@ -350,6 +380,60 @@ class ChatManager(val context: Context) {
         }
     }
 
+    /**
+     * Build the display text for a message (without any encryption indicator prefix)
+     * @return The clean message text without indicators
+     */
+    fun buildDisplayText(
+        schemeAbbr: String?,
+        schemeToUse: String?,
+        shortEncoding: String,
+        hasEncodingPassword: Boolean,
+        text: String,
+        encoding: String,
+        multiPartSize: Int = 1
+    ): String {
+        // Just return the original text - no prefix
+        return text
+    }
+
+    /**
+     * Build the encryption/encoding indicator to show in the UI
+     * Returns something like "[sisa@b256p]" or "[sisa@b32]" or "[3-part]" or "[@b256]"
+     * New simplified expressions: "s@b3p" or "s@b1p" or "@b1" or "@b1p"
+     */
+    fun buildEncryptionIndicator(
+        schemeAbbr: String?,
+        schemeToUse: String?,
+        shortEncoding: String,
+        hasEncodingPassword: Boolean,
+        encoding: String,
+        multiPartSize: Int = 1
+    ): String {
+        val multipartindicator = if (multiPartSize > 1) ":$multiPartSize" else ""
+        val sEncoding = if (hasEncodingPassword) shortEncoding + 'p' else shortEncoding
+
+        return when {
+            // Has encryption scheme (not plain text)
+            schemeAbbr?.isNotEmpty() == true && schemeToUse != EncryptionMapper.ENCRYPTION_TEXT -> {
+                "$schemeAbbr@$sEncoding$multipartindicator"
+            }
+            // Has encoding but no encryption
+            encoding.isNotEmpty() && encoding != EncryptionMapper.ENCRYPTION_SCHEME_TEXT -> {
+                "@$sEncoding$multipartindicator"
+            }
+            // Only multipart indicator
+            multiPartSize > 1 -> {
+                "$multipartindicator"
+            }
+            // No encryption, no encoding, no multipart
+            else -> {
+                ""
+            }
+        }
+    }
+
+
     fun createNormalChat(phoneNumber: String, contactName: String?, encoding: String = Constants.DEFAULT_encoding) {
         try {
             // Crea la conversazione
@@ -376,15 +460,20 @@ class ChatManager(val context: Context) {
         }
     }
 
+    /**
+     * Handle incoming message with full receipt support
+     */
     fun handleIncomingMessage(
         messageText0: String,
         isDecoded: Boolean = true,
         conversation: ChatConversation,
-        transTimestamp: Long, // timestamp coming from NooK, not SMS
+        transTimestamp: Long, // transmission timestamp coming from NooK sender, not SMS might match
         timestamp: Long,
         usedScheme: String = "",
         usedEncoding: String = "",
-        multiPartSize: Int = 1
+        usedEncodingPassword: String,
+        multiPartSize: Int = 1,
+        decryptionNotes: String = ""
     ): Boolean {
 
         // Prevent concurrent handling of incoming messages
@@ -394,22 +483,32 @@ class ChatManager(val context: Context) {
             Thread.sleep(100)
         }
 
+        var messageText = messageText0
+
         synchronized(isHandlingIncoming) {
             try {
 
                 val senderName = conversation.contactName ?: conversation.phoneNumber
                 isHandlingIncoming.set(true)
 
-                LogUtils.d(context, "ChatManager", "📱 Gestione SMS in arrivo da: $senderName")
-                LogUtils.d(context, "ChatManager", "  Testo: '${messageText0.take(50)}...'")
+                LogUtils.d(context, "ChatManager", "📱 SMS coming from: $senderName")
+                LogUtils.d(context, "ChatManager", "  Text: '${messageText0.take(50)}...'")
                 LogUtils.d(context, "ChatManager", "  isDecoded: $isDecoded")
 
-                //compatibility: nowadays messages have EncryptionMapper.techSign as #
-                //in case we get a message starting with # - replace # with EncryptionMapper.techSign
-                val messageText =
-                    if (messageText0.startsWith("#"))
-                        messageText0.replace("#", EncryptionMapper.techSign)
-                    else messageText0
+                /////// not decoded - send a DEFAULT replay with nok ad mid -1 (last one)
+                if (!isDecoded) {
+                    runBlocking {
+                        // Use the original chat ID and message ID from the receipt request
+                        sendDecryptionReceipt(
+                            targetMessageId = -1, // target for receipt = last one
+                            receivedMessage = null,
+                            localConversation = conversation,
+                            decryptionNotes = decryptionNotes
+                        )
+                    }
+                    //Correct message since not readable
+                    messageText = context.getString(R.string.MessageNotDecrypted)
+                }
 
                 // DEFENSIVE CHECK: Verify this sender should have a chat
                 val prefs = SharedPreferencesManager.getInstance(context)
@@ -422,47 +521,134 @@ class ChatManager(val context: Context) {
                     return false
                 }
 
-                val encodingPassword = conversation.encodingPassword
-
                 LogUtils.d(context, "ChatManager",
                     "📊 Encoding: chat=$usedEncoding, message=$usedEncoding, usando=$usedEncoding")
 
-                val isPlaintextReceived = when {
-                    usedScheme == EncryptionMapper.ENCRYPTION_TEXT && usedEncoding == EncryptionMapper.ENCRYPTION_TEXT -> true
-                    !isDecoded &&
-                            !messageText.trim().startsWith(EncryptionMapper.techSign+"e") &&  // e.g. #e
-                            !CryptoManager.hasEncryptionIndicators(messageText) -> true
-                    else -> false
-                }
+                val isDefaultChatEncConfig = detectDefaultChatEncConfiguration(conversation)
+                val isDecoded = isDecoded && (isDefaultChatEncConfig || conversation.encryptionScheme == EncryptionMapper.ENCRYPTION_SCHEME_SISA)
+
+                val isPlaintextReceived = !isDecoded
 
                 val schemeAbbr = EncryptionMapper.extractShortForEncrScheme(usedScheme)
                 val shortEncoding = EncryptionMapper.extractShortForEncoding(usedEncoding)
-                val hasEncodingPassword = encodingPassword.isNotEmpty()
+                val hasEncodingPassword = usedEncodingPassword.isNotEmpty()
 
-                val displayText = encIndicatorWithText(
+                val encryptionIndicator = buildEncryptionIndicator(
                     schemeAbbr,
                     usedScheme,
                     shortEncoding,
                     hasEncodingPassword,
-                    messageText,
                     usedEncoding,
                     multiPartSize
                 )
 
+                val metadata = mutableMapOf<String, String>()
+                if (encryptionIndicator.isNotEmpty()) {
+                    metadata["e_ind"] = encryptionIndicator
+                }
+
+
+                // useful only for the default case:
                 val message = ChatMessage(
-                    text = displayText,
+                    conversationId = conversation.id,
+                    text = messageText,
                     sender = conversation.phoneNumber,
                     senderName = senderName,
                     timestamp = timestamp,
                     trans_timestamp = transTimestamp,
-                    isDecoded = !isPlaintextReceived,
+                    isDecoded = isDecoded,
                     isOutgoing = false,
-                    isYMessage = false
+                    metadata = metadata
                 )
+
+                if (isDecoded) {
+                    ////////////////////////////////////////////////////////
+                    // Check if this is just a receipt response (highest priority)
+                    ////////////////////////////////////////////////////////
+                    if (isReceiptResponse(messageText)) {
+                        LogUtils.d(context, "ChatManager", "📋 Received receipt message")
+
+                        val receiptInfo = parseReceiptResponse(messageText0)
+                        if (receiptInfo != null) {
+                            val (originalMessageId, decrTimestampStr, response) = receiptInfo
+                            val decrTimestamp = decrTimestampStr.toLongOrNull() ?: timestamp
+
+                            LogUtils.d(context, "ChatManager",
+                                "📋 Processing receipt: message=$originalMessageId, decrTimestamp=$decrTimestamp, response=$response")
+
+                            // Process the receipt - this will update the original message with receipt metadata
+                            updateMessageWithReceiptStatus(originalMessageId, response, decrTimestamp)
+
+                            // Don't create a system message - we'll just update the original message
+                            LogUtils.d(context, "ChatManager", "✅ Receipt processed successfully for message $originalMessageId")
+                        } else {
+                            LogUtils.w(context, "ChatManager", "⚠️ Malformed receipt message, ignoring")
+                        }
+
+                        // Return true even if malformed - we don't want to show receipt messages in chat
+                        return true
+                    }
+
+                    ////////////////////////////////////////////////////////
+                    // Check if this message is requesting a receipt
+                    ////////////////////////////////////////////////////////
+                    else if (isReceiptRequested(messageText)) {
+                        LogUtils.d(context, "ChatManager", "📋 Message requests decryption receipt")
+
+                        // MODIFICATION: Parse the receipt request to get chat ID and message ID
+                        val receiptRequestInfo = parseReceiptRequest(messageText0)
+                        val transmittingMessageId = receiptRequestInfo?.first ?: conversation.id
+
+                        // Remove the receipt request marker from display text
+                        message.text = if (receiptRequestInfo != null) {
+                            messageText0.take(messageText0.length - receiptRequestInfo.second.length - 1) // remove marker+params
+                        } else {
+                            messageText0.dropLast(1) // just remove marker
+                        }
+
+                        // Store receipt request info in metadata
+                        val metadata = message.metadata?.toMutableMap() ?: mutableMapOf()
+                        metadata["rr"] = "true" // requested receipt
+                        val updatedMessage = message.copy(metadata = metadata)
+                        val databaseManager = DatabaseManager.getInstance(context)
+
+                        // DUMP VOR
+                        // databaseManager.dumpLastMessages(context, 2)
+
+                        // Add the received message
+                        addMessageInChat(updatedMessage, conversation)
+
+                        // Thread.sleep(2000)
+                        // DUMP AFTER
+                        // databaseManager.dumpLastMessages(context, 2)
+
+                        if (transmittingMessageId > 0) {
+                            // Create a copy of the message with the correct ID
+                            val transittedMessageId = updatedMessage.copy(id = transmittingMessageId)
+
+                            // Then send receipt (successful decryption) with the correct IDs
+                            runBlocking {
+                                // Use the original chat ID and message ID from the receipt request
+                                sendDecryptionReceipt(
+                                    targetMessageId = transmittingMessageId, // target for receipt
+                                    receivedMessage = updatedMessage, // to store inside that we sent a receipt
+                                    decryptionNotes = decryptionNotes,
+                                    localConversation = conversation
+                                )
+                            }
+                        }
+
+                        return true
+                    }
+                }
+                ////////////////////////////////////////////////////////
+                // Regular message (no receipt stuff)
+                ////////////////////////////////////////////////////////
+
+                // Just add the message normally
 
                 addMessageInChat(message, conversation)
 
-                // Log dettagliato
                 LogUtils.d(context, "ChatManager",
                     "✅ Message saved: plaintext=$isPlaintextReceived, " +
                             "isDecoded=${message.isDecoded}, " +
@@ -470,6 +656,8 @@ class ChatManager(val context: Context) {
                             "text='${message.text.take(30)}...'")
 
                 return true
+
+
             } catch (e: Exception) {
                 LogUtils.e(context, "ChatManager", "❌ Error in handleIncomingMessage", e)
                 return false
@@ -477,7 +665,136 @@ class ChatManager(val context: Context) {
                 isHandlingIncoming.set(false)
             }
         }
+        return true
     }
+
+    private fun parseReceiptRequest(messageText: String): Pair<Long,String>? {
+        try {
+            val marker = EncryptionMapper.RECEIPT_REQUEST_MARKER
+            val markerIndex = messageText.lastIndexOf(marker)
+
+            if (markerIndex == -1) return null
+
+            val paramsPart = messageText.substring(markerIndex + marker.length)
+
+            // Parse just the message ID (no chat-id anymore)
+            val messageId = paramsPart.toLongOrNull() ?: return null
+
+            return Pair(messageId, paramsPart)
+        } catch (e: Exception) {
+            LogUtils.e(context, "ChatManager", "Error parsing receipt request", e)
+            return null
+        }
+    }
+
+    /**
+     * Update a message with receipt status when we receive a receipt response
+     */
+    private fun updateMessageWithReceiptStatus(
+        originalMessageId: Long,
+        response: String,
+        receiptTimestamp: Long
+    ) {
+        try {
+            LogUtils.d(context, "ChatManager",
+                "📨 Processing receipt for message $originalMessageId: $response at $receiptTimestamp")
+
+            val databaseManager = DatabaseManager.getInstance(context)
+
+            // DUMP BEFORE
+            // databaseManager.dumpLastMessages(context, 2)
+
+            val messageEntity = if (originalMessageId == -1L) {
+                databaseManager.database.chatMessageDao().findLast()
+            } else {
+                databaseManager.database.chatMessageDao().findById(originalMessageId)
+            }
+            if (messageEntity == null) {
+                LogUtils.e(context, "ChatManager", "❌ Message NOT FOUND in DB for ID: $originalMessageId")
+                return
+            }
+
+            LogUtils.d(context, "ChatManager", "✅ Found message in DB: ${messageEntity.id}")
+
+            // Create metadata
+            val message = messageEntity.toDomain(context)
+            val existingMetadata = message.metadata?.toMutableMap() ?: mutableMapOf()
+            existingMetadata["rr"] = "true"
+            existingMetadata["rres"] = response
+            existingMetadata["rrt"] = receiptTimestamp.toString()
+            existingMetadata["type"] = "receipt"  // Add type for metadata_type column
+
+            // Convert metadata to JSON and encrypt
+            val metadataJson = com.google.gson.Gson().toJson(existingMetadata)
+            val encryptedMetadataJson = EncryptionVerifier.encryptAndVerify(
+                metadataJson, "metadataJson", "ChatMessage", context,
+                conversationId = messageEntity.conversationId
+            )
+
+            // DIRECT SQL UPDATE VIA DAO METHOD
+            runBlocking {
+                try {
+                    val rowsAffected = databaseManager.database.chatMessageDao().updateMetadataDirectly(
+                        messageId = originalMessageId,
+                        metadataJson = encryptedMetadataJson,
+                        metadataType = "receipt",
+                        updatedAt = System.currentTimeMillis()
+                    )
+
+                    LogUtils.d(context, "ChatManager", "📊 Direct update result: $rowsAffected rows affected")
+
+                    if (rowsAffected > 0) {
+                        LogUtils.d(context, "ChatManager", "✅ Message $originalMessageId updated via direct query")
+                    } else {
+                        LogUtils.w(context, "ChatManager", "⚠️ Direct update affected 0 rows, trying raw SQL")
+
+                        // FALLBACK: Raw SQL
+                        val db = databaseManager.database.openHelper.writableDatabase
+                        val sql = """
+                        UPDATE chat_messages 
+                        SET metadata_json = ?, 
+                            metadata_type = ?,
+                            updated_at = ?
+                        WHERE id = ?
+                    """
+
+                        db.execSQL(sql, arrayOf(
+                            encryptedMetadataJson,
+                            "receipt",
+                            System.currentTimeMillis(),
+                            originalMessageId
+                        ))
+
+                        LogUtils.d(context, "ChatManager", "✅ Message $originalMessageId updated via raw SQL")
+                    }
+                } catch (e: Exception) {
+                    LogUtils.e(context, "ChatManager", "❌ Error during update", e)
+                }
+            }
+
+            // Wait a moment and verify
+            Thread.sleep(1000)
+
+            // Verify the update
+            val updatedEntity = databaseManager.database.chatMessageDao().findById(originalMessageId)
+            if (updatedEntity != null) {
+                val updatedMessage = updatedEntity.toDomain(context)
+                LogUtils.d(context, "ChatManager", "🔍 Verification after update:")
+                LogUtils.d(context, "ChatManager", "   Metadata contains 'rr': ${updatedMessage.metadata?.get("rr")}")
+                LogUtils.d(context, "ChatManager", "   Metadata contains 'rres': ${updatedMessage.metadata?.get("rres")}")
+            }
+
+            // DUMP AFTER
+            // databaseManager.dumpLastMessages(context, 2)
+
+            LogUtils.d(context, "ChatManager", "✅ Updated message $originalMessageId with receipt")
+            sendChatUpdateBroadcast()
+
+        } catch (e: Exception) {
+            LogUtils.e(context, "ChatManager", "❌ Error updating message with receipt status", e)
+        }
+    }
+
 
     // Helper method to check trusted numbers
     private fun isTrustedNumber(context: Context, number: String,
@@ -638,94 +955,288 @@ class ChatManager(val context: Context) {
         }.start()
     }
 
-    fun sendMessage(context: Context, conversation: ChatConversation, text: String): ChatMessage {
-        var messageToReturn: ChatMessage? = null
-        return try {
-            val pendingMessage = conversation.messages.lastOrNull {
-                it.isOutgoing && it.text == text && !it.isSent
+
+    /**
+     * Simulates receiving an SMS for loopback testing
+     * Follows the exact same path as SMSReceiver.processEncryptedMessage()
+     */
+    fun simulateSmsReception(
+        encodedText: String,
+        conversation: ChatConversation,
+        timestamp: Long
+    ): Boolean {
+        LogUtils.d(context, "ChatManager", "🔄 LOOPBACK: Simulating SMS reception for ${conversation.phoneNumber}")
+
+        // simulate latency time 2 sec
+        Thread.sleep(2000)
+
+        try {
+            // STEP 1: Extract timestamp from prefix
+            val (messageWithoutTimestamp, transTimestamp) = extractTimestampFromPrefix(encodedText, conversation.encoding)
+
+            // STEP 2: Decrypt the message
+            val result = runBlocking(Dispatchers.IO) {
+                CryptoManager.decodeMessage(
+                    context,
+                    messageWithoutTimestamp,
+                    conversation.encryptionScheme,
+                    conversation.encoding,
+                    conversation.encodingPassword,
+                    conversation.phoneNumber,
+                    transTimestamp ?: timestamp
+                )
             }
+
+            if (result.success) {
+                LogUtils.d(context, "ChatManager",
+                    "  Step 2 - Decryption successful: '${result.decoded.take(50)}...'")
+
+                // Handle/Add the decrypted message
+                // DO NOT add any additional messages here
+                val handled = handleIncomingMessage(
+                    messageText0 = result.decoded,
+                    conversation = conversation,
+                    transTimestamp = transTimestamp ?: -1,
+                    timestamp = timestamp,
+                    usedScheme = conversation.encryptionScheme,
+                    usedEncoding = conversation.encoding,
+                    usedEncodingPassword = conversation.encodingPassword,
+                )
+
+                if (handled) {
+                    LogUtils.d(context, "ChatManager",
+                        "✅ LOOPBACK: Message processed through all levels successfully")
+                }
+
+                return handled
+            } else {
+                LogUtils.e(context, "ChatManager",
+                    "❌ LOOPBACK: Decryption failed for message")
+                return false
+            }
+
+        } catch (e: Exception) {
+            LogUtils.e(context, "ChatManager",
+                "❌ LOOPBACK: Error simulating SMS reception (loopback)", e)
+            return false
+        }
+    }
+
+    /**
+     * Helper method - copies the timestamp extraction logic from SMSReceiver
+     */
+    private fun extractTimestampFromPrefix(encodedMessage: String, usedEncoding: String): Pair<String, Long?> {
+        if (!encodedMessage.startsWith(Constants.SMS_OBF_PREFIX)) {
+            return Pair(encodedMessage, null)
+        }
+
+        val encodingBase = EncryptionMapper.extractEncodingBase(usedEncoding)
+        val timestampWidth = BaseXXXUtils.SecondTimestamp.getTimestampWidthForSeconds(encodingBase)
+
+        val isEncrypted = encodedMessage.length > 2 &&
+                encodedMessage.substring(2).startsWith(EncryptionMapper.SISA_ENCR_PREFIX)
+        val prefixLength = if (isEncrypted) {
+            Constants.SMS_OBF_PREFIX.length + EncryptionMapper.SISA_ENCR_PREFIX.length
+        } else {
+            Constants.SMS_OBF_PREFIX.length
+        }
+
+        if (encodedMessage.length < prefixLength + timestampWidth + 1) {
+            return Pair(encodedMessage, null)
+        }
+
+        val afterPrefix = encodedMessage.substring(prefixLength)
+        val timestampPart = afterPrefix.take(timestampWidth)
+
+        return try {
+            val timestamp = BaseXXXUtils.SecondTimestamp.decodeToLong(timestampPart, timestampWidth, encodingBase)
+            val remainingMessage = encodedMessage.substring(0, prefixLength) +
+                    afterPrefix.substring(timestampWidth + 1)
+            Pair(remainingMessage, timestamp)
+        } catch (e: Exception) {
+            LogUtils.d(context, "ChatManager", "⚠️ Timestamp extraction failed: ${e.message}")
+            Pair(encodedMessage, null)
+        }
+    }
+
+    /**
+     * Send a message to a contact
+     * @param context The context
+     * @param conversation The conversation to send the message to
+     * @param text The message text to send
+     * @param messageid The temporary message ID (usually timestamp)
+     * @return The ChatMessage object that was created (with real ID if available)
+     */
+    fun sendMessage(context: Context, conversation: ChatConversation, text: String, messageid: Long): ChatMessage {
+        var messageToReturn: ChatMessage? = null
+
+        return try {
+            LogUtils.d(context, "ChatManager", "✈️ sendMessage to: ${conversation.phoneNumber}")
+            LogUtils.d(context, "ChatManager", "   Text: '${text.take(30)}...'")
+            LogUtils.d(context, "ChatManager", "   Temp ID: $messageid")
+
+            // Get encryption/encoding parameters
+            val scheme = conversation.encryptionScheme
+            val schemeToUse = scheme.ifEmpty { getGlobalDecodingScheme() }
+            val schemeAbbr = EncryptionMapper.extractShortForEncrScheme(schemeToUse)
             val encoding = conversation.encoding
             val encodingPassword = conversation.encodingPassword
+
+            val shortEncoding = if (encoding == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) "" else
+                EncryptionMapper.extractShortForEncoding(encoding)
+
             val hasEncodingPassword = encodingPassword.isNotEmpty()
+            val multiPartSize = 1 // Default, can be adjusted for multipart messages
 
-            if (pendingMessage != null) {
-                messageToReturn = pendingMessage
-                LogUtils.d(context, "ChatManager", "✅ Pending message found: ${pendingMessage.id}")
-            } else {
-                LogUtils.w(context, "ChatManager", "⚠️ No pending message found. Create backup.")
+            // Check if this is a default encryption chat
+            val isDefaultChatEncConfig = detectDefaultChatEncConfiguration(conversation)
 
-                val scheme = conversation.encryptionScheme
-                val schemeToUse = scheme.ifEmpty { getGlobalDecodingScheme() }
-                val schemeAbbr = EncryptionMapper.extractShortForEncrScheme(schemeToUse)
+            // For default encryption, set isDecoded = false (plaintext) even though it's encoded
+            // This ensures it uses the plaintext layouts in the adapter
+            val isDecoded = isDefaultChatEncConfig || conversation.encryptionScheme == EncryptionMapper.ENCRYPTION_SCHEME_SISA
 
-                val short_encoding = if (encoding == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) "" else
-                    EncryptionMapper.extractShortForEncoding(encoding)
-                val msgDisplayText = encIndicatorWithText(
-                    schemeAbbr,
-                    schemeToUse,
-                    short_encoding,
-                    hasEncodingPassword,
-                    text,
-                    encoding
-                )
+            // Build encryption indicator for UI
+            val encryptionIndicator = buildEncryptionIndicator(
+                schemeAbbr,
+                schemeToUse,
+                shortEncoding,
+                hasEncodingPassword,
+                encoding,
+                multiPartSize
+            )
 
-                val fallbackMessage = ChatMessage(
-                    id = generateMessageId(),
-                    text = msgDisplayText,
-                    sender = conversation.phoneNumber,
-                    senderName = null,
-                    timestamp = System.currentTimeMillis(),
-                    isDecoded = true,
-                    isOutgoing = true,
-                    isSent = false,
-                    isYMessage = false
-                )
-
-                //Add message in local chat on cell phone
-                addMessageInChat(fallbackMessage, conversation)
-                messageToReturn = fallbackMessage
+            // Create metadata with encryption indicator
+            val metadata = mutableMapOf<String, String>()
+            if (encryptionIndicator.isNotEmpty()) {
+                metadata["e_ind"] = encryptionIndicator
             }
 
-            // Send SMS in background
+            // Create the message object with temporary ID
+            val newMessage = ChatMessage(
+                id = messageid, // Temporary ID
+                conversationId = conversation.id,
+                text = text,
+                sender = conversation.phoneNumber,
+                senderName = null,
+                timestamp = System.currentTimeMillis(),
+                isDecoded = isDecoded,
+                isOutgoing = true,
+                isSent = false,
+                isYMessage = false,
+                metadata = metadata
+            )
+
+            // Add message to database IMMEDIATELY and get the real database ID
+            val realMessageId = runBlocking {
+                databaseActor.addMessageToConversation(conversation.phoneNumber, newMessage)
+            }
+
+            //  broadcast to show asap "sent" local message
+            sendChatUpdateBroadcast()
+
+            if (realMessageId <= 0) {
+                LogUtils.e(context, "ChatManager", "❌ Failed to save message to database")
+                // Return the temporary message as fallback
+                return newMessage
+            }
+
+            LogUtils.d(context, "ChatManager", "✅ Message saved to database with real ID: $realMessageId (temp ID: $messageid)")
+
+            // Create the message with real ID for UI and return value
+            messageToReturn = newMessage.copy(
+                id = realMessageId,
+                metadata = metadata
+            )
+
+            // Store ID mapping for potential receipt handling
+            storeIdMapping(messageid, realMessageId)
+
+            // Send SMS in background thread
             Thread {
                 try {
-                    val scheme = conversation.encryptionScheme
+                    val shouldRequestReceipt = prefs.getRequestReceipts()
 
-                    LogUtils.d(context, "ChatManager",
-                        "✈️ Send SMS to: ${conversation.phoneNumber}  with scheme: $scheme " +
-                                "(chat: $scheme, global: ${getGlobalDecodingScheme()})")
-
-                    val encodedText = if ( scheme == EncryptionMapper.ENCRYPTION_TEXT
-                        && encoding == EncryptionMapper.ENCRYPTION_TEXT)  {
-                        text
+                    // Build the text to send with receipt request if enabled
+                    val textToSend = if (shouldRequestReceipt) {
+                        // Format: original_text + RECEIPT_REQUEST_MARKER + realMessageId
+                        "$text${EncryptionMapper.RECEIPT_REQUEST_MARKER}$realMessageId"
                     } else {
+                        text
+                    }
 
-                        if ( scheme.isNotEmpty() && scheme != EncryptionMapper.ENCRYPTION_TEXT )
-                            encEncodeMessage(context, text, scheme, encoding, encodingPassword, conversation.phoneNumber)
-                        else { // just encoding
-                            encodeOlnyMessage(context, text, encoding, encodingPassword, conversation.phoneNumber)
+                    // Encode/encrypt the message for transmission
+                    val encodedText = if (schemeToUse == EncryptionMapper.ENCRYPTION_TEXT
+                        && encoding == EncryptionMapper.ENCRYPTION_TEXT) {
+                        // Plain text - no encoding
+                        textToSend
+                    } else {
+                        if (schemeToUse.isNotEmpty() && schemeToUse != EncryptionMapper.ENCRYPTION_TEXT) {
+                            // Encrypt then encode
+                            encEncodeMessage(context, textToSend, schemeToUse, encoding, encodingPassword, conversation.phoneNumber)
+                        } else {
+                            // Just encode
+                            encodeOlnyMessage(context, textToSend, encoding, encodingPassword, conversation.phoneNumber)
                         }
                     }
 
-                    LogUtils.d(context, "ChatManager",
-                        "📤 Text encoded (${encodedText.length} chars): '${encodedText.take(30)}...'")
+                    // Check loopback mode for testing
+                    val isLoopbackMode = prefs.isSmsLoopbackMode() && BuildConfig.DEBUG
 
-                    SMSSender.sendSms(context, conversation.phoneNumber, encodedText)
+                    if (isLoopbackMode) {
+                        // LOOPBACK MODE: Simulate reception
+                        LogUtils.d(context, "ChatManager", "🔁 LOOPBACK MODE: Simulating reception")
 
-                    updateSmsMessageStatus(conversation.phoneNumber, text, true)
-                    LogUtils.d(context, "ChatManager", "✅ SMS sent successfully with scheme: $scheme")
+                        Thread {
+                            try {
+                                Thread.sleep(Constants.SMS_LOOPBACK_DELAY)
+
+                                // Get fresh conversation
+                                val updatedConversation = getConversation(conversation.phoneNumber) ?: conversation
+
+                                // Simulate reception - this will create a NEW incoming message
+                                val success = simulateSmsReception(
+                                    encodedText = encodedText,
+                                    conversation = updatedConversation,
+                                    timestamp = System.currentTimeMillis()
+                                )
+
+                                if (success) {
+                                    LogUtils.d(context, "ChatManager", "✅ LOOPBACK: Reception simulated")
+
+                                    // Mark the ORIGINAL outgoing message as sent using the REAL database ID
+                                    runBlocking {
+                                        databaseActor.markMessageAsSent(realMessageId)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                LogUtils.e(context, "ChatManager", "❌ LOOPBACK error", e)
+                            }
+                        }.start()
+
+                    } else {
+                        // Normal mode: send SMS
+                        SMSSender.sendSms(context, conversation.phoneNumber, encodedText)
+
+                        // Update message status in database using the REAL database ID
+                        runBlocking {
+                            databaseActor.markMessageAsSent(realMessageId)
+                        }
+                    }
+
+                    LogUtils.d(context, "ChatManager", "✅ SMS sent successfully and marked as sent in database")
 
                 } catch (e: Exception) {
                     LogUtils.e(context, "ChatManager", "❌ Error sending SMS", e)
-                    updateSmsMessageStatus(conversation.phoneNumber, text, false)
                 }
             }.start()
 
-            messageToReturn
+            // Return the message with REAL database ID (UI will use this)
+            messageToReturn ?: newMessage
 
         } catch (e: Exception) {
             LogUtils.e(context, "ChatManager", "❌ Error in sendMessage", e)
-            // Fallback completo
+
+            // Return fallback message
             ChatMessage(
                 id = generateMessageId(),
                 text = text,
@@ -738,36 +1249,96 @@ class ChatManager(val context: Context) {
         }
     }
 
-    private fun updateSmsMessageStatus(phoneNumber: String, text: String, isSent: Boolean) {
+    private fun detectDefaultChatEncConfiguration(conversation: ChatConversation): Boolean =
+        (conversation.encryptionScheme == EncryptionMapper.ENCRYPTION_TEXT
+                || conversation.encryptionScheme.isEmpty()) &&
+                conversation.encoding == EncryptionMapper.ENCODING_BASE256 &&
+                conversation.encodingPassword.isNullOrEmpty()
+
+    /**
+     * Overloaded method to update message status using the message object
+     */
+    private fun updateSmsMessageStatus(phoneNumber: String, message: ChatMessage, isSent: Boolean) {
         Thread {
             try {
-                // Find most recent message with this outgoing text
+                LogUtils.d(context, "ChatManager",
+                    "📝 Updating message status: ID=${message.id}, isSent=$isSent")
+
                 val conversation = getConversation(phoneNumber)
                 conversation?.let { conv ->
 
+                    // Try to find the message by ID first (if it's a real ID)
+                    val messageToUpdate = if (message.id > 0 && message.id < 1000000000000) { // Real ID is usually smaller than timestamps
+                        // This is likely a real database ID
+                        runBlocking {
+                            databaseActor.findMessageById(message.id)
+                        }
+                    } else {
+                        // Fall back to finding by text and timestamp
+                        conv.messages.lastOrNull {
+                            it.isOutgoing &&
+                                    it.text == message.text &&
+                                    Math.abs(it.timestamp - message.timestamp) < 5000 && // Within 5 seconds
+                                    !it.isYMessage
+                        }
+                    }
+
+                    if (messageToUpdate != null) {
+                        val updatedMessage = messageToUpdate.copy(
+                            isSent = isSent,
+                            timestamp = System.currentTimeMillis()
+                        )
+
+                        // Use the real ID for the update
+                        val success = runBlocking {
+                            // We need to update the message in the database
+                            // This assumes you have a method to update a message by ID
+                            databaseActor.addMessageToConversation(phoneNumber, updatedMessage) > 0
+                        }
+
+                        if (success) {
+                            LogUtils.d(context, "ChatManager",
+                                "✅ SMS state updated for message ${messageToUpdate.id}: isSent=$isSent")
+
+                            // Store the mapping if we have both temp and real IDs
+                            if (message.id != messageToUpdate.id) {
+                                storeIdMapping(message.id, messageToUpdate.id)
+                            }
+
+                            sendChatUpdateBroadcast()
+                        } else {
+                            LogUtils.e(context, "ChatManager", "❌ Failed to update message status")
+                        }
+                    } else {
+                        LogUtils.w(context, "ChatManager",
+                            "⚠️ Message not found for status update. ID: ${message.id}, Text: ${message.text.take(20)}...")
+                    }
+                }
+            } catch (e: Exception) {
+                LogUtils.e(context, "ChatManager", "❌ Error updating SMS state", e)
+            }
+        }.start()
+    }
+
+
+    /**
+     * Original method for backward compatibility
+     */
+    private fun updateSmsMessageStatus(phoneNumber: String, text: String, isSent: Boolean) {
+        Thread {
+            try {
+                val conversation = getConversation(phoneNumber)
+                conversation?.let { conv ->
                     val message = conv.messages.lastOrNull {
                         it.isOutgoing && it.text == text && !it.isYMessage
                     }
 
                     if (message != null) {
-                        val updatedMessage = message.copy(
-                            isSent = isSent,
-                            timestamp = System.currentTimeMillis()
-                        )
-
-                        val success = runBlocking {
-                            databaseActor.addMessageToConversation(phoneNumber, updatedMessage)
-                        }
-
-                        if (success) {
-                            LogUtils.d(context, "ChatManager", "✅ SMS state updated: isSent=$isSent")
-                            sendChatUpdateBroadcast()
-                        }
+                        updateSmsMessageStatus(phoneNumber, message, isSent)
                     } else {
                         LogUtils.w(context, "ChatManager", "⚠️ SMS Message not found for state update")
                     }
                 }
-
             } catch (e: Exception) {
                 LogUtils.e(context, "ChatManager", "❌ Error updating SMS state", e)
             }
@@ -914,65 +1485,7 @@ class ChatManager(val context: Context) {
 
     // Add these methods to your ChatManager class
 
-    /**
-     * Add a system/info message to the chat
-     * These messages are visually distinct and can be replaced later
-     */
-    fun addSystemMessage(
-        sender: String,
-        messageText: String,
-        timestamp: Long,
-        senderName: String?,
-        messageId: String
-    ) {
-        try {
-            LogUtils.d(context, "ChatManager", "📱 Adding system message: $messageId")
 
-            // Create metadata for the system message
-            val metadata = mapOf(
-                "type" to "multipart_progress",
-                "dummy_id" to messageId,
-                "part_count" to extractPartCountFromMessage(messageText).toString()
-            )
-
-            // Convert metadata to JSON string for storage
-            val metadataJson = gson.toJson(metadata)
-
-            // Create a system message with special indicator
-            val systemMessage = ChatMessage(
-                id = generateMessageId(),
-                text = "🔄 $messageText",  // Add a visual indicator
-                sender = sender,
-                senderName = senderName,
-                timestamp = timestamp,
-                trans_timestamp = -1,
-                isDecoded = false,
-                isOutgoing = false,
-                isYMessage = false,
-                metadata = metadata  // Store metadata for later replacement
-            )
-
-            // Add to database
-            val success = runBlocking {
-                databaseActor.addMessageToConversation(sender, systemMessage)
-            }
-
-            if (success) {
-                LogUtils.d(context, "ChatManager", "✅ System message added: $messageId")
-
-                // Update conversation last message
-                updateConversationLastMessage(sender, systemMessage)
-
-                // Send broadcast to update UI
-                sendChatUpdateBroadcast()
-            } else {
-                LogUtils.e(context, "ChatManager", "❌ Failed to add system message")
-            }
-
-        } catch (e: Exception) {
-            LogUtils.e(context, "ChatManager", "❌ Error adding system message", e)
-        }
-    }
 
     /**
      * Extract part count from multipart progress message
@@ -1083,6 +1596,328 @@ class ChatManager(val context: Context) {
         }.start()
     }
 
+
+    /**
+     * Check if a message is requesting a receipt
+     */
+    private fun isReceiptRequested(messageText: String): Boolean {
+        // Don't request receipts for receipt messages themselves (prevents loops)
+        if (isReceiptResponse(messageText)) return false
+
+        val prefs = SharedPreferencesManager.getInstance(context)
+
+        // DEBUG: Log the actual preference value
+        val requestReceipts = prefs.getRequestReceipts()
+        LogUtils.d(context, "ChatManager",
+            "🔍 isReceiptRequested - prefs.getRequestReceipts() = $requestReceipts")
+
+        // Check for the marker followed by comma-separated numbers (chatId,messageId)
+        val marker = EncryptionMapper.RECEIPT_REQUEST_MARKER
+        val markerIndex = messageText.lastIndexOf(marker)
+
+        if (markerIndex != -1 && markerIndex + marker.length < messageText.length) {
+            val afterMarker = messageText.substring(markerIndex + marker.length)
+            // Check if it looks like "456" (messageid)
+            if (afterMarker.matches(Regex("\\d+"))) {
+                LogUtils.d(context, "ChatManager",
+                    "🔍 Found receipt marker with ID: $afterMarker, returning $requestReceipts")
+                return requestReceipts
+            }
+        }
+
+        // Fall back to simple marker at end for backward compatibility
+        val result = messageText.endsWith(marker) && requestReceipts
+        LogUtils.d(context, "ChatManager", "🔍 No marker found, returning $result")
+        return result
+    }
+
+    /**
+     * Check if we've already sent a receipt for this message
+     */
+    private suspend fun hasReceiptAlreadySent(messageId: Long): Boolean {
+        return try {
+            // Check in database if this message already has receipt_sent flag
+            val databaseManager = DatabaseManager.getInstance(context)
+            val entity = databaseManager.database.chatMessageDao().findById(messageId)
+
+            if (entity != null) {
+                val message = entity.toDomain(context)
+                message.metadata?.get("receipt_sent") == "true"
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            LogUtils.e(context, "ChatManager", "Error checking receipt sent status", e)
+            false
+        }
+    }
+
+
+
+    /**
+     * Check if a message is a receipt response (to avoid processing receipts as regular messages)
+     */
+    private fun isReceiptResponse(messageText: String): Boolean {
+        return messageText.contains(EncryptionMapper.RECEIPT_RESPONSE_PREFIX)
+    }
+
+    /**
+     * Parse receipt response to extract original message info
+     */
+    private fun parseReceiptResponse(messageText: String): Triple< Long, String, String>? {
+        try {
+            // Format: receiptprefix<chat-id>,<message-id>,<timestamp>,<result>
+            val content = messageText.substring(EncryptionMapper.RECEIPT_RESPONSE_PREFIX.length) // skip control char
+            val parts = content.split(",", limit=4)
+            if (parts.size != 3) return null
+
+            // val originalChatId = parts[0].toLongOrNull() ?: return null
+            val originalMessageId = parts[0].toLongOrNull() ?: return null
+            val timestamp = parts[1] // timestamp where decrypted/shown
+            val result = parts[2] // "OK" or "NOK"
+
+            return Triple(originalMessageId, timestamp, result)
+        } catch (e: Exception) {
+            LogUtils.e(context, "ChatManager", "Error parsing receipt response", e)
+            return null
+        }
+    }
+
+    /**
+     * Get a conversation by its database ID
+     */
+    suspend fun getConversationById(conversationId: Long): ChatConversation? {
+        return try {
+            LogUtils.d(context, "ChatManager", "🔍 Getting conversation by ID: $conversationId")
+
+            val databaseManager = DatabaseManager.getInstance(context)
+            val entity = databaseManager.database.chatConversationDao()
+                .findById(conversationId)
+
+            entity?.toDomain(context)
+        } catch (e: Exception) {
+            LogUtils.e(context, "ChatManager", "❌ Error getting conversation by ID", e)
+            null
+        }
+    }
+
+
+    /**
+     * Send a decryption receipt back to the sender
+     * USE ALWAYS DEFAULT encoding for higher compatibility
+     * @param success Whether decryption was successful
+     * @param targetChatId The ID of the original chat that requested the receipt
+     * @param targetMessageId The ID of the original message that requested the receipt
+     */
+    private suspend fun sendDecryptionReceipt(
+        targetMessageId: Long,
+        receivedMessage: ChatMessage?,
+        localConversation: ChatConversation,
+        decryptionNotes: String = ""
+    ) {
+        try {
+            val prefs = SharedPreferencesManager.getInstance(context)
+
+            // CHECK 1: Is sending receipts enabled?
+            if (!prefs.getAllowSendingReceipts()) {
+                LogUtils.d(context, "ChatManager", "⏭️ Sending receipts disabled, skipping")
+                return
+            }
+
+            // CHECK 2: Have we already sent a receipt for this message?
+            if (hasReceiptAlreadySent(targetMessageId)) {
+                LogUtils.d(context, "ChatManager", "⏭️ Receipt already sent for message $targetMessageId, skipping")
+                return
+            }
+
+            // Get the original message to pass to markReceiptSent
+            LogUtils.d(context, "ChatManager",
+                "📨 Sending decryption receipt for message ${targetMessageId} in chat ${localConversation.id}")
+
+            // Format: #receipt#<chat-id>,<message-id>,<timestamp>,<response>
+            // response Ok if sisa set and sisa decrypted
+            //val response = if (success) "OK" else "NOK"
+
+            val response = when { localConversation.encryptionScheme == EncryptionMapper.ENCRYPTION_SISA ->
+                                            { if (decryptionNotes.contains("DEFAULT")) "NOK" else "OK" }
+                                else -> "NOK" }
+            val timestamp = System.currentTimeMillis()
+            val receiptText = "${EncryptionMapper.RECEIPT_RESPONSE_PREFIX}${targetMessageId},$timestamp,$response"
+
+            /* // Use the same encryption/encoding as the conversation
+            val encodedDecryptionReceiptText = if (conversation.encryptionScheme.isNotEmpty() &&
+                conversation.encryptionScheme != EncryptionMapper.ENCRYPTION_TEXT) {
+                encEncodeMessage(context, receiptText, conversation.encryptionScheme,
+                    conversation.encoding, conversation.encodingPassword, conversation.phoneNumber)
+            } else if (conversation.encoding != EncryptionMapper.ENCRYPTION_SCHEME_TEXT) {
+                encodeOlnyMessage(context, receiptText, conversation.encoding,
+                    conversation.encodingPassword, conversation.phoneNumber)
+            } else {
+                receiptText
+            } */
+
+            // use always DEFAULT
+            val encodedDecryptionReceiptText =
+                encodeOlnyMessage(context, receiptText, EncryptionMapper.ENCODING_BASE256,
+                    "", localConversation.phoneNumber)
+
+
+            // Send the receipt SMS
+            val isLoopbackMode = prefs.isSmsLoopbackMode() && BuildConfig.DEBUG
+
+            if (isLoopbackMode) {
+                Thread {
+                    try {
+                        Thread.sleep(Constants.SMS_LOOPBACK_DELAY)
+                        simulateSmsReception(
+                            encodedText = encodedDecryptionReceiptText,
+                            conversation = localConversation,
+                            timestamp = System.currentTimeMillis()
+                        )
+                    } catch (e: Exception) {
+                        LogUtils.e(context, "ChatManager", "❌ LOOPBACK: Error simulating receipt", e)
+                    }
+                }.start()
+            } else {
+                SMSSender.sendSms(context, localConversation.phoneNumber, encodedDecryptionReceiptText)
+            }
+
+            // Mark in the original message that we've sent a receipt - PASS THE MESSAGE OBJECT
+            if (receivedMessage != null)
+                markReceiptSent(receivedMessage, localConversation)
+
+            LogUtils.d(context, "ChatManager", "✅ Decryption receipt sent for transmitting message ${targetMessageId}")
+
+        } catch (e: Exception) {
+            LogUtils.e(context, "ChatManager", "❌ Error sending decryption receipt", e)
+        }
+    }
+
+    /**
+     * Mark in the original message that a receipt has been sent
+     */
+    private suspend fun markReceiptSent(message: ChatMessage, conversation: ChatConversation) {
+        try {
+            LogUtils.d(context, "ChatManager", "📝 Marking receipt as sent for message ${message.id}")
+
+            // Get the existing entity
+            val databaseManager = DatabaseManager.getInstance(context)
+
+            // DUMP DB
+            // databaseManager.dumpLast4Messages(context)
+
+            val existingEntity = databaseManager.database.chatMessageDao().findById(message.id)
+
+            if (existingEntity != null) {
+                // Update metadata
+                val existingMetadata = message.metadata?.toMutableMap() ?: mutableMapOf()
+                existingMetadata["rs"] = "true"
+                existingMetadata["rst"] = System.currentTimeMillis().toString()
+
+                // Create updated message with same ID
+                val updatedMessage = message.copy(metadata = existingMetadata)
+
+                // Create updated entity
+                val updatedEntity = ChatMessageEntity.fromDomain(updatedMessage, existingEntity.conversationId, context)
+
+                databaseManager.database.chatMessageDao().update(updatedEntity)
+
+                // DUMP AFTER
+                // delay(1000) // small delay to ensure write completes
+                // databaseManager.dumpLast4Messages(context)
+
+                LogUtils.d(context, "ChatManager", "✅ Message ${message.id} updated with receipt sent status")
+            }
+        } catch (e: Exception) {
+            LogUtils.e(context, "ChatManager", "❌ Error marking receipt as sent", e)
+        }
+    }
+
+
+
+    /**
+     * Store mapping between temporary ID and real database ID
+     */
+    private fun storeIdMapping(tempId: Long, realId: Long) {
+        synchronized(mapLock) {
+            tempIdToRealIdMap[tempId] = realId
+
+            // Clean up old mappings (keep last 100 or older than 5 minutes)
+            val cutoffTime = System.currentTimeMillis() - 5 * 60 * 1000
+            tempIdToRealIdMap.entries.removeAll {
+                it.key < cutoffTime
+            }
+            // Keep only last 100 entries if still too many
+            if (tempIdToRealIdMap.size > 100) {
+                val entriesToKeep = tempIdToRealIdMap.entries
+                    .sortedByDescending { it.key }
+                    .take(100)
+                tempIdToRealIdMap.clear()
+                entriesToKeep.forEach { (tempId, realId) ->
+                    tempIdToRealIdMap[tempId] = realId
+                }
+            }
+        }
+    }
+
+    /**
+     * Get real database ID from temporary ID
+     */
+    fun getRealMessageId(tempId: Long): Long? {
+        synchronized(mapLock) {
+            return tempIdToRealIdMap[tempId]
+        }
+    }
+
+    /**
+     * Get temporary ID from real database ID (reverse lookup)
+     */
+    fun getTempMessageId(realId: Long): Long? {
+        synchronized(mapLock) {
+            return tempIdToRealIdMap.entries.find { it.value == realId }?.key
+        }
+    }
+
+    /**
+     * Clear ID mappings for a specific message
+     */
+    fun clearIdMapping(tempId: Long) {
+        synchronized(mapLock) {
+            tempIdToRealIdMap.remove(tempId)
+        }
+    }
+
+    /**
+     * Check if a message has a receipt and get its status
+     */
+    fun getMessageReceiptStatus(messageId: Long): Triple<String?, Long?, String?>? {
+        return try {
+            val databaseManager = DatabaseManager.getInstance(context)
+            val messageEntity = databaseManager.database.chatMessageDao().findById(messageId)
+
+            if (messageEntity != null) {
+                val message = messageEntity.toDomain(context)
+                val metadata = message.metadata
+
+                // Use the same keys as in updateMessageWithReceiptStatus
+                if (metadata != null && metadata["rr"] == "true") {
+                    val status = metadata["rres"]
+                    val timestamp = metadata["rrt"]?.toLongOrNull()
+                    Triple(status, timestamp, message.text)
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            LogUtils.e(context, "ChatManager", "Error getting receipt status", e)
+            null
+        }
+    }
+
+
+
 }
 
 fun cleanupIndicator(message: String): String {
@@ -1104,17 +1939,13 @@ fun encIndicatorWithText(
     multiPartSize: Int = 1
 ): String {
 
-    val multipartindicator = if (multiPartSize > 1) ":$multiPartSize" else ""
     // show password for encoding if set
-    val sEncoding = if (hasEncodingPassword) shortEncoding+'p' else shortEncoding
+    var sEncoding = if (hasEncodingPassword) shortEncoding+'p' else shortEncoding
     val msgDisplayText =
         if (schemeAbbr?.isNotEmpty() == true && schemeToUse != EncryptionMapper.ENCRYPTION_TEXT)
-            "[$schemeAbbr@$sEncoding$multipartindicator] $text"
+            "[${schemeAbbr.take(1)}@$sEncoding] $text"
         else { // no encryption
-            if (encoding.isEmpty() || encoding == EncryptionMapper.ENCRYPTION_SCHEME_TEXT)
-                if (multiPartSize>1) "[$multipartindicator] $text" else text
-            else // but encoding
-                "[@$sEncoding$multipartindicator] $text"
+            "[@${sEncoding}] $text"
         }
     return msgDisplayText
 }

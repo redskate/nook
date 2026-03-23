@@ -48,6 +48,19 @@ object PhoneUtils {
     }
 
     /**
+     * Formats phone number for display
+     */
+    fun formatPhoneNumber(number: String): String {
+        return when {
+            number.startsWith("+39") && number.length == 13 ->
+                "+39 ${number.substring(3, 6)} ${number.substring(6, 9)} ${number.substring(9)}"
+            number.length == 10 ->
+                "${number.take(3)} ${number.substring(3, 6)} ${number.substring(6)}"
+            else -> number
+        }
+    }
+
+    /**
      * More lenient version that only checks minimum requirements
      * Useful for validation where you don't want to be too strict
      */

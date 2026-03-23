@@ -128,13 +128,6 @@ data class ChatConversationEntity(
                     conversationId = conversationId ?: 0L
                 )
 
-                if (AppCryptoManager.looksLikeEncoded(result) && !AppCryptoManager.looksLikeEncoded(plainText)) {
-                    LogUtils.e("ENCRYPT_WATCH", "❌❌❌ PRODUCED BASE64 OUTPUT for $fieldName!")
-                    LogUtils.e("ENCRYPT_WATCH", "  Original (plain): '$plainText'")
-                    LogUtils.e("ENCRYPT_WATCH", "  Result (looks like Base64): '$result'")
-                    LogUtils.e("ENCRYPT_WATCH", "  This suggests we're encrypting already encrypted data!")
-                }
-
                 result
             } catch (e: Exception) {
                 LogUtils.e("ENCRYPT_WATCH", "❌ Encryption failed for $fieldName", e)

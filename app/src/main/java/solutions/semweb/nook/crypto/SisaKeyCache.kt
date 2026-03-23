@@ -1,30 +1,19 @@
 package solutions.semweb.nook.crypto
 
 import android.content.Context
-import android.os.Build
 import android.security.keystore.KeyProperties
+import android.security.keystore.KeyProtection
 import solutions.semweb.nook.LogUtils
 import java.security.KeyStore
 import java.security.KeyStore.SecretKeyEntry
 import javax.crypto.SecretKey
-import android.security.keystore.KeyProtection
 
-/**
- * Manages cached AES keys derived from passwords
- * Stores keys directly in Android Keystore
- * No in-memory caching - always reads from KeyStore
- * Supports Android 8+ (API 26+) only
- */
 object SisaKeyCache {
     private const val TAG = "SisaKeyCache"
     private const val KEYSTORE_PROVIDER = "AndroidKeyStore"
 
-    // Cache the KeyStore instance to avoid repeated loading
     private var keyStore: KeyStore? = null
 
-    /**
-     * Get the KeyStore instance (lazy initialization)
-     */
     private fun getKeyStore(): KeyStore {
         if (keyStore == null) {
             keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
@@ -33,11 +22,11 @@ object SisaKeyCache {
     }
 
     /**
-     * Get cached AES key for a phone number and date
-     * Only reads from KeyStore, returns null if not found
+     * Get cached AES key - NOW INCLUDES PASSWORD
      */
-    fun getCachedKey(context: Context, phoneNumber: String, dateStr: String): SecretKey? {
-        val keystoreAlias = generateKeystoreAlias(phoneNumber, dateStr)
+    fun getCachedKey(context: Context, phoneNumber: String, dateStr: String, password: String): SecretKey? {
+        val passwordHash = hashString(password)
+        val keystoreAlias = generateKeystoreAlias(phoneNumber, dateStr, passwordHash)
 
         return try {
             val keyStore = getKeyStore()
@@ -46,42 +35,31 @@ object SisaKeyCache {
                 val secretKeyEntry = keyStore.getEntry(keystoreAlias, null) as? SecretKeyEntry
                 val key = secretKeyEntry?.secretKey
 
-                if (key != null) {
-                    LogUtils.d(context, TAG, "🔐 KeyStore cache hit for $phoneNumber on $dateStr")
-
-                    // Verify the key is valid for AES
-                    if (key.algorithm == "AES") {
-                        key
-                    } else {
-                        LogUtils.w(context, TAG, "⚠️ Key algorithm is ${key.algorithm}, expected AES")
-                        // Delete invalid key
-                        keyStore.deleteEntry(keystoreAlias)
-                        null
-                    }
+                if (key != null && key.algorithm == "AES") {
+                    LogUtils.d(context, TAG, "🔐 KeyStore cache HIT for $phoneNumber on $dateStr with password hash: ${passwordHash.take(8)}")
+                    key
                 } else {
-                    LogUtils.w(context, TAG, "⚠️ KeyStore entry exists but key is null for $keystoreAlias")
-                    // Clean up invalid entry
+                    LogUtils.w(context, TAG, "⚠️ KeyStore entry exists but key is invalid")
                     keyStore.deleteEntry(keystoreAlias)
                     null
                 }
             } else {
-                LogUtils.d(context, TAG, "❌ No cached key for $phoneNumber on $dateStr")
+                LogUtils.d(context, TAG, "❌ KeyStore cache MISS for $phoneNumber on $dateStr with password hash: ${passwordHash.take(8)}")
                 null
             }
         } catch (e: Exception) {
-            LogUtils.e(context, TAG, "❌ Error accessing KeyStore for $keystoreAlias", e)
-            // Reset KeyStore instance on error
+            LogUtils.e(context, TAG, "❌ Error accessing KeyStore", e)
             keyStore = null
             null
         }
     }
 
     /**
-     * Store a derived AES key in KeyStore
-     * Works on Android 8+ (API 26+) through Android 16+
+     * Store a derived AES key - NOW INCLUDES PASSWORD
      */
-    fun cacheKey(context: Context, phoneNumber: String, dateStr: String, key: SecretKey): Boolean {
-        val keystoreAlias = generateKeystoreAlias(phoneNumber, dateStr)
+    fun cacheKey(context: Context, phoneNumber: String, dateStr: String, password: String, key: SecretKey): Boolean {
+        val passwordHash = hashString(password)
+        val keystoreAlias = generateKeystoreAlias(phoneNumber, dateStr, passwordHash)
 
         return try {
             val keyStore = getKeyStore()
@@ -92,45 +70,52 @@ object SisaKeyCache {
                 LogUtils.d(context, TAG, "🗑️ Removed existing key for alias: $keystoreAlias")
             }
 
-            // Store key with protection parameters that allow deterministic encryption
             storeKeyWithProtection(context, keystoreAlias, key)
 
-            // Verify the key was stored successfully
             val stored = keyStore.containsAlias(keystoreAlias)
             if (stored) {
-                LogUtils.d(context, TAG, "✅ Key successfully cached in KeyStore for $phoneNumber on $dateStr")
-            } else {
-                LogUtils.e(context, TAG, "❌ Failed to verify key storage for $keystoreAlias")
+                LogUtils.d(context, TAG, "✅ Key successfully cached for $phoneNumber on $dateStr with password hash: ${passwordHash.take(8)}")
             }
-
             stored
         } catch (e: Exception) {
-            LogUtils.e(context, TAG, "❌ Failed to store key in KeyStore for $keystoreAlias", e)
-            // Reset KeyStore instance on error
+            LogUtils.e(context, TAG, "❌ Failed to store key", e)
             keyStore = null
             false
         }
     }
 
     /**
-     * Key storage with protection parameters
-     * Works on all supported Android versions (8+)
-     *
-     * CRITICAL:
-     * - setRandomizedEncryptionRequired(false) allows us to use deterministic IVs
-     * - This maintains compatibility with SisaCrypto's deterministic encryption
-     *   where IV is derived from the date
+     * Clear all keys for a specific phone number (when password changes)
      */
+    fun clearKeysForPhoneNumber(context: Context, phoneNumber: String) {
+        try {
+            val keyStore = getKeyStore()
+            val phoneHash = hashString(phoneNumber)
+            val aliases = keyStore.aliases()
+
+            var deletedCount = 0
+            aliases.toList().forEach { alias ->
+                if (alias.startsWith("sisa_key_${phoneHash}_")) {
+                    keyStore.deleteEntry(alias)
+                    deletedCount++
+                    LogUtils.d(context, TAG, "🗑️ Deleted key: $alias")
+                }
+            }
+
+            LogUtils.d(context, TAG, "🗑️ Cleared $deletedCount keys for phone number: $phoneNumber")
+        } catch (e: Exception) {
+            LogUtils.e(context, TAG, "❌ Error clearing keys", e)
+        }
+    }
+
     private fun storeKeyWithProtection(context: Context, alias: String, key: SecretKey) {
         val keyStore = getKeyStore()
 
-        // Build protection parameters that ALLOW deterministic encryption
         val protection = KeyProtection.Builder(
             KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
         )
             .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            // CRITICAL: This must be false to allow deterministic IVs
             .setRandomizedEncryptionRequired(false)
             .setUserAuthenticationRequired(false)
             .build()
@@ -138,61 +123,42 @@ object SisaKeyCache {
         val entry = SecretKeyEntry(key)
         keyStore.setEntry(alias, entry, protection)
 
-        LogUtils.d(context, TAG, "🔧 Key stored with protection (randomizedEncryptionRequired=false)")
+        LogUtils.d(context, TAG, "🔧 Key stored with alias: ${alias.take(50)}")
     }
 
-    /**
-     * Generate a stable KeyStore alias
-     */
-    private fun generateKeystoreAlias(phoneNumber: String, dateStr: String): String {
+    private fun generateKeystoreAlias(phoneNumber: String, dateStr: String, passwordHash: String): String {
         val phoneHash = hashString(phoneNumber)
-        return "sisa_key_${phoneHash}_${dateStr}"
+        return "sisa_key_${phoneHash}_${dateStr}_${passwordHash}"
     }
 
-    /**
-     * Generate a stable hash string
-     */
     private fun hashString(input: String): String {
         return try {
             val digest = java.security.MessageDigest.getInstance("SHA-256")
             val hash = digest.digest(input.toByteArray())
             hash.joinToString("") { "%02x".format(it) }.take(16)
         } catch (e: Exception) {
-            // Fallback to simple hash if SHA-256 not available
             String.format("%016x", input.hashCode().toLong() and 0xFFFFFFFFFFFFFFF)
         }
     }
 
-    /**
-     * Check if a key exists in cache
-     */
-    fun hasKey(context: Context, phoneNumber: String, dateStr: String): Boolean {
-        val keystoreAlias = generateKeystoreAlias(phoneNumber, dateStr)
+    // Keep this for backward compatibility if needed, but mark as deprecated
+    @Deprecated("Use getCachedKey with password parameter instead")
+    fun getCachedKey(context: Context, phoneNumber: String, dateStr: String): SecretKey? {
+        LogUtils.w(context, TAG, "⚠️ Using deprecated getCachedKey without password - this may return wrong keys!")
+        // Try to find any key for this phone/date (for migration)
         return try {
             val keyStore = getKeyStore()
-            keyStore.containsAlias(keystoreAlias)
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    /**
-     * Clear all keys for a specific phone number (useful for testing)
-     */
-    fun clearKeysForPhoneNumber(context: Context, phoneNumber: String) {
-        try {
-            val keyStore = getKeyStore()
-            val aliases = keyStore.aliases()
             val phoneHash = hashString(phoneNumber)
+            val aliases = keyStore.aliases()
 
-            aliases.toList().forEach { alias ->
-                if (alias.startsWith("sisa_key_${phoneHash}_")) {
-                    keyStore.deleteEntry(alias)
-                    LogUtils.d(context, TAG, "🗑️ Deleted key: $alias")
-                }
+            aliases.toList().firstOrNull { alias ->
+                alias.startsWith("sisa_key_${phoneHash}_${dateStr}_")
+            }?.let { alias ->
+                val entry = keyStore.getEntry(alias, null) as? SecretKeyEntry
+                entry?.secretKey
             }
         } catch (e: Exception) {
-            LogUtils.e(context, TAG, "❌ Error clearing keys", e)
+            null
         }
     }
 }

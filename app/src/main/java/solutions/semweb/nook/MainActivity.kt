@@ -79,7 +79,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.regex.Pattern
 
 class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
-
+    private lateinit var smsLoopbackToggle: Switch
+    private lateinit var smsLoopbackContainer: LinearLayout
     private lateinit var checkAppBtn: Button
     private lateinit var updateChecker: UpdateChecker
     private lateinit var updateBadgeContainer: LinearLayout
@@ -180,9 +181,24 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         }
 
         // make showToast available for all with silent mode control
-        fun showToast(message: String, isError: Boolean = false) {
+        fun showToast(message: String, isError: Boolean = false, context: Context? = null) {
             val activity = instance ?: run {
-                LogUtils.e("MAIN", "⚠️ Toast skipped - no activity instance")
+                // If no MainActivity instance, try to use provided context
+                if (context != null) {
+                    // Use the provided context to show toast
+                    try {
+                        val prefs = getPrefs()
+                        if (isError || prefs?.silentMode != true) {
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        } else {
+                            LogUtils.d("MAIN", "🔇 Toast suppressed (silent mode): $message")
+                        }
+                    } catch (e: Exception) {
+                        LogUtils.e("MAIN", "❌ Error showing toast with context", e)
+                    }
+                    return
+                }
+                LogUtils.e("MAIN", "⚠️ Toast skipped - no activity instance and no context")
                 return
             }
 
@@ -206,9 +222,66 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 }
             }
         }
-    }
+
+        fun resetConversationToDefault(
+            context: Context,
+            conversation: ChatConversation,
+            onComplete: (() -> Unit)? = null
+        ) {
+            AlertDialog.Builder(context)
+                .setTitle(context.getString(R.string.reset_to_default_title))
+                .setMessage(context.getString(R.string.reset_to_default_message, conversation.contactName ?: conversation.phoneNumber))
+                .setPositiveButton(context.getString(R.string.yes)) { _, _ ->
+                    try {
+                        val chatManager = ChatManager(context)
+                        val prefs = SharedPreferencesManager.getInstance(context)
+
+                        chatManager.setEncryptionSchemeForChat(conversation.phoneNumber, EncryptionMapper.ENCRYPTION_SCHEME_TEXT)
+                        chatManager.setEncodingSchemeAndPasswordForChat(
+                            conversation,
+                            EncryptionMapper.ENCODING_BASE256,
+                            ""
+                        )
+
+                        prefs.remove("encryption_${conversation.phoneNumber}_password")
+                        prefs.remove("encryption_${conversation.phoneNumber}_scheme")
+
+                        conversation.encryptionScheme = EncryptionMapper.ENCRYPTION_SCHEME_TEXT
+                        conversation.encoding = EncryptionMapper.ENCODING_BASE256
+                        conversation.encodingPassword = ""
+
+                        // If we're in ChatActivity, update the toolbar color directly
+                        if (context is ChatActivity) {
+                            context.runOnUiThread {
+                                context.updateToolbarColor()
+                            }
+                        } else {
+                            // Fallback to broadcast
+                            val intent = Intent("${Constants.mainpackage}.CHAT_UPDATED")
+                            context.sendBroadcast(intent)
+                        }
+
+                        MainActivity.showToast(context.getString(R.string.reset_to_default_success), false)
+                        LogUtils.d(context, "MainActivityUtils",
+                            "✅ Reset conversation to default: ${conversation.phoneNumber}")
+
+                        // Call callback to update UI
+                        onComplete?.invoke()
+
+                    } catch (e: Exception) {
+                        LogUtils.e(context, "MainActivityUtils", "❌ Error resetting conversation", e)
+                        MainActivity.showToast(context.getString(R.string.reset_to_default_error), true)
+                    }
+                }
+                .setNegativeButton(context.getString(R.string.no), null)
+                .show()
+        }
 
 
+    } // companion
+
+
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -268,6 +341,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun showInitialShaNoInternetDialog() {
         val dialogView = if (prefs.pureSmsMode) {
             // Create custom view with small hint text
@@ -679,6 +753,12 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         try {
             LogUtils.e("MAIN", "🎯 Setting up spinners and toggles")
 
+            // Find the new toggle views
+            val requestReceiptsToggle = findViewById<Switch>(R.id.request_receipts_toggle)
+            val allowSendingReceiptsToggle = findViewById<Switch>(R.id.allow_sending_receipts_toggle)
+            smsLoopbackToggle = findViewById(R.id.sms_loopback_toggle)
+            smsLoopbackContainer = findViewById(R.id.sms_loopback_container)
+
             // ==============================================
             // 1. SETUP DECODING SCHEME SPINNER
             // ==============================================
@@ -759,13 +839,81 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
                 LogUtils.e("MAIN", "📳 Vibration: ${if (isChecked) "ON" else "OFF"}")
             }
 
-            // PURE SMS TOGGLE - ORA È INIZIALIZZATO!
+            // ==============================================
+            // NEW RECEIPT TOGGLES - Initialize with defaults (false)
+            // ==============================================
+
+            // REQUEST RECEIPTS TOGGLE
+            requestReceiptsToggle.isChecked = prefs.getRequestReceipts()
+            requestReceiptsToggle.setOnCheckedChangeListener { _, isChecked ->
+                prefs.setRequestReceipts(isChecked)
+                LogUtils.e("MAIN", "📋 Request receipts: ${if (isChecked) "ON" else "OFF"}")
+                showToast(if (isChecked)
+                    getString(R.string.receipts_requested)
+                else
+                    getString(R.string.receipts_not_requested))
+            }
+
+            // ALLOW SENDING RECEIPTS TOGGLE
+            allowSendingReceiptsToggle.isChecked = prefs.getAllowSendingReceipts()
+            allowSendingReceiptsToggle.setOnCheckedChangeListener { _, isChecked ->
+                prefs.setAllowSendingReceipts(isChecked)
+                LogUtils.e("MAIN", "📋 Allow sending receipts: ${if (isChecked) "ON" else "OFF"}")
+                showToast(if (isChecked)
+                    getString(R.string.receipts_sending_allowed)
+                else
+                    getString(R.string.receipts_sending_disabled))
+            }
+
+            // PURE SMS TOGGLE
             pureSmsToggle.isChecked = prefs.pureSmsMode
             pureSmsToggle.setOnCheckedChangeListener { _, isChecked ->
                 prefs.pureSmsMode = isChecked
                 LogUtils.e("MAIN", "${if (isChecked) "Pure SMS" else "Normal"} mode")
                 showToast(if (isChecked) getString(R.string.pure_sms_mode_active) else getString(R.string.pure_sms_mode_inactive))
             }
+
+            // ALLOW SENDING RECEIPTS TOGGLE
+            allowSendingReceiptsToggle.isChecked = prefs.getAllowSendingReceipts()
+            allowSendingReceiptsToggle.setOnCheckedChangeListener { _, isChecked ->
+                prefs.setAllowSendingReceipts(isChecked)
+                LogUtils.e("MAIN", "📋 Allow sending receipts: ${if (isChecked) "ON" else "OFF"}")
+                showToast(if (isChecked)
+                    getString(R.string.receipts_sending_allowed)
+                else
+                    getString(R.string.receipts_sending_disabled))
+            }
+
+            // SMS toggle
+            smsLoopbackToggle = findViewById(R.id.sms_loopback_toggle)
+            smsLoopbackContainer = findViewById(R.id.sms_loopback_container)
+
+            if (BuildConfig.DEBUG) {
+                smsLoopbackContainer.visibility = View.VISIBLE
+                smsLoopbackToggle.isChecked = prefs.isSmsLoopbackMode()
+
+                // Set initial system bar color based on saved state
+                updateSystemBarsForSmsLoopback(prefs.isSmsLoopbackMode())
+
+                smsLoopbackToggle.setOnCheckedChangeListener { _, isChecked ->
+                    prefs.setSmsLoopbackMode(isChecked)
+                    LogUtils.d(this, "MainActivity", "🔄 SMS Loopback mode: $isChecked")
+
+                    updateSystemBarsForSmsLoopback(isChecked)
+
+                    Toast.makeText(this,
+                        if (isChecked) "🔁 SMS Loopback ATTIVO - I messaggi non verranno inviati via SMS\n🔴 Barre rosse attivate"
+                        else "📱 SMS Loopback DISATTIVO - Invio SMS normale\n⚫ Barre normali ripristinate",
+                        Toast.LENGTH_LONG).show()
+                }
+
+                smsLoopbackContainer.setOnClickListener {
+                    smsLoopbackToggle.isChecked = !smsLoopbackToggle.isChecked
+                }
+            }
+
+            // Make the toggle labels clickable
+            setupToggleLabelClickListeners()
 
             // Add a debug queue button (not in release apks)
             addDebugQueueButton()
@@ -777,6 +925,15 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
             LogUtils.e("MAIN", "Error details: ${e.message}")
             LogUtils.e("MAIN", "Stack trace: ${e.stackTraceToString()}")
             Toast.makeText(this, "Error setting options: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+
+        // Restore system bar colors after configuration change
+        if (BuildConfig.DEBUG && this::smsLoopbackToggle.isInitialized) {
+            updateSystemBarsForSmsLoopback(smsLoopbackToggle.isChecked)
         }
     }
 
@@ -1220,13 +1377,19 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     }
 
     private fun setupToggleLabelClickListeners() {
+        // Find the new toggle views
+        val requestReceiptsToggle = findViewById<Switch>(R.id.request_receipts_toggle)
+        val allowSendingReceiptsToggle = findViewById<Switch>(R.id.allow_sending_receipts_toggle)
+
         val togglePairs = listOf(
             Pair(silentModeToggle, getString(R.string.silent_mode_title)),
             Pair(logToggle, getString(R.string.enable_log_title)),
             Pair(useAllContactsToggle, getString(R.string.extend_to_all_contacts_title)),
             Pair(allowScreenshotsToggle, getString(R.string.allow_screenshots_title)),
             Pair(vibrationToggle, getString(R.string.vibration_title)),
-            Pair(appProtectionToggle, getString(R.string.app_protection_title)) ,
+            Pair(appProtectionToggle, getString(R.string.app_protection_title4toggle)),
+            Pair(requestReceiptsToggle, getString(R.string.request_receipts_title)),
+            Pair(allowSendingReceiptsToggle, getString(R.string.allow_sending_receipts_title)),
             Pair(pureSmsToggle, getString(R.string.pure_sms_title))
         )
 
@@ -1707,7 +1870,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
      */
     fun showModifySmsChatNameDialog(conversation: ChatConversation) {
 
-        val dialogView = layoutInflater.inflate(R.layout.dialog_associate_y_user, null)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_associate_user, null)
 
         //all fields
         val textPhoneTitle = dialogView.findViewById<TextView>(R.id.text_phone_title)
@@ -1974,6 +2137,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
 
 
 
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun verifyAppProtectionPassword(inputPassword: String): Boolean {
         return try {
             val storedEncryptedPassword = prefs.appProtectionPassword
@@ -2232,6 +2396,7 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
     /**
      * Show dialog for missing internet
      */
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun showShaNoInternetDialog() {
         // Prevent multiple dialogs
         if (isNoInternetDialogShowing) return
@@ -3772,5 +3937,45 @@ class MainActivity : AppCompatActivity(), MainActivitySoundPicker {
         }
     }
 
+    private fun updateSystemBarsForSmsLoopback(isLoopbackMode: Boolean) {
+        if (!BuildConfig.DEBUG) return  // Only in DEBUG mode
 
-}
+        try {
+            val window = window
+
+            if (isLoopbackMode) {
+                // SMS Loopback ON - Red bars
+                window.statusBarColor = ContextCompat.getColor(this, android.R.color.holo_red_dark)
+
+                // For navigation bar
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    window.navigationBarColor = ContextCompat.getColor(this, android.R.color.holo_red_dark)
+                }
+
+                // For light/dark icons based on background
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    val decorView = window.decorView
+                    // Clear light status bar flag to ensure icons are light on dark background
+                    decorView.systemUiVisibility = decorView.systemUiVisibility and
+                            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+                }
+
+                LogUtils.e("MAIN", "🔴 System bars set to RED (SMS Loopback ON)")
+            } else {
+                // SMS Loopback OFF - Restore default colors
+                window.statusBarColor = ContextCompat.getColor(this, R.color.intensive_green)
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    window.navigationBarColor = ContextCompat.getColor(this, R.color.intensive_green)
+                }
+
+                LogUtils.e("MAIN", "⚫ System bars restored to default (SMS Loopback OFF)")
+            }
+        } catch (e: Exception) {
+            LogUtils.e("MAIN", "❌ Error updating system bars", e)
+        }
+    }
+
+
+
+} // class

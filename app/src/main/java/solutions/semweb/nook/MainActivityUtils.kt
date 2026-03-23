@@ -1,6 +1,5 @@
 package solutions.semweb.nook
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlarmManager
 import android.app.Notification
@@ -13,7 +12,6 @@ import android.content.Context.INPUT_METHOD_SERVICE
 import android.content.Context.RECEIVER_EXPORTED
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.graphics.Color
 import android.media.AudioAttributes
 import android.net.Uri
@@ -31,7 +29,6 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
@@ -39,17 +36,19 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.PopupMenu
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.runBlocking
 import solutions.semweb.nook.chat.ChatActivity
 import solutions.semweb.nook.chat.ChatImportExportManager
 import solutions.semweb.nook.chat.ChatManager
 import solutions.semweb.nook.chat.SMSQueueManager
 import solutions.semweb.nook.contacts.SearchContactAdapter
 import solutions.semweb.nook.crypto.CryptoManager
+import solutions.semweb.nook.crypto.EncryptionDialogHelper
 import solutions.semweb.nook.crypto.EncryptionMapper
 import solutions.semweb.nook.data.database.DatabaseActor
 import solutions.semweb.nook.keyboards.KeyboardSafetyManager
@@ -63,11 +62,14 @@ class MainActivityUtils(private val activity: MainActivity) {
 
     companion object {
         private const val TAG = "MainActivityUtils"
+
     }
+
 
     /**
      * Shows the disclaimer dialog - wait 2 secs - wait until scrolled
      */
+    @RequiresApi(Build.VERSION_CODES.S)
     fun showDisclaimerDialog(prefs: SharedPreferencesManager, context: Context) {
         val dialogView = LayoutInflater.from(activity).inflate(R.layout.dialog_disclaimer, null)
 
@@ -438,7 +440,7 @@ class MainActivityUtils(private val activity: MainActivity) {
                 val filtered = contacts.filter { contact ->
                     contact.displayName?.lowercase(Locale.getDefault())?.contains(query) == true ||
                             contact.phoneNumber.lowercase(Locale.getDefault()).contains(query) ||
-                            formatPhoneNumber(contact.phoneNumber).contains(query)
+                            PhoneUtils.formatPhoneNumber(contact.phoneNumber).contains(query)
                 }
                 adapter.updateContacts(filtered)
             }
@@ -541,9 +543,9 @@ class MainActivityUtils(private val activity: MainActivity) {
     ) {
         val popupMenu = PopupMenu(activity, view)
 
-        val userNameText =
-            activity.getString(R.string.edit_chat_name)
+        val userNameText = activity.getString(R.string.edit_chat_name)
 
+        popupMenu.menu.add(0, 1, 0, activity.getString(R.string.reset_to_default)) // Add DEFAULT as first option
         popupMenu.menu.add(0, 2, 1, activity.getString(R.string.delete_chat))
         popupMenu.menu.add(0, 4, 3, userNameText)
 
@@ -561,7 +563,6 @@ class MainActivityUtils(private val activity: MainActivity) {
                     true
                 }
                 4 -> {
-                    // REALIZE HERE
                     activity.showModifySmsChatNameDialog(conversation)
                     true
                 }
@@ -586,7 +587,6 @@ class MainActivityUtils(private val activity: MainActivity) {
     }
 
 
-    @SuppressLint("StringFormatMatches")
     fun showEncryptionCodingSchemesDialogForChat(
         conversation: ChatConversation,
         view: View,
@@ -594,66 +594,17 @@ class MainActivityUtils(private val activity: MainActivity) {
         chatManager: ChatManager,
         activity: MainActivity
     ) {
-        LogUtils.d(activity, "ChatManager",
-            "🔄 Conversation reloaded for dialog: " +
-                    "Encoding: ${conversation.encoding}, " +
-                    "Encryption: ${conversation.encryptionScheme}")
-
-        if (!checkAndRequestPhonePermissionIfNeeded(conversation, prefs, activity)) {
-            return
-        }
-
-        val dialogView = LayoutInflater.from(activity).inflate(R.layout.dialog_encryption_encoding, null)
-        val dialog = initializeEncryptEncodingDialogUI(conversation, dialogView, activity)
-
-        val uiElements = initializeUIElements(dialogView)
-
-        setupSpinners(conversation, uiElements, activity)
-        setupPasswordFields(conversation, uiElements, activity)
-
-        setupListeners(uiElements, conversation, dialog, chatManager, prefs, activity)
-
-        dialog.show()
-        focusOnPasswordIfNeeded(uiElements)
+        // Delegate to the helper
+        EncryptionDialogHelper.showEncryptionCodingSchemesDialogForChat(
+            conversation = conversation,
+            view = view,
+            prefs = prefs,
+            chatManager = chatManager,
+            activity = activity
+        )
     }
 
-    private fun checkAndRequestPhonePermissionIfNeeded(
-        conversation: ChatConversation,
-        prefs: SharedPreferencesManager,
-        activity: MainActivity
-    ): Boolean {
-        if (conversation.encryptionScheme == EncryptionMapper.ENCRYPTION_SISA ||
-            prefs.decodingScheme == EncryptionMapper.ENCRYPTION_SISA) {
 
-            // On Android 16+, no permission needed - just return true
-            if (Build.VERSION.SDK_INT >= 36) { // Android 16 API level
-                return true // No permission needed, auto-password will work via other means
-            }
-
-            // For older Android versions, check permission
-            if (ContextCompat.checkSelfPermission(
-                    activity,
-                    Manifest.permission.READ_PHONE_STATE
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                AlertDialog.Builder(activity)
-                    .setTitle(activity.getString(R.string.phone_state_permission_title))
-                    .setMessage(activity.getString(R.string.phone_state_permission_message))
-                    .setPositiveButton(activity.getString(R.string.grant_permission_button)) { _, _ ->
-                        CryptoManager.requestPhoneStatePermission(activity)
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            // Reload dialog after having asked for permissions
-                        }, 1000)
-                    }
-                    .setNegativeButton(activity.getString(R.string.cancel)) { dialog, _ ->
-                        dialog.dismiss()
-                    }
-                    .show()
-                return false
-            }
-        }
-        return true
-    }
 
     private data class EncryptionDialogUIElements(
         val dialogView: View,
@@ -671,165 +622,6 @@ class MainActivityUtils(private val activity: MainActivity) {
         val encryptionGenerateAutoBtn: ImageButton
     )
 
-    private fun initializeEncryptEncodingDialogUI(
-        conversation: ChatConversation,
-        dialogView: View,
-        activity: MainActivity
-    ): AlertDialog {
-        return AlertDialog.Builder(activity)
-            .setTitle(activity.getString(R.string.encryption_for_contact,
-                conversation.contactName ?: conversation.phoneNumber))
-            .setView(dialogView)
-            .setPositiveButton(activity.getString(R.string.save), null)
-            .setNegativeButton(activity.getString(R.string.cancel)) { dialog, _ ->
-                dialog.dismiss()
-            }
-            .create()
-    }
-
-    private fun initializeUIElements(dialogView: View): EncryptionDialogUIElements {
-        return EncryptionDialogUIElements(
-            dialogView = dialogView,
-            encodingSpinner = dialogView.findViewById(R.id.encoding_spinner),
-            encryptionSpinner = dialogView.findViewById(R.id.encryption_spinner),
-            encodingPasswordContainer = dialogView.findViewById(R.id.encoding_password_container),
-            encodingPasswordInput = dialogView.findViewById(R.id.encoding_password_input),
-            encodingPasswordInfo = dialogView.findViewById(R.id.encoding_password_info),
-            encodingTogglePasswordBtn = dialogView.findViewById(R.id.encoding_toggle_password_btn),
-            encodingGenerateAutoBtn = dialogView.findViewById(R.id.encoding_generate_auto_btn),
-            encryptionPasswordContainer = dialogView.findViewById(R.id.encryption_password_container),
-            encryptionPasswordInput = dialogView.findViewById(R.id.encryption_password_input),
-            encryptionPasswordInfo = dialogView.findViewById(R.id.encryption_password_info),
-            encryptionTogglePasswordBtn = dialogView.findViewById(R.id.encryption_toggle_password_btn),
-            encryptionGenerateAutoBtn = dialogView.findViewById(R.id.encryption_generate_auto_btn)
-        )
-    }
-
-    private fun setupSpinners(
-        conversation: ChatConversation,
-        ui: EncryptionDialogUIElements,
-        activity: MainActivity
-    ) {
-        val encodingAdapter = ArrayAdapter(activity, android.R.layout.simple_spinner_item,
-            EncryptionMapper.encodingSchemes)
-        encodingAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        ui.encodingSpinner.adapter = encodingAdapter
-
-        val encryptionAdapter = ArrayAdapter(activity, android.R.layout.simple_spinner_item,
-            EncryptionMapper.encryptionSchemes)
-        encryptionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        ui.encryptionSpinner.adapter = encryptionAdapter
-
-        val encodingIndex = EncryptionMapper.encodingValues.indexOfFirst { it == conversation.encoding }
-            .coerceAtLeast(0)
-        val encryptionIndex = EncryptionMapper.encryptionValues.indexOfFirst { it == conversation.encryptionScheme }
-            .coerceAtLeast(0)
-
-        ui.encodingSpinner.setSelection(encodingIndex)
-        ui.encryptionSpinner.setSelection(encryptionIndex)
-
-        updateEncodingPasswordVisibility(encodingIndex, ui, activity)
-    }
-
-    private fun setupPasswordFields(
-        conversation: ChatConversation,
-        ui: EncryptionDialogUIElements,
-        activity: MainActivity
-    ) {
-        LogUtils.d(activity, "ChatManager",
-            "📝 Setup password fields per conversazione:" +
-                    "\n  Phone: ${conversation.phoneNumber}" +
-                    "\n  Encoding: ${conversation.encoding}" +
-                    "\n  EncodingPassword: ${if (conversation.encodingPassword.isNullOrEmpty()) "EMPTY" else "SET"}" +
-                    "\n  EncryptionScheme: ${conversation.encryptionScheme}")
-
-        val savedPassword = CryptoManager.getSavedPasswordForChat(activity, conversation.phoneNumber)
-
-        if (savedPassword.isEmpty() && conversation.encryptionScheme == EncryptionMapper.ENCRYPTION_SISA) {
-            val autoPassword = CryptoManager.generateAutoPassword(activity, conversation.phoneNumber)
-            ui.encryptionPasswordInput.setText(autoPassword)
-            LogUtils.d(activity, "ChatManager", "🔑 SiSa Password generated automatically")
-        } else if (savedPassword.isNotEmpty()) {
-            ui.encryptionPasswordInput.setText(savedPassword)
-            LogUtils.d(activity, "ChatManager", "🔑 SiSa Password recovered: ${savedPassword.take(5)}...")
-        } else {
-            ui.encryptionPasswordInput.setText("")
-        }
-
-        val savedEncoding = conversation.encoding
-        val savedEncodingPassword = conversation.encodingPassword
-
-        val encodingIndex = EncryptionMapper.encodingValues.indexOfFirst { it == savedEncoding }
-            .coerceAtLeast(0)
-        ui.encodingSpinner.setSelection(encodingIndex)
-
-        ui.encodingPasswordInput.setText(savedEncodingPassword)
-
-        LogUtils.d(activity, "ChatManager",
-            "📊 Selected Encoding: $savedEncoding (index: $encodingIndex)" +
-                    "\n  Password encoding: ${if (savedEncodingPassword.isEmpty()) "empty" else "set"}")
-
-        updateEncodingPasswordVisibility(encodingIndex, ui, activity)
-        updateEncryptionPasswordVisibility(ui.encryptionSpinner.selectedItemPosition, ui)
-    }
-
-    private fun setupListeners(
-        ui: EncryptionDialogUIElements,
-        conversation: ChatConversation,
-        dialog: AlertDialog,
-        chatManager: ChatManager,
-        prefs: SharedPreferencesManager,
-        activity: MainActivity
-    ) {
-        var permessitelefonomancanti = false
-
-        ui.encodingSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                updateEncodingPasswordVisibility(position, ui, activity)
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-
-        ui.encryptionSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                updateEncryptionPasswordVisibility(position, ui)
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-
-        setupPasswordToggleListener(
-            ui.encodingPasswordInput,
-            ui.encodingTogglePasswordBtn,
-            activity
-        )
-
-        setupPasswordToggleListener(
-            ui.encryptionPasswordInput,
-            ui.encryptionTogglePasswordBtn,
-            activity
-        )
-
-        ui.encodingGenerateAutoBtn.setOnClickListener {
-            onEncodingGeneratePasswordClicked(ui, activity)
-        }
-
-        ui.encryptionGenerateAutoBtn.setOnClickListener {
-            onEncryptionGeneratePasswordClicked(ui, conversation, activity) {
-                permessitelefonomancanti = true
-            }
-        }
-
-        dialog.setOnShowListener {
-            setupSaveButton(
-                dialog,
-                ui,
-                conversation,
-                chatManager,
-                activity,
-                permessitelefonomancanti
-            )
-        }
-    }
 
     private fun updateEncodingPasswordVisibility(
         encodingPosition: Int,
@@ -871,7 +663,16 @@ class MainActivityUtils(private val activity: MainActivity) {
         toggleButton: ImageButton,
         activity: MainActivity
     ) {
-        var isPasswordVisible = true
+        // Initialize with password hidden
+        var isPasswordVisible = false
+
+        // Set initial input type to password (hidden)
+        passwordInput.inputType = InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_VARIATION_PASSWORD or
+                InputType.TYPE_TEXT_FLAG_MULTI_LINE
+
+        // Set initial icon to show password is hidden
+        toggleButton.setImageResource(android.R.drawable.ic_partial_secure)
 
         toggleButton.setOnClickListener {
             isPasswordVisible = !isPasswordVisible
@@ -1292,18 +1093,7 @@ class MainActivityUtils(private val activity: MainActivity) {
         MainActivity.showToast(activity.getString(R.string.screenshots_enabled))
     }
 
-    /**
-     * Formats phone number for display
-     */
-    fun formatPhoneNumber(number: String): String {
-        return when {
-            number.startsWith("+39") && number.length == 13 ->
-                "+39 ${number.substring(3, 6)} ${number.substring(6, 9)} ${number.substring(9)}"
-            number.length == 10 ->
-                "${number.substring(0, 3)} ${number.substring(3, 6)} ${number.substring(6)}"
-            else -> number
-        }
-    }
+
 
     /**
      * Finds all EditTexts in a View recursively
@@ -1323,6 +1113,29 @@ class MainActivityUtils(private val activity: MainActivity) {
         }
 
         return editTexts
+    }
+
+
+    /**
+     * Refreshes a conversation from the database to get the latest data
+     */
+    fun refreshConversationFromDatabase(conversation: ChatConversation): ChatConversation? {
+        return try {
+            val databaseActor = DatabaseActor.getInstance(activity)
+            val refreshedConversation = runBlocking {
+                databaseActor.getChatConversation(conversation.phoneNumber)
+            }
+            if (refreshedConversation != null) {
+                LogUtils.d(activity, TAG, "✅ Conversation refreshed: ${refreshedConversation.phoneNumber}")
+                refreshedConversation
+            } else {
+                LogUtils.w(activity, TAG, "⚠️ Could not refresh conversation, keeping original")
+                conversation
+            }
+        } catch (e: Exception) {
+            LogUtils.e(activity, TAG, "❌ Error refreshing conversation", e)
+            conversation
+        } as ChatConversation?
     }
 
 

@@ -23,6 +23,7 @@ object EncryptionMapper {
 
     var DEFAULT_ENCRYPTION_SCHEME = ""  // Empty = global use
     var DEFAULT_ENCODING = ""  // Empty = global use
+    var DEFAULT_ENCODING_SHORT = "@b3" // means encoded only with base256 and no encoding password
     var ENCRYPTION_SCHEME_TEXT = "text"
     var ENCRYPTION_SCHEME_NONE = "none"
     val ENCRYPTION_SCHEME_SISA = "sisa"
@@ -51,6 +52,10 @@ object EncryptionMapper {
     )
 
     const val techSign = "✅" // was # but better another one
+
+    const val RECEIPT_REQUEST_MARKER = "⎋"   // Appended to encrypted message
+    const val RECEIPT_RESPONSE_PREFIX = "⇲"  // Prefix for receipt messages
+
     const val SISA_ENCR_PREFIX = techSign+"0"
 
     //NB: Only encryption scheme is shown, encoding is set but not shown in message
@@ -74,12 +79,22 @@ object EncryptionMapper {
         if (enc=="")
             return ""
         else
-            return "b"+extractEncodingBase(enc)
+            return "b"+classifyBase(extractEncodingBase(enc))
     }
+
+    fun classifyBase(encodingBase: Int): String? {
+        return when (encodingBase) {
+            32 -> {"1"}
+            64 -> {"2"}
+            256 -> {"3"}
+            else -> {"?"}
+        }
+    }
+
 
     fun extractShortForEncrScheme(sch: String?): String {
         return if (sch==this.ENCRYPTION_SCHEME_SISA)
-            "sisa"
+            "s"
         else
             ""
     }

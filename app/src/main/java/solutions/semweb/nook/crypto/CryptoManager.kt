@@ -65,7 +65,7 @@ object CryptoManager {
                     }
                     else {
                         cleanMessage = cleanMessage.substring(Constants.SMS_OBF_PREFIX.length) // eat prefix #e
-                        SisaCrypto.decryptMessage(context, phoneNumber, encoding, cleanMessage, timestamp)
+                        SisaCrypto.decryptMessage(context, phoneNumber, encoding,  encodingPassword, cleanMessage, timestamp)
                         // result of method
                     }
                 }
@@ -116,26 +116,6 @@ object CryptoManager {
         }
     }
 
-
-    private fun autoDetectAndDecode(cleanMessage: String, context: Context?, encoding: String, phoneNumber: String): DecodeResult {
-        LogUtils.d(null, "CryptoManager", "🤖 Auto format detection...")
-
-        if (SisaCrypto.isSisaEncrypted(cleanMessage) && context != null) {
-            LogUtils.d(null, "CryptoManager", "  🔐 SiSa detected")
-            return SisaCrypto.decryptMessage(context, phoneNumber, encoding,cleanMessage)
-        }
-
-        LogUtils.d(null, "CryptoManager", "  ⚠️ No format detected, plaintext")
-        return DecodeResult(
-            original = cleanMessage,
-            decoded = cleanMessage,
-            scheme = EncryptionMapper.ENCRYPTION_TEXT,
-            encoding =EncryptionMapper.ENCRYPTION_TEXT,
-            success = true,
-            notes = "No format detected, plaintext",
-        )
-    }
-
     // =============================================
     // 2. MESSAGE CODING
     // =============================================
@@ -164,7 +144,7 @@ object CryptoManager {
                     text
                 } else
                     //encryption AND coding here:
-                    SisaCrypto.encryptEncMessage(context, phoneNumber, text, encoding)
+                    SisaCrypto.encryptEncMessage(context, phoneNumber, text, encoding, encodingPassword)
                 }
             else -> {
                 when (encoding.lowercase()) {
@@ -277,6 +257,11 @@ object CryptoManager {
                             putString("encryption_password_$normalizedNumber", encryptedPassword)
                         }
                         LogUtils.d(context, "CryptoManager", "✅ Password successfully encrypted and verified")
+
+                        SisaKeyCache.clearKeysForPhoneNumber(context, normalizedNumber)
+                        // Generate and save ECDH keys (using normalized phone)
+                        generateAndStoreECDHKeys(context, normalizedNumber, encryptionPassword)
+
                     } else {
                         LogUtils.e(context, "CryptoManager", "❌ Password encryption verification failed")
                         MainActivity.showToast(context.getString(R.string.error_encrypting_password), true)

@@ -44,6 +44,7 @@ import solutions.semweb.nook.PhoneUtils
 import solutions.semweb.nook.R
 import solutions.semweb.nook.SharedPreferencesManager
 import solutions.semweb.nook.crypto.ChatSafeCopyManager
+import solutions.semweb.nook.crypto.EncryptionDialogHelper
 import solutions.semweb.nook.crypto.EncryptionMapper
 import solutions.semweb.nook.data.database.ChatConversationEntity
 import solutions.semweb.nook.data.database.DatabaseActor
@@ -63,6 +64,7 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var prefs: SharedPreferencesManager
     private lateinit var keyboardSafetyManager: KeyboardSafetyManager
+    private lateinit var resetDefaultButton: ImageButton
 
     // === STATUS VARS ===
     var conversation: ChatConversation? = null
@@ -90,6 +92,31 @@ class ChatActivity : AppCompatActivity() {
     private val FONT_SIZE_STEP = 2f
     private lateinit var scaleDetector: ScaleGestureDetector
     private lateinit var databaseActor: DatabaseActor
+
+    private val chatUpdateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                "${Constants.mainpackage}.CHAT_UPDATED" -> {
+                    LogUtils.d(this@ChatActivity, "ChatActivity", "📡 Received CHAT_UPDATED broadcast")
+                    runOnUiThread {
+                        // Refresh conversation data
+                        conversation = getConversationById(conversationId ?: return@runOnUiThread)
+                        // Update toolbar color based on new encryption settings
+                        setChatTitle()
+                        // Reload messages to show any changes (like receipt icons)
+                        loadMessages()
+                    }
+                }
+                "${Constants.mainpackage}.MESSAGE_DELETED" -> {
+                    val messageId = intent.getLongExtra("message_id", -1)
+                    LogUtils.d(this@ChatActivity, "ChatActivity", "🗑️ Message deleted: $messageId")
+                    runOnUiThread {
+                        loadMessages()
+                    }
+                }
+            }
+        }
+    }
 
     // === UI VARS ===
     private var sortOrderButton: ImageView? = null
@@ -154,7 +181,8 @@ class ChatActivity : AppCompatActivity() {
         prefs = SharedPreferencesManager.getInstance(this)
         currentMsgSeq = prefs.msgSeq
         isYChat = conversation?.isYChat ?: phoneNumber.startsWith("Y_")
-        yUserId = if (isYChat) phoneNumber.removePrefix("Y_") else null
+        yUserId = null
+
 
         // 7. Setup UI
         setupUI()
@@ -178,6 +206,81 @@ class ChatActivity : AppCompatActivity() {
             .show()
     }
 
+    fun updateToolbarColor() {
+        // Reload conversation data to ensure we have the latest
+        conversation = getConversationById(conversationId ?: return)
+
+        // Update the toolbar color based on current encryption settings
+        val toolbarColorRes = when {
+            // Case 1: Default encryption parameters detected
+            (conversation?.encryptionScheme.isNullOrEmpty() || conversation?.encryptionScheme == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) &&
+                    (conversation?.encoding == EncryptionMapper.ENCODING_BASE256 || conversation?.encoding.isNullOrEmpty()) &&
+                    conversation?.encodingPassword.isNullOrEmpty() ->
+                R.color.default_encryption_outgoing
+
+            // Case 2: PlainText configuration
+            (conversation?.encryptionScheme == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) &&
+                    (conversation?.encoding == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) &&
+                    conversation?.encodingPassword.isNullOrEmpty() ->
+                R.color.plaintext_incoming
+
+            // Case 3: All other configurations
+            else -> R.color.middle_green
+        }
+
+        val toolbar = findViewById<LinearLayout>(R.id.chat_toolbar)
+        val gradient = GradientDrawable().apply {
+            setColor(ContextCompat.getColor(this@ChatActivity, toolbarColorRes))
+        }
+        toolbar?.background = gradient
+
+        // Update the reset button icon based on new configuration
+        updateResetButton()  // This should work since it's in the same class
+
+        LogUtils.d(this, "ChatActivity", "🎨 Toolbar color updated to: $toolbarColorRes")
+    }
+
+    fun updateResetButton_toggle() {
+        if (isChatInDefaultConfiguration()) {
+            resetDefaultButton.setImageResource(R.drawable.ic_settings)
+            resetDefaultButton.contentDescription = getString(R.string.set_encryption)
+            resetDefaultButton.setOnClickListener {
+                EncryptionDialogHelper.showEncryptionCodingSchemesDialogForChat(
+                    conversation = conversation!!,
+                    view = resetDefaultButton,
+                    prefs = prefs,
+                    chatManager = chatManager,
+                    activity = this
+                )
+            }
+        } else {
+            resetDefaultButton.setImageResource(R.drawable.ic_reset_default)
+            resetDefaultButton.contentDescription = getString(R.string.reset_to_default)
+            resetDefaultButton.setOnClickListener {
+                MainActivity.resetConversationToDefault(this, conversation!!) {
+                    updateResetButton()
+                }
+            }
+        }
+    }
+
+    // this normally called when the user changes to default
+    // actually we want always the gear (settings)
+    // because in the settings panel we have already resetConversationToDefault
+    fun updateResetButton() {
+        resetDefaultButton.setImageResource(R.drawable.ic_settings)
+        resetDefaultButton.contentDescription = getString(R.string.set_encryption)
+        resetDefaultButton.setOnClickListener {
+            EncryptionDialogHelper.showEncryptionCodingSchemesDialogForChat(
+                conversation = conversation!!,
+                view = resetDefaultButton,
+                prefs = prefs,
+                chatManager = chatManager,
+                activity = this
+            )
+        }
+
+    }
 
     private fun getConversationById(conversationId: Long): ChatConversation? {
         LogUtils.d(this, "ChatActivity", "🔍 getConversationById called with ID: $conversationId")
@@ -271,8 +374,14 @@ class ChatActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.chat_recycler_view)
         swipeRefreshLayout = findViewById(R.id.swipe_refresh_layout)
 
-        // ⭐⭐ FORZA il posizionamento dell'indicatore di refresh ⭐⭐
+        // Initialize the reset button
+        resetDefaultButton = findViewById(R.id.reset_default_button)
+
+        // forces swipe indicator repositioning:
         swipeRefreshLayout.setProgressViewEndTarget(true, 200)
+
+        // Call updateResetButton after initializing the button
+        updateResetButton()
 
         configureSwipeRefreshLayout()
         setupTouchDebugging()
@@ -294,7 +403,6 @@ class ChatActivity : AppCompatActivity() {
         val parent = swipeRefreshLayout.parent
         LogUtils.d(this, "ChatActivity", "SwipeRefreshLayout parent: ${parent?.javaClass?.simpleName}")
 
-
         LogUtils.d(this, "ChatActivity", "✅ SwipeRefreshLayout configured for MSG_SEQ: $currentMsgSeq")
         debugSwipeConfiguration()
 
@@ -313,6 +421,9 @@ class ChatActivity : AppCompatActivity() {
         LogUtils.d(this, "ChatActivity", "✅ Adapter configured with MSG_SEQ: $currentMsgSeq")
 
         recyclerView.adapter = adapter
+
+        val isDefaultEncr = isDefaultEncryptionChat()
+        adapter.setDefaultEncryptionMode(isDefaultEncr)
 
         adapter.onContinuationStateChanged = { show, loading ->
             runOnUiThread {
@@ -382,7 +493,7 @@ class ChatActivity : AppCompatActivity() {
                     LogUtils.d(this, "ChatActivity", "🔐 Keyboard state: $status")
                     if (status == KeyboardSafetyManager.KeyboardSafetyStatus.REJECTED ||
                         status == KeyboardSafetyManager.KeyboardSafetyStatus.IGNORED) {
-                        LogUtils.w(this, "ChatActivity", "⚠️ Usafe keyboard detected")
+                        LogUtils.w(this, "ChatActivity", "⚠️ Unsafe keyboard detected")
                         showKeyboardWarning()
                     }
                 }, 300)
@@ -391,45 +502,33 @@ class ChatActivity : AppCompatActivity() {
             }
         }
 
-        val chatUpdateReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                LogUtils.d(this@ChatActivity, "ChatActivity", "📡 Broadcast received: CHAT_UPDATED")
-                runOnUiThread {
-                    syncMsgSeqFromPrefs()
-                    loadMessages()
-                    recyclerView.postDelayed({
-                        scrollToAppropriatePosition()
-                        updateSwipeRefreshVisibility()
-                    }, 200)
+        // Register broadcast receivers
+        val filter = IntentFilter().apply {
+            addAction("${Constants.mainpackage}.CHAT_UPDATED")
+            addAction("${Constants.mainpackage}.MESSAGE_DELETED")
+        }
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    registerReceiver(
+                        chatUpdateReceiver,
+                        filter,
+                        RECEIVER_NOT_EXPORTED  // Use NOT_EXPORTED since it's only for internal broadcasts
+                    )
+                    LogUtils.d(this, "ChatActivity", "✅ Broadcast receiver registered (API >= TIRAMISU)")
+                } else {
+                    @Suppress("DEPRECATION")
+                    registerReceiver(chatUpdateReceiver, filter)
+                    LogUtils.d(this, "ChatActivity", "✅ Broadcast receiver registered (API < TIRAMISU)")
                 }
+            } else {
+                @Suppress("DEPRECATION")
+                registerReceiver(chatUpdateReceiver, filter)
+                LogUtils.d(this, "ChatActivity", "✅ Broadcast receiver registered (API < O)")
             }
-        }
-
-        val filter = IntentFilter(Constants.mainpackage + ".CHAT_UPDATED")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(chatUpdateReceiver, filter, RECEIVER_NOT_EXPORTED)
-            LogUtils.d(this, "ChatActivity", "✅ Broadcast receiver registered (API >= TIRAMISU)")
-        } else {
-            registerReceiver(chatUpdateReceiver, filter)
-            LogUtils.d(this, "ChatActivity", "✅ Broadcast receiver registered (API < TIRAMISU)")
-        }
-
-        val messageDeletedReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                LogUtils.d(this@ChatActivity, "ChatActivity", "📡 Broadcast registered: MESSAGE_DELETED")
-                runOnUiThread {
-                    loadMessages()
-                }
-            }
-        }
-
-        val deleteFilter = IntentFilter("${Constants.mainpackage}.MESSAGE_DELETED")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(messageDeletedReceiver, deleteFilter, RECEIVER_NOT_EXPORTED)
-            LogUtils.d(this, "ChatActivity", "✅ Message deleted receiver registrato")
-        } else {
-            registerReceiver(messageDeletedReceiver, deleteFilter)
-            LogUtils.d(this, "ChatActivity", "✅ Message deleted receiver registrato")
+        } catch (e: Exception) {
+            LogUtils.e(this, "ChatActivity", "❌ Error registering receiver", e)
         }
 
         runOnUiThread {
@@ -439,6 +538,19 @@ class ChatActivity : AppCompatActivity() {
 
         LogUtils.d(this, "ChatActivity", "🎉 setupUI() finished with success!")
     }
+
+    // In ChatActivity.kt, add a new method to reset conversation to default settings
+
+
+
+    private fun isChatInDefaultConfiguration(): Boolean {
+        return (conversation?.encryptionScheme == EncryptionMapper.ENCRYPTION_SCHEME_TEXT ||
+                conversation?.encryptionScheme.isNullOrEmpty()) &&
+                conversation?.encoding == EncryptionMapper.ENCODING_BASE256 &&
+                conversation?.encodingPassword.isNullOrEmpty()
+    }
+
+
 
     private fun setupSortOrderButton() {
         val button = sortOrderButton ?: return
@@ -842,11 +954,28 @@ class ChatActivity : AppCompatActivity() {
         val toolbar = findViewById<LinearLayout>(R.id.chat_toolbar)
         chatTitle.setTextColor(ContextCompat.getColor(this, android.R.color.white))
 
+        // Determine toolbar color based on encryption settings
+        val toolbarColorRes = when {
+            // Case 1: Default encryption parameters detected
+            (conversation?.encryptionScheme.isNullOrEmpty() || conversation?.encryptionScheme == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) &&
+                    (conversation?.encoding == EncryptionMapper.ENCODING_BASE256 || conversation?.encoding.isNullOrEmpty()) &&
+                    conversation?.encodingPassword.isNullOrEmpty() ->
+                R.color.default_encryption_outgoing
+
+            // Case 2: PlainText configuration
+            (conversation?.encryptionScheme == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) &&
+                    (conversation?.encoding == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) &&
+                    conversation?.encodingPassword.isNullOrEmpty() ->
+                R.color.plaintext_incoming
+
+            // Case 3: All other configurations
+            else -> R.color.middle_green
+        }
+
         val gradient = GradientDrawable().apply {
-            setColor(ContextCompat.getColor(this@ChatActivity, R.color.middle_green))
+            setColor(ContextCompat.getColor(this@ChatActivity, toolbarColorRes))
         }
         toolbar?.background = gradient
-
     }
 
     private fun chatActSendMessage() {
@@ -858,13 +987,13 @@ class ChatActivity : AppCompatActivity() {
 
         LogUtils.d(this, "ChatActivity", "✈️ Sending message: '$text', YChat: $isYChat")
 
-        chatActAddOutgoingMessageToChat(text)
+        val mid = chatActAddOutgoingMessageToChat(text)
         messageInput.text.clear()
         hideKeyboard()
-        checkIfPlaintextAndSendmessageInCurrentChat(text)
+        checkIfPlaintextAndSendmessageInCurrentChat(text,mid)
     }
 
-    private fun chatActAddOutgoingMessageToChat(text: String) {
+    private fun chatActAddOutgoingMessageToChat(text: String): Long {
         LogUtils.d(this, "ChatActivity", "✈️ Creation of outgoing message: '$text'")
 
         val encryptionScheme = chatManager.getEncryptionSchemeForChat(phoneNumber)
@@ -879,6 +1008,7 @@ class ChatActivity : AppCompatActivity() {
         val messageId = chatManager.generateMessageId()
         val message = ChatMessage(
             id = messageId,
+            conversationId = conversation?.id ?: -1,
             text = displayText,
             sender = phoneNumber,
             senderName = conversation?.contactName,
@@ -897,9 +1027,17 @@ class ChatActivity : AppCompatActivity() {
         }
 
         LogUtils.d(this, "ChatActivity", "⚠️ Message shown in UI, DB will save it after sending SMS")
+        return messageId
     }
 
-    private fun checkIfPlaintextAndSendmessageInCurrentChat(text: String) {
+    private fun isDefaultEncryptionChat(): Boolean {
+        return (conversation?.encryptionScheme == EncryptionMapper.ENCRYPTION_TEXT || conversation?.encryptionScheme?.isEmpty() == true)
+                && conversation?.encoding == EncryptionMapper.ENCODING_BASE256
+                && conversation?.encodingPassword.isNullOrEmpty()
+    }
+
+
+    private fun checkIfPlaintextAndSendmessageInCurrentChat(text: String, messageid: Long) {
         val conversation =
             this.conversation?:
                 runBlocking {
@@ -911,21 +1049,21 @@ class ChatActivity : AppCompatActivity() {
 
         if (schemeToUse == EncryptionMapper.ENCRYPTION_SCHEME_TEXT
             && encodingScheme == EncryptionMapper.ENCRYPTION_SCHEME_TEXT) {
-            showPlaintextWarningDialog(text,conversation)
+            showPlaintextWarningDialog(text,conversation,messageid)
         } else {
             Thread {
                 if (conversation!=null)
-                    chatManager.sendMessage(this, conversation, text)
+                    chatManager.sendMessage(this, conversation, text, messageid)
             }.start()
         }
     }
 
-    private fun showPlaintextWarningDialog(text: String, conversation: ChatConversation) {
+    private fun showPlaintextWarningDialog(text: String, conversation: ChatConversation, messageid:Long) {
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.plaintext_warning_title))
             .setMessage(getString(R.string.plaintext_warning_message))
             .setPositiveButton(getString(R.string.send_anyway)) { dialog, _ ->
-                sendSmsMessage(text,conversation)
+                sendSmsMessage(text,conversation,messageid)
                 dialog.dismiss()
             }
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
@@ -940,9 +1078,9 @@ class ChatActivity : AppCompatActivity() {
 
 
 
-    private fun sendSmsMessage(text: String, conversation: ChatConversation) {
+    private fun sendSmsMessage(text: String, conversation: ChatConversation, messageid: Long) {
         val chatManager = ChatManager(this)
-        val result = chatManager.sendMessage(this, conversation, text)
+        val result = chatManager.sendMessage(this, conversation, text, messageid)
 
         if (result.isSent) {
             MainActivity.showToast(getString(R.string.message_sent), false)
@@ -973,7 +1111,7 @@ class ChatActivity : AppCompatActivity() {
 
 
         popup.menu.add(getString(R.string.menu_resend_msg)).setOnMenuItemClickListener {
-            resendMessage(message.text)
+            resendMessage(message.text, message.id)
             true
         }
 
@@ -1010,11 +1148,11 @@ class ChatActivity : AppCompatActivity() {
     }
 
 
-    private fun resendMessage(text: String) {
+    private fun resendMessage(text: String, messageId: Long) {
         if (this.conversation != null) {
             //text containst prolog - cleanup text / avoid duplicating prolog
             val cleantext = cleanupIndicator( text )
-            chatManager.sendMessage(this, this.conversation!!,cleantext)
+            chatManager.sendMessage(this, this.conversation!!, cleantext, messageId)
         }
     }
 
@@ -1243,6 +1381,11 @@ class ChatActivity : AppCompatActivity() {
 
         isChatForeground = true
         markAsRead()
+
+        // Reload messages when returning to the chat
+        loadMessages()
+
+        updateSystemBarsForSmsLoopback()
     }
 
     override fun onPause() {
@@ -1260,7 +1403,15 @@ class ChatActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         markAsRead()
-        MainActivity.conversation = null;
+        MainActivity.conversation = null
+
+        // Unregister receiver to prevent memory leaks
+        try {
+            unregisterReceiver(chatUpdateReceiver)
+        } catch (e: IllegalArgumentException) {
+            // Ignore if not registered
+        }
+
         super.onDestroy()
     }
 
@@ -1421,5 +1572,42 @@ class ChatActivity : AppCompatActivity() {
         loadMoreMessages()
     }
 
+    private fun updateSystemBarsForSmsLoopback() {
+
+        try {
+            val prefs = SharedPreferencesManager.getInstance(this)
+            val isLoopbackMode = prefs.isSmsLoopbackMode()
+            val window = window
+
+            if (isLoopbackMode) {
+                // SMS Loopback ON - Red bars
+                window.statusBarColor = ContextCompat.getColor(this, android.R.color.holo_red_dark)
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    window.navigationBarColor = ContextCompat.getColor(this, android.R.color.holo_red_dark)
+                }
+
+                // Ensure icons are light on dark background
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    val decorView = window.decorView
+                    decorView.systemUiVisibility = decorView.systemUiVisibility and
+                            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+                }
+
+                LogUtils.e("ChatActivity", "🔴 System bars set to RED (SMS Loopback ON)")
+            } else {
+                // SMS Loopback OFF - Restore default colors
+                window.statusBarColor = ContextCompat.getColor(this, R.color.middle_green)
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    window.navigationBarColor = ContextCompat.getColor(this, R.color.middle_green)
+                }
+
+                LogUtils.e("ChatActivity", "⚫ System bars restored to default (SMS Loopback OFF)")
+            }
+        } catch (e: Exception) {
+            LogUtils.e("ChatActivity", "❌ Error updating system bars", e)
+        }
+    }
 }
 

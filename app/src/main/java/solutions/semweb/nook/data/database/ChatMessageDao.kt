@@ -27,6 +27,9 @@ interface ChatMessageDao {
     @Update
     fun update(message: ChatMessageEntity)
 
+    @Query("UPDATE chat_messages SET metadata_json = :metadataJson, metadata_type = :metadataType, updated_at = :updatedAt WHERE id = :messageId")
+    suspend fun updateMetadataDirectly(messageId: Long, metadataJson: String?, metadataType: String?, updatedAt: Long): Int
+
     @Delete
     fun delete(message: ChatMessageEntity)
 
@@ -36,6 +39,8 @@ interface ChatMessageDao {
     @Query("SELECT * FROM chat_messages WHERE id = :messageId LIMIT 1")
     fun findById(messageId: Long): ChatMessageEntity?
 
+    @Query("SELECT * FROM chat_messages ORDER BY id DESC LIMIT 1")
+    fun findLast(): ChatMessageEntity?
     @Query("SELECT COUNT(*) FROM chat_messages WHERE conversation_id = :conversationId")
     fun countByConversation(conversationId: Long): Int
 
