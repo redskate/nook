@@ -124,17 +124,19 @@ object EncryptionDialogHelper {
             .setNeutralButton(activity.getString(R.string.default_button)) { dialog, _ ->
                 // Use the activity as Context
                 MainActivity.Companion.resetConversationToDefault(activity, conversation) {
-                    // Refresh UI after reset
-                    // We need to refresh the dialog or close it
-                    dialog.dismiss()
-                    // Optionally show the dialog again with default values
-                    showEncryptionCodingSchemesDialogForChat(
-                        conversation = conversation,
-                        view = dialogView,
-                        prefs = SharedPreferencesManager.Companion.getInstance(activity),
-                        chatManager = ChatManager(activity),
-                        activity = activity
-                    )
+                // Refresh UI after reset
+                // We need to refresh the dialog or close it
+                dialog.dismiss()
+                // Optionally show the dialog again with default values
+                /* do not show it - values set!
+                showEncryptionCodingSchemesDialogForChat(
+                    conversation = conversation,
+                    view = dialogView,
+                    prefs = SharedPreferencesManager.Companion.getInstance(activity),
+                    chatManager = ChatManager(activity),
+                    activity = activity
+                )
+                    */
                 }
             }
             .create()
