@@ -544,7 +544,7 @@
     <string name="pure_sms_description">Non contatta automaticamente GitHub per aggiornamenti o verifiche SHA</string>
     <string name="pure_sms_mode_active">Modalità SMS Puro attiva - nessuna connessione a GitHub</string>
     <string name="pure_sms_mode_inactive">Modalità SMS Puro disattivata</string>
-    <string name="sha_pure_sms_hint">Controlla il toggle Pure SMS e riprova</string>
+    <string name="sha_pure_sms_hint">Controlla il toggle della modalità "solo SMS" e riprova</string>
     <string name="sha_retry_with_internet">Riprova con internet</string>
     <string name="pure_sms_deactivation_title">Modalità Pure SMS Attiva</string>
     <string name="pure_sms_deactivation_message">Per verificare con internet, la modalità Pure SMS deve essere disattivata. Come vuoi procedere?</string>
