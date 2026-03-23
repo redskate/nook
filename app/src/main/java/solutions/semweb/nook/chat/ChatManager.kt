@@ -496,7 +496,9 @@ class ChatManager(val context: Context) {
                 LogUtils.d(context, "ChatManager", "  isDecoded: $isDecoded")
 
                 /////// not decoded - send a DEFAULT replay with nok ad mid -1 (last one)
-                if (!isDecoded) {
+                if (!isDecoded // but should
+                    && (usedScheme == EncryptionMapper.ENCRYPTION_SISA || usedEncoding != "")) {
+
                     runBlocking {
                         // Use the original chat ID and message ID from the receipt request
                         sendDecryptionReceipt(
@@ -509,6 +511,7 @@ class ChatManager(val context: Context) {
                     //Correct message since not readable
                     messageText = context.getString(R.string.MessageNotDecrypted)
                 }
+
 
                 // DEFENSIVE CHECK: Verify this sender should have a chat
                 val prefs = SharedPreferencesManager.getInstance(context)
