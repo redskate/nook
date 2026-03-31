@@ -1,5 +1,6 @@
 package solutions.semweb.nook.chat
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.BroadcastReceiver
@@ -8,11 +9,17 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.graphics.drawable.GradientDrawable
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.OpenableColumns
 import android.provider.Settings
 import android.text.InputType
 import android.view.MotionEvent
@@ -27,6 +34,7 @@ import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -51,8 +59,26 @@ import solutions.semweb.nook.data.database.DatabaseActor
 import solutions.semweb.nook.data.database.DatabaseManager
 import solutions.semweb.nook.keyboards.KeyboardManagementActivity
 import solutions.semweb.nook.keyboards.KeyboardSafetyManager
+import java.util.concurrent.atomic.AtomicBoolean
 
 class ChatActivity : AppCompatActivity() {
+
+    private lateinit var locationManager: LocationManager
+    private var isLocationUpdatePending = AtomicBoolean(false)
+
+    private lateinit var toggleActionsButton: MaterialButton
+    private lateinit var sendVocalButton: MaterialButton
+    private lateinit var sendPositionButton: MaterialButton
+    private lateinit var sendFileButton: MaterialButton
+    private var isExpanded = false
+    private val filePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            LogUtils.d(this, "ChatActivity", "📎 File selected: $it")
+            handleSelectedFile(it)
+        } ?: run {
+            LogUtils.d(this, "ChatActivity", "📎 File selection cancelled")
+        }
+    }
 
     // === MAIN VARS ===
     private lateinit var phoneNumber: String
@@ -204,6 +230,278 @@ class ChatActivity : AppCompatActivity() {
             .setPositiveButton("OK") { _, _ -> finish() }
             .setCancelable(false)
             .show()
+    }
+
+    private fun setupActionsToggle() {
+        toggleActionsButton = findViewById(R.id.toggle_actions_button)
+        sendVocalButton = findViewById(R.id.send_vocalm)
+        sendPositionButton = findViewById(R.id.send_position)
+        sendFileButton = findViewById(R.id.send_file)
+
+        toggleActionsButton.setOnClickListener {
+            isExpanded = !isExpanded
+
+            if (isExpanded) {
+                // Expand: show action buttons, change button to "-"
+
+                //NO VOCAL FOR NOW:
+                //sendVocalButton.visibility = View.VISIBLE
+                //NO File Button for now
+                //sendFileButton.visibility = View.VISIBLE
+                sendPositionButton.visibility = View.VISIBLE
+                toggleActionsButton.text = "－"
+                LogUtils.d(this, "ChatActivity", "➕ Actions expanded")
+            } else {
+                // Collapse: hide action buttons, change button back to "+"
+                sendVocalButton.visibility = View.GONE
+                sendPositionButton.visibility = View.GONE
+                sendFileButton.visibility = View.GONE
+                toggleActionsButton.text = "＋"
+                LogUtils.d(this, "ChatActivity", "➖ Actions collapsed")
+            }
+        }
+    }
+
+    private fun setupActionButtons() {
+        sendVocalButton.setOnClickListener {
+            LogUtils.d(this, "ChatActivity", "🎤 Voice message button clicked")
+            startVoiceRecording()
+            collapseActions()
+        }
+
+        sendPositionButton.setOnClickListener {
+            LogUtils.d(this, "ChatActivity", "📎 Send location button clicked")
+            sendCurrentLocation()
+            collapseActions()
+        }
+
+        sendFileButton.setOnClickListener {
+            LogUtils.d(this, "ChatActivity", "📍 Attach file button clicked")
+            openFilePicker()
+            collapseActions()
+        }
+    }
+
+
+    // Location permission launcher
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        when {
+            permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) ||
+                    permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {
+                LogUtils.d(this, "ChatActivity", "📍 Location permission granted")
+                getCurrentLocation()
+            }
+            else -> {
+                LogUtils.d(this, "ChatActivity", "📍 Location permission denied")
+                Toast.makeText(this, "Location permission required to send position", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun openFilePicker() {
+        filePickerLauncher.launch("*/*")
+    }
+
+    private fun handleSelectedFile(uri: Uri) {
+        val fileName = getFileNameFromUri(uri)
+        Toast.makeText(this, "📎 File selected: $fileName", Toast.LENGTH_SHORT).show()
+        LogUtils.d(this, "ChatActivity", "📎 File URI: $uri, Name: $fileName")
+        // TODO: Implement your file sending logic here
+    }
+
+    private fun getFileNameFromUri(uri: Uri): String {
+        var fileName = "unknown"
+        val cursor = contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex >= 0) {
+                    fileName = it.getString(nameIndex)
+                }
+            }
+        }
+        return fileName
+    }
+
+    private fun startVoiceRecording() {
+        Toast.makeText(this, "🎤 TODO - Voice recording starting...", Toast.LENGTH_SHORT).show()
+        // TODO: Implement voice recording
+    }
+
+    private fun sendCurrentLocation() {
+        LogUtils.d(this, "ChatActivity", "📍 Attempting to get current location")
+
+        // Check if location services are enabled
+        if (!isLocationEnabled()) {
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.location_services_disabled))
+                .setMessage(getString(R.string.location_services_disabled_message))
+                .setPositiveButton(getString(R.string.open_settings)) { _, _ ->
+                    startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                }
+                .setNegativeButton(getString(R.string.cancel), null)
+                .show()
+            return
+        }
+
+        // Check permissions
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // Request permissions
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+                return
+            }
+        }
+
+        // Get location
+        getCurrentLocation()
+    }
+
+    private fun isLocationEnabled(): Boolean {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return try {
+            locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                    locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        } catch (e: Exception) {
+            false
+        }
+    }
+    private fun getCurrentLocation() {
+        locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+        // Show progress dialog
+        val progressDialog = AlertDialog.Builder(this)
+            .setTitle(getString(R.string.getting_location))
+            .setMessage(getString(R.string.waiting_for_gps))
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+
+        try {
+            // Check which providers are available
+            val gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+            val networkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+
+            if (!gpsEnabled && !networkEnabled) {
+                progressDialog.dismiss()
+                showLocationSettingsDialog()
+                return
+            }
+
+            // Try to get last known location first (fast)
+            val provider = if (gpsEnabled) LocationManager.GPS_PROVIDER else LocationManager.NETWORK_PROVIDER
+            val lastLocation = locationManager.getLastKnownLocation(provider)
+            if (lastLocation != null && System.currentTimeMillis() - lastLocation.time < 30000) {
+                // Location is recent (less than 30 seconds old)
+                progressDialog.dismiss()
+                sendLocationMessage(lastLocation)
+                return
+            }
+
+            // Request new location update
+            isLocationUpdatePending.set(true)
+
+            // Create location listener
+            val locationListener = object : LocationListener {
+                override fun onLocationChanged(location: Location) {
+                    if (isLocationUpdatePending.getAndSet(false)) {
+                        progressDialog.dismiss()
+                        locationManager.removeUpdates(this)
+                        sendLocationMessage(location)
+                    }
+                }
+
+                override fun onProviderEnabled(provider: String) {}
+                override fun onProviderDisabled(provider: String) {}
+
+                override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {
+                    if (status == android.location.LocationProvider.OUT_OF_SERVICE) {
+                        if (isLocationUpdatePending.getAndSet(false)) {
+                            progressDialog.dismiss()
+                            Toast.makeText(this@ChatActivity,
+                                getString(R.string.location_not_available),
+                                Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+
+            // Request single location update
+            val activeProvider = if (gpsEnabled) LocationManager.GPS_PROVIDER
+            else LocationManager.NETWORK_PROVIDER
+
+            locationManager.requestSingleUpdate(activeProvider, locationListener, Looper.getMainLooper())
+
+            // Set timeout (10 seconds)
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (isLocationUpdatePending.getAndSet(false)) {
+                    progressDialog.dismiss()
+                    locationManager.removeUpdates(locationListener)
+                    Toast.makeText(this, getString(R.string.location_timeout), Toast.LENGTH_LONG).show()
+                }
+            }, 10000)
+
+        } catch (e: SecurityException) {
+            progressDialog.dismiss()
+            LogUtils.e(this, "ChatActivity", "Location permission error", e)
+            Toast.makeText(this, getString(R.string.location_permission_required), Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            progressDialog.dismiss()
+            LogUtils.e(this, "ChatActivity", "Error getting location", e)
+            Toast.makeText(this, getString(R.string.location_error), Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun sendLocationMessage(location: Location) {
+        val latitude = location.latitude
+        val longitude = location.longitude
+
+        // Create OpenStreetMap link (privacy-friendly)
+        val osmUrl = "https://www.openstreetmap.org/?mlat=$latitude&mlon=$longitude&zoom=15"
+        val latFormatted = String.format("%.6f", latitude)
+        val lonFormatted = String.format("%.6f", longitude)
+        val geoUri = "Geo:\n$latitude\n$longitude\nZoom=15"
+        val locationText=getString(R.string.i_am_here)
+        val messageText = "$locationText\n\nOpenStreetMap: $osmUrl\n\n$geoUri"
+
+        LogUtils.d(this, "ChatActivity", "📍 Sending location message: $messageText")
+
+        // Set the message in the input field and send it
+        messageInput.setText(messageText)
+        chatActSendMessage()
+
+        Toast.makeText(this,
+            getString(R.string.location_sent, latitude, longitude),
+            Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showLocationSettingsDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.location_services_disabled))
+            .setMessage(getString(R.string.location_services_disabled_message))
+            .setPositiveButton(getString(R.string.open_settings)) { _, _ ->
+                startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+    }
+    private fun collapseActions() {
+        if (isExpanded) {
+            isExpanded = false
+            sendVocalButton.visibility = View.GONE
+            sendPositionButton.visibility = View.GONE
+            sendFileButton.visibility = View.GONE
+            toggleActionsButton.text = "+"
+            LogUtils.d(this, "ChatActivity", "➖ Actions auto-collapsed after selection")
+        }
     }
 
     fun updateToolbarColor() {
@@ -452,6 +750,9 @@ class ChatActivity : AppCompatActivity() {
             LogUtils.d(this, "ChatActivity", "📤 Start button clicked")
             chatActSendMessage()
         }
+        // Setup toggle and action buttons
+        setupActionsToggle()
+        setupActionButtons()
 
         findViewById<View>(R.id.back_button).setOnClickListener {
             LogUtils.d(this, "ChatActivity", "⬅️ Back button clicked")
@@ -1078,9 +1379,9 @@ class ChatActivity : AppCompatActivity() {
 
 
 
-    private fun sendSmsMessage(text: String, conversation: ChatConversation, messageid: Long) {
+    private fun sendSmsMessage(text: String, conversation: ChatConversation, messageId: Long) {
         val chatManager = ChatManager(this)
-        val result = chatManager.sendMessage(this, conversation, text, messageid)
+        val result = chatManager.sendMessage(this, conversation, text, messageId)
 
         if (result.isSent) {
             MainActivity.showToast(getString(R.string.message_sent), false)

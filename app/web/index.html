@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- === PAGE PARAMS === -->
-    <meta name="nook-version" content="v1.6.8.296">
-    <meta name="nook-apk-url" content="https://github.com/redskate/nook/releases/download/v1.6.8.296/nook-v1.6.8.296.apk">
+    <meta name="nook-version" content="v1.7.8.297">
+    <meta name="nook-apk-url" content="https://github.com/redskate/nook/releases/download/v1.6.8.296/nook-v1.7.8.297.apk">
     <meta name="nook-pub-date" content="23.03.2026">
 
     <!-- === SEO SECTION === -->
@@ -1083,6 +1083,7 @@
                 <div class="permission-item"><i class="fas fa-bell"></i> <span class="notranslate"> POST_NOTIFICATIONS </span></div>
                 <div class="permission-item"><i class="fas fa-server"></i> <span class="notranslate"> FOREGROUND_SERVICE </span></div>                    <div class="permission-item"><i class="fas fa-server"></i> <span class="notranslate"> ACCESS_NETWORK_STATE </span></div>
                 <div class="permission-item"><i class="fas fa-server"></i> <span class="notranslate"> INTERNET </span></div>
+                <div class="permission-item"><i class="fas fa-server"></i> <span class="notranslate"> ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION </span></div>
 
             </div>
 
@@ -1095,7 +1096,10 @@
                 • <strong class="notranslate">POST_NOTIFICATIONS:</strong>&nbsp;To issue notifications<br>
                 • <strong class="notranslate">FOREGROUND_SERVICE:</strong>&nbsp;To capture incoming encrypted SMS<br>
                 • <strong class="notranslate">INTERNET, ACCESS_NETWORK_STATE:</strong>&nbsp;Periodic Self Check (SHA) + app Upgrade - these permissions are not expressely requested; if internet is working - they allow NooK to use them<br><br>
-                Some permissions are requested when needed
+
+                Some permissions are requested when needed, like:<br>
+                • <strong class="notranslate">ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION:</strong>&nbsp;To send your own location to your partner<br>
+
             </div>
         </div>
     </section>

@@ -18,7 +18,7 @@ import androidx.core.app.NotificationManagerCompat
 class ForegroundService : Service() {
 
     companion object {
-        const val NOTIFICATION_ID = 1001
+        const val NOTIFICATION_ID = 2001
         private const val TAG = "ForegroundService"
 
         // This is the missing method!

@@ -6,9 +6,11 @@ object Constants {
     //////////////////////////////////////////////////////
     // 🔴 CENTRALIZED VERSIONING - Edit only these values
     const val VERSION_MAJOR = 1
-    const val VERSION_MINOR = 6
-    const val VERSION_PATCH = 8 // fixes for passwords
-    const val VERSION_CODE = 296
+    const val VERSION_MINOR = 7
+    const val VERSION_PATCH = 8 // Sending own location to partner
+    const val VERSION_CODE = 297
+
+    const val FILE_PICKER_REQUEST_CODE = 3001
 
     // Computed version name (DO NOT EDIT DIRECTLY)
     const val VERSION_NAME = "$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_CODE"

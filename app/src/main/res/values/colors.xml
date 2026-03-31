@@ -31,7 +31,8 @@
     <color name="plaintext_outgoing">#757575</color>
     <color name="plaintext_incoming">#FF9800</color> <!-- Brighter version -->
 
-
+    <color name="link_blue_navy">#000080</color>     <!-- Blu navy -->
+    <color name="link_blue_midnight">#191970</color> <!-- Midnight blue -->
     <!--
        <color name="plaintext_background">#FFF8E1</color> < Light yellow background --><![CDATA[
     -->
