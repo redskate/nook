@@ -1,6 +1,6 @@
-Welcome to NooK SMS!   (No one Knows)   [https://semweb.solutions/nook/]
+Welcome to NooK!   (No one Knows)   [https://semweb.solutions/nook/]
 
-Private SMS Messaging Powered by AES-256 Encryption
+Private Android SMS Messaging Powered by AES-256 Encryption
 
 Secure. Simple. Offline.
 
